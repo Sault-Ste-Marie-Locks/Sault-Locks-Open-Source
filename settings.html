@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings</title>
+<script>
+try {
+  if (localStorage.getItem('ssmCanalDashboard.darkMode') === 'true') {
+    document.documentElement.classList.add('app-dark');
+  }
+} catch(e) {}
+</script>
+<link rel="stylesheet" href="assets/style.css" />
+
+<style>
+/* =========================================================
+   Settings Page Refresh
+   Uses the app's existing theme variables and layout.
+========================================================= */
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+.settings-stack {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.settings-side {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.settings-card-body {
+  padding: 18px;
+}
+
+.settings-section {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-row:first-child {
+  padding-top: 0;
+}
+
+.settings-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.settings-row strong {
+  display: block;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.settings-row span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.settings-control {
+  min-width: 180px;
+}
+
+.settings-control select,
+.settings-control input {
+  min-height: 36px;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-actions .btn {
+  min-height: 36px;
+}
+
+.settings-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.settings-mini-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-alt);
+}
+
+.settings-mini-card span {
+  display: block;
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.settings-mini-card strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.settings-mini-card small {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.settings-note {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.settings-warning {
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--text);
+}
+
+.settings-warning strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--danger);
+}
+
+.settings-warning span {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.settings-pill-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.settings-kv {
+  display: grid;
+  gap: 9px;
+}
+
+.settings-kv div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-kv div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.settings-kv span {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.settings-kv strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.storage-bar {
+  height: 9px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.storage-bar i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.settings-save-indicator {
+  min-height: 28px;
+  color: var(--text-soft);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.settings-save-indicator.good {
+  color: var(--success);
+}
+
+.settings-save-indicator.warn {
+  color: var(--warning);
+}
+
+body.dark-mode .settings-mini-card,
+html.app-dark .settings-mini-card,
+body.dark-mode .settings-pill,
+html.app-dark .settings-pill {
+  background: var(--surface-alt);
+  border-color: var(--line);
+}
+
+body.dark-mode .settings-warning,
+html.app-dark .settings-warning {
+  background: #2a1716;
+  border-color: #6f2a25;
+}
+
+@media (max-width: 980px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-side {
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .settings-control {
+    min-width: 0;
+  }
+
+  .settings-mini-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-actions .btn {
+    width: 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="app-shell easy-only">
+  <main class="main">
+    <header class="topbar">
+      <a class="topbar-logo" href="index.html" aria-label="Go home">
+        <img class="logo-light" src="assets/ssm-logo.png" alt="Sault Ste. Marie logo">
+        <img class="logo-dark" src="assets/ssm-logo-dark.png" alt="Sault Ste. Marie logo">
+      </a>
+
+      <div class="searchbar">
+        <span>Search</span>
+        <input id="globalSearch" placeholder="Search vessel, owner, registration, destination..." />
+      </div>
+
+      <div class="top-actions">
+        <div class="pill" id="clock">--:--:--</div>
+        <a class="pill primary" href="daily.html">New Entry</a>
+      </div>
+    </header>
+
+    <nav class="page-nav">
+      <a href="index.html">Home</a>
+      <a href="search.html">Search</a>
+      <a href="daily.html">New Entry</a>
+      <a href="records.html">All Records</a>
+      <a href="phone-link.html">Phone Link</a>
+      <a href="management.html">Management</a>
+      <a href="settings.html" class="active">Settings</a>
+    </nav>
+
+    <div class="page-intro">
+      <div>
+        <div class="eyebrow">Administration</div>
+        <h1>Settings</h1>
+        <p>Control appearance, reports, local storage, data export, and safety options for the dashboard.</p>
+      </div>
+    </div>
+
+    <section class="section active" id="settings">
+      <div class="settings-grid">
+        <div class="settings-stack">
+
+          <div class="panel">
+            <div class="panel-title">
+              <h3>Appearance</h3>
+              <small>Theme and display</small>
+            </div>
+
+            <div class="settings-card-body">
+              <div class="settings-section">
+                <div class="settings-row">
+                  <div>
+                    <strong>Dark Mode</strong>
+                    <span>Switch the whole dashboard to a darker theme. This setting is saved on this device.</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <strong>Time Format</strong>
+                    <span>Choose whether clocks and report times display in 12-hour or 24-hour format.</span>
+                  </div>
+                  <div class="settings-control">
+                    <select id="settingTimeFormat">
+                      <option value="12">12-hour</option>
+                      <option value="24">24-hour</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <strong>Compact Tables</strong>
+                    <span>Use tighter table rows for screens with less space.</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="settingCompactTables">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <strong>Reduce Animations</strong>
+                    <span>Turn down hover movement and visual motion across the app.</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="settingReduceMotion">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <h3>Entry Defaults</h3>
+              <small>New record behavior</small>
+            </div>
+
+            <div class="settings-card-body">
+              <div class="settings-section">
+                <div class="settings-row">
+                  <div>
+                    <strong>Default Canal</strong>
+                    <span>Used as the default canal value for new entries when the form supports it.</span>
+                  </div>
+                  <div class="settings-control">
+                    <input id="settingDefaultCanal" placeholder="0708" maxlength="12">
+                  </div>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <strong>Default Direction</strong>
+                    <span>Preferred direction for lockage forms.</span>
+                  </div>
+                  <div class="settings-control">
+                    <select id="settingDefaultDirection">
+                      <option value="">No default</option>
+                      <option value="Up">Up</option>
+                      <option value="Down">Down</option>
+                      <option value="Drain">Drain</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <strong>Auto-fill Current Time</strong>
+                    <span>Use the current time when opening a new entry form.</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="settingAutofillTime">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <strong>Confirm Before Saving</strong>
+                    <span>Show a confirmation step before saving new records.</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="settingConfirmSave">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <h3>Reports</h3>
+              <small>Print and export preferences</small>
+            </div>
+
+            <div class="settings-card-body">
+              <div class="settings-section">
+                <div class="settings-row">
+                  <div>
+                    <strong>Default Report</strong>
+                    <span>Choose which report type opens first on the All Records page.</span>
+                  </div>
+                  <div class="settings-control">
+                    <select id="settingDefaultReport">
+                      <option value="dailyReport">Daily Report</option>
+                      <option value="monthlyReport">Monthly Report</option>
+                      <option value="betweenReport">Range Report</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <strong>Print Theme</strong>
+                    <span>Printed reports should stay light even when the dashboard is dark.</span>
+                  </div>
+                  <div class="settings-control">
+                    <select id="settingPrintTheme">
+                      <option value="light">Always Light</option>
+                      <option value="match">Match App Theme</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <strong>Report Density</strong>
+                    <span>Controls how tight report previews and printed tables appear.</span>
+                  </div>
+                  <div class="settings-control">
+                    <select id="settingReportDensity">
+                      <option value="comfortable">Comfortable</option>
+                      <option value="compact">Compact</option>
+                      <option value="print">Print Fit</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <strong>Show All Traffic Types</strong>
+                    <span>Daily, monthly, and range reports show TB, RB, Government, Commercial, LR, and LT totals.</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="settingShowAllTypes">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <h3>Data Tools</h3>
+              <small>Backup and reset</small>
+            </div>
+
+            <div class="settings-card-body">
+              <p class="settings-note">
+                This dashboard saves records in this browser using localStorage. Export backups before resetting data or moving to another computer.
+              </p>
+
+              <div class="settings-row">
+                <div>
+                  <strong>Export Backup</strong>
+                  <span>Download the current local database as a JSON backup file.</span>
+                </div>
+                <div class="settings-actions">
+                  <button class="btn good" id="exportData" type="button">Export JSON</button>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div>
+                  <strong>Import Backup</strong>
+                  <span>Load a previously exported JSON backup into this browser.</span>
+                </div>
+                <div class="settings-actions">
+                  <input type="file" id="importDataFile" accept=".json,application/json" hidden>
+                  <button class="btn" id="importData" type="button">Import JSON</button>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div>
+                  <strong>Export Today</strong>
+                  <span>Download only today’s records as a JSON file.</span>
+                </div>
+                <div class="settings-actions">
+                  <button class="btn" id="exportTodayData" type="button">Export Today</button>
+                </div>
+              </div>
+
+              <div class="settings-warning">
+                <strong>Danger Zone</strong>
+                <span>Resetting demo data removes locally saved records from this browser. Export a backup first.</span>
+              </div>
+
+              <div class="settings-actions" style="margin-top:14px">
+                <button class="btn danger" id="resetData" type="button">Reset Demo Data</button>
+                <button class="btn danger" id="clearSettingsOnly" type="button">Clear Settings Only</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <aside class="settings-side">
+          <div class="panel">
+            <div class="panel-title">
+              <h3>Storage</h3>
+              <small>This browser</small>
+            </div>
+
+            <div class="settings-card-body">
+              <div class="settings-mini-grid">
+                <div class="settings-mini-card">
+                  <span>Records</span>
+                  <strong id="settingsRecordCount">0</strong>
+                  <small>Saved locally</small>
+                </div>
+                <div class="settings-mini-card">
+                  <span>Presets</span>
+                  <strong id="settingsPresetCount">0</strong>
+                  <small>Vessel presets</small>
+                </div>
+                <div class="settings-mini-card">
+                  <span>Today</span>
+                  <strong id="settingsTodayCount">0</strong>
+                  <small>Entries today</small>
+                </div>
+                <div class="settings-mini-card">
+                  <span>Size</span>
+                  <strong id="settingsStorageSize">0 KB</strong>
+                  <small>Approximate</small>
+                </div>
+              </div>
+
+              <div style="margin-top:16px">
+                <div class="storage-bar"><i id="settingsStorageBar"></i></div>
+                <p class="settings-note" style="margin-top:8px">Browser storage is limited. Export backups regularly.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <h3>System Info</h3>
+              <small>App status</small>
+            </div>
+
+            <div class="settings-card-body">
+              <div class="settings-kv">
+                <div><span>App</span><strong>Sault Locks Dashboard</strong></div>
+                <div><span>Storage</span><strong>localStorage</strong></div>
+                <div><span>Last Opened</span><strong id="settingsLastOpened">Now</strong></div>
+                <div><span>Dark Mode</span><strong id="settingsDarkStatus">Off</strong></div>
+                <div><span>Version</span><strong>Local build</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <h3>Quick Links</h3>
+              <small>Shortcuts</small>
+            </div>
+
+            <div class="settings-card-body">
+              <div class="settings-actions">
+                <a class="btn" href="daily.html">New Entry</a>
+                <a class="btn" href="records.html">Reports</a>
+                <a class="btn" href="management.html">Presets</a>
+                <a class="btn" href="phone-link.html">Phone Link</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <h3>Enabled Features</h3>
+              <small>Local options</small>
+            </div>
+
+            <div class="settings-card-body">
+              <div class="settings-pill-list" id="settingsFeatureList">
+                <span class="settings-pill">Local records</span>
+                <span class="settings-pill">Report printing</span>
+                <span class="settings-pill">Dark mode</span>
+                <span class="settings-pill">Vessel presets</span>
+              </div>
+              <div class="settings-save-indicator" id="settingsSavedStatus">Settings ready</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+</div>
+
+<datalist id="vesselList"></datalist>
+<div class="toast" id="toast">Saved</div>
+
+<script src="assets/old-db-data.js"></script>
+<script src="assets/app.js"></script>
+
+<script>
+(function () {
+  const SETTINGS_KEY = "ssmCanalDashboard.settings.v2";
+  const DATA_KEY = "ssmCanalDashboard.v1";
+
+  const defaults = {
+    timeFormat: "12",
+    compactTables: false,
+    reduceMotion: false,
+    defaultCanal: "0708",
+    defaultDirection: "",
+    autofillTime: true,
+    confirmSave: true,
+    defaultReport: "dailyReport",
+    printTheme: "light",
+    reportDensity: "compact",
+    showAllTypes: true
+  };
+
+  const controls = {
+    timeFormat: document.getElementById("settingTimeFormat"),
+    compactTables: document.getElementById("settingCompactTables"),
+    reduceMotion: document.getElementById("settingReduceMotion"),
+    defaultCanal: document.getElementById("settingDefaultCanal"),
+    defaultDirection: document.getElementById("settingDefaultDirection"),
+    autofillTime: document.getElementById("settingAutofillTime"),
+    confirmSave: document.getElementById("settingConfirmSave"),
+    defaultReport: document.getElementById("settingDefaultReport"),
+    printTheme: document.getElementById("settingPrintTheme"),
+    reportDensity: document.getElementById("settingReportDensity"),
+    showAllTypes: document.getElementById("settingShowAllTypes")
+  };
+
+  function readJson(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function writeJson(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  function getSettings() {
+    return Object.assign({}, defaults, readJson(SETTINGS_KEY, {}));
+  }
+
+  function saveSettings(settings) {
+    writeJson(SETTINGS_KEY, settings);
+
+    // Also save a few simple keys that other pages can use later.
+    localStorage.setItem("ssmCanalDashboard.timeFormat", settings.timeFormat);
+    localStorage.setItem("ssmCanalDashboard.defaultCanal", settings.defaultCanal || "");
+    localStorage.setItem("ssmCanalDashboard.defaultDirection", settings.defaultDirection || "");
+    localStorage.setItem("ssmCanalDashboard.defaultReport", settings.defaultReport || "dailyReport");
+    localStorage.setItem("ssmCanalDashboard.printTheme", settings.printTheme || "light");
+    localStorage.setItem("ssmCanalDashboard.reportDensity", settings.reportDensity || "compact");
+    localStorage.setItem("ssmCanalDashboard.showAllTypes", String(!!settings.showAllTypes));
+  }
+
+  function applySettings(settings) {
+    if (controls.timeFormat) controls.timeFormat.value = settings.timeFormat;
+    if (controls.compactTables) controls.compactTables.checked = !!settings.compactTables;
+    if (controls.reduceMotion) controls.reduceMotion.checked = !!settings.reduceMotion;
+    if (controls.defaultCanal) controls.defaultCanal.value = settings.defaultCanal || "";
+    if (controls.defaultDirection) controls.defaultDirection.value = settings.defaultDirection || "";
+    if (controls.autofillTime) controls.autofillTime.checked = !!settings.autofillTime;
+    if (controls.confirmSave) controls.confirmSave.checked = !!settings.confirmSave;
+    if (controls.defaultReport) controls.defaultReport.value = settings.defaultReport || "dailyReport";
+    if (controls.printTheme) controls.printTheme.value = settings.printTheme || "light";
+    if (controls.reportDensity) controls.reportDensity.value = settings.reportDensity || "compact";
+    if (controls.showAllTypes) controls.showAllTypes.checked = !!settings.showAllTypes;
+
+    document.body.classList.toggle("settings-compact-tables", !!settings.compactTables);
+    document.body.classList.toggle("settings-reduce-motion", !!settings.reduceMotion);
+  }
+
+  function collectSettings() {
+    return {
+      timeFormat: controls.timeFormat ? controls.timeFormat.value : defaults.timeFormat,
+      compactTables: controls.compactTables ? controls.compactTables.checked : defaults.compactTables,
+      reduceMotion: controls.reduceMotion ? controls.reduceMotion.checked : defaults.reduceMotion,
+      defaultCanal: controls.defaultCanal ? controls.defaultCanal.value.trim() : defaults.defaultCanal,
+      defaultDirection: controls.defaultDirection ? controls.defaultDirection.value : defaults.defaultDirection,
+      autofillTime: controls.autofillTime ? controls.autofillTime.checked : defaults.autofillTime,
+      confirmSave: controls.confirmSave ? controls.confirmSave.checked : defaults.confirmSave,
+      defaultReport: controls.defaultReport ? controls.defaultReport.value : defaults.defaultReport,
+      printTheme: controls.printTheme ? controls.printTheme.value : defaults.printTheme,
+      reportDensity: controls.reportDensity ? controls.reportDensity.value : defaults.reportDensity,
+      showAllTypes: controls.showAllTypes ? controls.showAllTypes.checked : defaults.showAllTypes
+    };
+  }
+
+  function setSavedStatus(text, type) {
+    const el = document.getElementById("settingsSavedStatus");
+    if (!el) return;
+    el.textContent = text;
+    el.classList.remove("good", "warn");
+    if (type) el.classList.add(type);
+  }
+
+  function autoSave() {
+    const settings = collectSettings();
+    saveSettings(settings);
+    applySettings(settings);
+    refreshStats();
+    setSavedStatus("Settings saved", "good");
+
+    if (typeof toast === "function") {
+      toast("Settings saved");
+    }
+  }
+
+  function estimateStorageSize() {
+    let total = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i) || "";
+        const value = localStorage.getItem(key) || "";
+        total += key.length + value.length;
+      }
+    } catch(e) {}
+    return total * 2;
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+    return (bytes / 1024 / 1024).toFixed(1) + " MB";
+  }
+
+  function currentData() {
+    return readJson(DATA_KEY, {});
+  }
+
+  function recordsFromData(data) {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.records)) return data.records;
+    if (Array.isArray(data.traffic)) return data.traffic;
+    if (Array.isArray(data.logs)) return data.logs;
+    return [];
+  }
+
+  function presetsFromData(data) {
+    if (Array.isArray(data.presets)) return data.presets;
+    if (Array.isArray(data.vessels)) return data.vessels;
+    if (Array.isArray(data.registry)) return data.registry;
+    return [];
+  }
+
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function recordDate(record) {
+    return String(record.date || record.day || record.entryDate || "").slice(0, 10);
+  }
+
+  function refreshStats() {
+    const data = currentData();
+    const records = recordsFromData(data);
+    const presets = presetsFromData(data);
+    const today = todayKey();
+    const todayCount = records.filter(r => recordDate(r) === today).length;
+    const bytes = estimateStorageSize();
+
+    const recordEl = document.getElementById("settingsRecordCount");
+    const presetEl = document.getElementById("settingsPresetCount");
+    const todayEl = document.getElementById("settingsTodayCount");
+    const sizeEl = document.getElementById("settingsStorageSize");
+    const barEl = document.getElementById("settingsStorageBar");
+    const darkEl = document.getElementById("settingsDarkStatus");
+    const lastEl = document.getElementById("settingsLastOpened");
+
+    if (recordEl) recordEl.textContent = records.length;
+    if (presetEl) presetEl.textContent = presets.length;
+    if (todayEl) todayEl.textContent = todayCount;
+    if (sizeEl) sizeEl.textContent = formatBytes(bytes);
+    if (barEl) barEl.style.width = Math.min(100, Math.round((bytes / (5 * 1024 * 1024)) * 100)) + "%";
+    if (darkEl) darkEl.textContent = document.body.classList.contains("dark-mode") || document.documentElement.classList.contains("app-dark") ? "On" : "Off";
+    if (lastEl) lastEl.textContent = new Date().toLocaleString();
+  }
+
+  function downloadJson(filename, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportToday() {
+    const data = currentData();
+    const records = recordsFromData(data);
+    const today = todayKey();
+    const todayRecords = records.filter(r => recordDate(r) === today);
+    downloadJson("sault-locks-today-" + today + ".json", {
+      exportedAt: new Date().toISOString(),
+      date: today,
+      records: todayRecords
+    });
+    if (typeof toast === "function") toast("Today exported");
+  }
+
+  function importJsonFile(file) {
+    const reader = new FileReader();
+
+    reader.onload = function () {
+      try {
+        const data = JSON.parse(String(reader.result || "{}"));
+        localStorage.setItem(DATA_KEY, JSON.stringify(data));
+        refreshStats();
+        if (typeof toast === "function") toast("Import complete");
+      } catch (e) {
+        alert("Could not import this JSON file.");
+      }
+    };
+
+    reader.readAsText(file);
+  }
+
+  function clearSettingsOnly() {
+    if (!confirm("Clear settings only? Your records will stay saved.")) return;
+
+    localStorage.removeItem(SETTINGS_KEY);
+    localStorage.removeItem("ssmCanalDashboard.timeFormat");
+    localStorage.removeItem("ssmCanalDashboard.defaultCanal");
+    localStorage.removeItem("ssmCanalDashboard.defaultDirection");
+    localStorage.removeItem("ssmCanalDashboard.defaultReport");
+    localStorage.removeItem("ssmCanalDashboard.printTheme");
+    localStorage.removeItem("ssmCanalDashboard.reportDensity");
+    localStorage.removeItem("ssmCanalDashboard.showAllTypes");
+
+    const settings = Object.assign({}, defaults);
+    saveSettings(settings);
+    applySettings(settings);
+    refreshStats();
+
+    if (typeof toast === "function") toast("Settings cleared");
+  }
+
+  function bind() {
+    Object.keys(controls).forEach(key => {
+      const control = controls[key];
+      if (!control) return;
+      control.addEventListener("change", autoSave);
+      control.addEventListener("input", function () {
+        if (control.tagName === "INPUT" && control.type === "text") autoSave();
+      });
+    });
+
+    const importButton = document.getElementById("importData");
+    const importFile = document.getElementById("importDataFile");
+
+    if (importButton && importFile) {
+      importButton.addEventListener("click", () => importFile.click());
+      importFile.addEventListener("change", function () {
+        const file = importFile.files && importFile.files[0];
+        if (file) importJsonFile(file);
+        importFile.value = "";
+      });
+    }
+
+    const exportTodayButton = document.getElementById("exportTodayData");
+    if (exportTodayButton) {
+      exportTodayButton.addEventListener("click", exportToday);
+    }
+
+    const clearSettingsButton = document.getElementById("clearSettingsOnly");
+    if (clearSettingsButton) {
+      clearSettingsButton.addEventListener("click", clearSettingsOnly);
+    }
+
+    const darkToggle = document.getElementById("darkModeToggle");
+    if (darkToggle) {
+      darkToggle.addEventListener("change", function () {
+        setTimeout(refreshStats, 80);
+      });
+    }
+  }
+
+  const initialSettings = getSettings();
+  saveSettings(initialSettings);
+  applySettings(initialSettings);
+  bind();
+  refreshStats();
+})();
+</script>
+</body>
+</html>
