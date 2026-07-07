@@ -8,7 +8,7 @@
     "productName":  "Lock Release",
     "scripts":  {
                     "start":  "electron .",
-                    "build-win":  "electron-packager . \"Lock Release\" --platform=win32 --arch=x64 --icon=assets/lock-release.ico --overwrite --out=dist --prune --ignore=\"^/dist($|/)\" --ignore=\"^/.git($|/)\""
+                    "build-win":  "electron-packager . \"Lock Release\" --platform=win32 --arch=x64 --icon=assets/lock-release.ico --overwrite --out=dist --prune"
                 },
     "devDependencies":  {
                             "electron":  "latest",
