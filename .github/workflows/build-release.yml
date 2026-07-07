@@ -34,7 +34,7 @@ jobs:
       - name: Build Windows app directly
         shell: pwsh
         run: |
-          npx electron-packager . "Lock Release" --platform win32 --arch x64 --overwrite --out dist
+          npx electron-packager . "Lock Release" --platform=win32 --arch=x64 --overwrite --out=dist
 
       - name: Create update ZIP
         shell: pwsh
@@ -46,5 +46,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
         run: |
-          gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes 2>$null
+          gh release view "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes
+          }
           gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop update."
