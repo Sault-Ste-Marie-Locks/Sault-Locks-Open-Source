@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>Settings - Sault Locks Ship Tracker</title>
+<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sault Locks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+
+<style>
+:root{
+    --settings-gap:14px;
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+}
+
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+.settings-page{
+    min-height:100dvh;
+    padding:calc(16px + env(safe-area-inset-top, 0px)) 16px calc(22px + var(--safe-bottom));
+}
+
+.settings-shell{
+    width:100%;
+    max-width:460px;
+    margin:0 auto;
+}
+
+.settings-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:16px;
+}
+
+.settings-title{
+    flex:1;
+    min-width:0;
+}
+
+.settings-title h1{
+    margin:0;
+    color:var(--text);
+    font-size:29px;
+    line-height:1;
+    font-weight:950;
+    letter-spacing:-.06em;
+}
+
+.settings-title p{
+    margin:6px 0 0;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.35;
+    font-weight:750;
+}
+
+.settings-status{
+    min-height:34px;
+    padding:0 12px;
+    border-radius:999px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--card-2);
+    color:var(--muted);
+    border:1px solid var(--border);
+    font-size:12px;
+    font-weight:900;
+    white-space:nowrap;
+}
+
+.settings-summary{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:18px;
+}
+
+.summary-card{
+    min-height:78px;
+    border-radius:18px;
+    padding:13px;
+    background:var(--card);
+    border:1px solid var(--border);
+    box-shadow:var(--shadow-soft), var(--inner);
+}
+
+.summary-card span{
+    display:block;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.45px;
+}
+
+.summary-card strong{
+    display:block;
+    margin-top:8px;
+    color:var(--text);
+    font-size:20px;
+    line-height:1;
+    font-weight:950;
+    letter-spacing:-.03em;
+}
+
+.settings-section{
+    margin-bottom:18px;
+}
+
+.section-label{
+    margin:0 2px 10px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.65px;
+}
+
+.setting-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:14px;
+    box-shadow:var(--shadow-soft), var(--inner);
+}
+
+.setting-card + .setting-card{
+    margin-top:10px;
+}
+
+.setting-link{
+    display:block;
+    color:inherit;
+    text-decoration:none;
+}
+
+.setting-link:active{
+    transform:scale(.99);
+}
+
+.setting-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+}
+
+.setting-info{
+    flex:1;
+    min-width:0;
+}
+
+.setting-info strong{
+    display:block;
+    color:var(--text);
+    font-size:15px;
+    line-height:1.1;
+    font-weight:950;
+}
+
+.setting-info span{
+    display:block;
+    margin-top:5px;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.35;
+    font-weight:700;
+}
+
+.toggle-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+    margin-top:12px;
+}
+
+.toggle-row.three{
+    grid-template-columns:repeat(3,1fr);
+}
+
+.toggle-btn{
+    min-height:43px;
+    border-radius:13px;
+    border:1px solid var(--border-strong);
+    background:var(--card-2);
+    color:var(--muted);
+    font-size:13px;
+    font-weight:950;
+    box-shadow:var(--inner);
+}
+
+.toggle-btn.active{
+    background:var(--blue);
+    color:#fff;
+    border-color:var(--blue-border);
+    box-shadow:var(--shadow), var(--inner);
+}
+
+.toggle-btn:active{
+    transform:scale(.98);
+}
+
+.setting-select,
+.setting-input{
+    width:100%;
+    min-height:48px;
+    margin-top:12px;
+    border-radius:13px;
+    border:1px solid var(--border-strong);
+    background:var(--input, var(--card-2));
+    color:var(--text);
+    padding:0 13px;
+    font-size:14px;
+    font-weight:800;
+    outline:none;
+}
+
+.setting-select:focus,
+.setting-input:focus{
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(47,134,183,.18);
+}
+
+.switch{
+    width:52px;
+    height:30px;
+    border:none;
+    border-radius:999px;
+    padding:3px;
+    background:var(--card-2);
+    border:1px solid var(--border-strong);
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    box-shadow:var(--inner);
+}
+
+.switch span{
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:var(--muted);
+    display:block;
+    transition:.18s ease;
+}
+
+.switch.active{
+    background:var(--blue);
+    border-color:var(--blue-border);
+}
+
+.switch.active span{
+    transform:translateX(21px);
+    background:#fff;
+}
+
+.action-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+}
+
+.action-btn{
+    min-height:48px;
+    border:none;
+    border-radius:14px;
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    font-size:14px;
+    font-weight:950;
+    box-shadow:var(--inner);
+}
+
+.action-btn.primary{
+    background:var(--blue);
+    color:#fff;
+    border-color:var(--blue-border);
+    box-shadow:var(--shadow), var(--inner);
+}
+
+.action-btn.danger{
+    background:var(--danger);
+    color:#fff;
+    border-color:rgba(255,255,255,.1);
+}
+
+.action-btn:active{
+    transform:scale(.98);
+}
+
+.app-info{
+    display:grid;
+    gap:8px;
+}
+
+.info-line{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 0;
+    border-bottom:1px solid var(--border);
+}
+
+.info-line:last-child{
+    border-bottom:none;
+    padding-bottom:0;
+}
+
+.info-line span{
+    color:var(--muted);
+    font-size:12px;
+    font-weight:850;
+}
+
+.info-line strong{
+    color:var(--text);
+    font-size:13px;
+    font-weight:950;
+    text-align:right;
+}
+
+.note{
+    margin-top:14px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:750;
+    text-align:center;
+}
+
+
+/* MATCH SHARED MOBILE HEADER / BOTTOM BAR */
+body{
+    margin:0;
+}
+
+.settings-page{
+    padding:calc(12px + env(safe-area-inset-top, 0px)) 14px calc(106px + var(--safe-bottom)) !important;
+}
+
+.settings-shell{
+    padding-bottom:8px;
+}
+
+.settings-app-header{
+    height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin:0 0 10px !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+}
+
+.settings-app-header .header-btn{
+    width:38px !important;
+    height:38px !important;
+    min-width:38px !important;
+    border-radius:14px !important;
+    display:grid !important;
+    place-items:center !important;
+    padding:0 !important;
+    background:var(--card-2, rgba(255,255,255,.12)) !important;
+    border:1px solid var(--border-strong, rgba(148,163,184,.20)) !important;
+    color:var(--text) !important;
+    box-shadow:var(--inner, inset 0 1px 0 rgba(255,255,255,.06)), 0 6px 16px rgba(0,0,0,.08) !important;
+    text-decoration:none !important;
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+}
+
+.settings-app-header .header-btn svg{
+    width:21px !important;
+    height:21px !important;
+    stroke:currentColor !important;
+    stroke-width:2.25 !important;
+    fill:none !important;
+    stroke-linecap:round !important;
+    stroke-linejoin:round !important;
+}
+
+.settings-app-header .app-logo-title{
+    flex:1;
+    min-width:0;
+    text-align:center;
+    line-height:1.05;
+    color:var(--text);
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    padding:0 !important;
+}
+
+.settings-app-header .app-logo-title span{
+    display:block;
+    font-size:17px;
+    font-weight:950;
+    letter-spacing:-.04em;
+    color:var(--text);
+}
+
+.settings-app-header .app-logo-title small{
+    display:block;
+    margin-top:4px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+}
+
+.settings-status-row{
+    display:flex;
+    justify-content:center;
+    margin:0 0 14px;
+}
+
+.settings-status-row .settings-status{
+    min-height:28px;
+    padding:0 12px;
+    font-size:11px;
+    border-radius:999px;
+}
+
+html.theme-dark body,
+html.theme-dark .settings-page,
+html.app-dark body,
+html.app-dark .settings-page{
+    background:linear-gradient(180deg,#0f172a 0%,#111827 100%) !important;
+    color:#f8fafc !important;
+}
+
+html.theme-dark .settings-app-header .header-btn,
+html.app-dark .settings-app-header .header-btn{
+    background:rgba(23,32,51,.94) !important;
+    border-color:rgba(148,163,184,.22) !important;
+    color:#f8fafc !important;
+    box-shadow:0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+html.theme-dark .settings-app-header .app-logo-title,
+html.theme-dark .settings-app-header .app-logo-title span,
+html.app-dark .settings-app-header .app-logo-title,
+html.app-dark .settings-app-header .app-logo-title span{
+    color:#f8fafc !important;
+}
+
+html.theme-dark .settings-app-header .app-logo-title small,
+html.app-dark .settings-app-header .app-logo-title small{
+    color:#a9b8cb !important;
+}
+
+html.theme-dark .setting-card,
+html.theme-dark .summary-card,
+html.theme-dark .popup-box,
+html.app-dark .setting-card,
+html.app-dark .summary-card,
+html.app-dark .popup-box{
+    background:linear-gradient(180deg,rgba(23,32,51,.96),rgba(17,24,39,.96)) !important;
+    border:1px solid rgba(148,163,184,.18) !important;
+    box-shadow:0 12px 28px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+html.theme-dark .setting-select,
+html.theme-dark .setting-input,
+html.app-dark .setting-select,
+html.app-dark .setting-input{
+    background:#0f172a !important;
+    color:#f8fafc !important;
+    border-color:rgba(148,163,184,.22) !important;
+}
+
+html.theme-dark .settings-status,
+html.app-dark .settings-status{
+    background:rgba(31,42,61,.92) !important;
+    color:#dbeafe !important;
+    border-color:rgba(148,163,184,.20) !important;
+}
+
+html.theme-light .settings-app-header .header-btn,
+body.light .settings-app-header .header-btn{
+    background:linear-gradient(180deg,#ffffff,var(--blue-soft,#E8F5FC)) !important;
+    border-color:rgba(var(--accent-rgb,52,141,188),.34) !important;
+    color:var(--blue,#348DBC) !important;
+    box-shadow:0 8px 18px rgba(var(--accent-rgb,52,141,188),.10) !important;
+}
+
+html.theme-light .settings-app-header .app-logo-title,
+html.theme-light .settings-app-header .app-logo-title span,
+body.light .settings-app-header .app-logo-title,
+body.light .settings-app-header .app-logo-title span{
+    color:#22233d !important;
+}
+
+html.theme-light .settings-status,
+body.light .settings-status{
+    background:var(--blue-soft,#E8F5FC) !important;
+    color:var(--blue,#348DBC) !important;
+    border-color:rgba(var(--accent-rgb,52,141,188),.34) !important;
+}
+
+@media(max-width:370px){
+    .settings-page{
+        padding-left:12px !important;
+        padding-right:12px !important;
+    }
+
+    .settings-app-header .app-logo-title span{
+        font-size:16px;
+    }
+}
+
+/* POPUPS */
+
+.popup-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.58);
+    backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9999;
+}
+
+body.light .popup-overlay{
+    background:rgba(16,32,48,.35);
+}
+
+.popup-overlay.active{
+    display:flex;
+}
+
+.popup-box{
+    width:100%;
+    max-width:365px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    animation:popupIn .18s ease;
+}
+
+body.light .popup-box{
+    box-shadow:0 20px 60px rgba(47,134,183,.18);
+}
+
+@keyframes popupIn{
+    from{
+        opacity:0;
+        transform:scale(.94) translateY(8px);
+    }
+    to{
+        opacity:1;
+        transform:scale(1) translateY(0);
+    }
+}
+
+.popup-box h3{
+    color:var(--text);
+    font-size:20px;
+    margin:0 0 8px;
+    font-weight:950;
+}
+
+.popup-box p{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.5;
+    margin:0 0 16px;
+    font-weight:700;
+}
+
+.popup-warning{
+    background:rgba(180,50,50,.12);
+    border:1px solid rgba(180,50,50,.35);
+    color:var(--text);
+    border-radius:14px;
+    padding:12px;
+    margin-bottom:18px;
+    font-size:13px;
+    line-height:1.35;
+    font-weight:850;
+}
+
+.popup-actions{
+    display:flex;
+    gap:10px;
+}
+
+.popup-actions button{
+    flex:1;
+    border:none;
+    border-radius:14px;
+    padding:14px 12px;
+    font-size:14px;
+    font-weight:950;
+    cursor:pointer;
+}
+
+.cancel-btn{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong) !important;
+}
+
+.confirm-delete-btn{
+    background:var(--danger);
+    color:#fff;
+}
+
+.confirm-reset-btn{
+    background:var(--blue);
+    color:#fff;
+    border:1px solid var(--blue-border) !important;
+}
+
+.cancel-btn:active,
+.confirm-delete-btn:active,
+.confirm-reset-btn:active{
+    transform:scale(.98);
+}
+
+.confirm-delete-btn:active{
+    background:var(--danger-hover);
+}
+
+.toast{
+    position:fixed;
+    left:50%;
+    bottom:calc(20px + var(--safe-bottom));
+    transform:translateX(-50%) translateY(15px);
+    width:calc(100% - 36px);
+    max-width:394px;
+    background:var(--card);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:13px;
+    font-size:13px;
+    font-weight:950;
+    text-align:center;
+    opacity:0;
+    pointer-events:none;
+    transition:.2s ease;
+    z-index:10000;
+    box-shadow:var(--shadow);
+}
+
+.toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+}
+
+body.settings-compact .setting-card{
+    padding:11px;
+    border-radius:15px;
+}
+
+body.settings-compact .setting-info span{
+    display:none;
+}
+
+body.settings-compact .settings-summary{
+    display:none;
+}
+
+@media(max-width:370px){
+    .settings-page{
+        padding-left:12px;
+        padding-right:12px;
+    }
+
+    .settings-title h1{
+        font-size:25px;
+    }
+
+    .settings-status{
+        display:none;
+    }
+
+    .toggle-row.three{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="page settings-page">
+    <main class="settings-shell">
+
+        <header class="app-header settings-app-header">
+            <a class="header-btn" href="index.html" aria-label="Back">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 18 9 12l6-6"></path>
+                </svg>
+            </a>
+
+            <div class="app-logo-title">
+                <span>Settings</span>
+                <small>Customize App</small>
+            </div>
+
+            <a class="header-btn" href="profile.html" aria-label="Profile">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 21a8 8 0 0 0-16 0"></path>
+                    <path d="M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"></path>
+                </svg>
+            </a>
+        </header>
+
+        
+
+        <div class="settings-summary">
+            <div class="summary-card">
+                <span>Current Time</span>
+                <strong id="previewTime">--:--</strong>
+            </div>
+
+            <div class="summary-card">
+                <span>Saved Logs</span>
+                <strong id="logCount">0</strong>
+            </div>
+        </div>
+
+
+     
+
+        <section class="settings-section">
+            <div class="section-label">Appearance</div>
+
+            <div class="setting-card">
+                <div class="setting-info">
+                    <strong>Theme</strong>
+                    <span>Switch between dark mode and light mode.</span>
+                </div>
+
+                <div class="toggle-row">
+                    <button class="toggle-btn" id="darkBtn" type="button">Dark</button>
+                    <button class="toggle-btn" id="lightBtn" type="button">Light</button>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-info">
+                    <strong>Accent Style</strong>
+                    <span>Choose the main app color for buttons and highlights.</span>
+                </div>
+
+                <div class="toggle-row three">
+                    <button class="toggle-btn" data-accent="blue" type="button">Blue</button>
+                    <button class="toggle-btn" data-accent="purple" type="button">Purple</button>
+                    <button class="toggle-btn" data-accent="green" type="button">Green</button>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <strong>Compact Mode</strong>
+                        <span>Make settings smaller and easier to scan.</span>
+                    </div>
+
+                    <button class="switch" id="compactSwitch" type="button" aria-label="Toggle compact mode">
+                        <span></span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-section">
+            <div class="section-label">Time & Entry Defaults</div>
+
+            <div class="setting-card">
+                <div class="setting-info">
+                    <strong>Time Format</strong>
+                    <span>Choose how time is shown across the app.</span>
+                </div>
+
+                <div class="toggle-row">
+                    <button class="toggle-btn" id="time12Btn" type="button">12 Hour</button>
+                    <button class="toggle-btn" id="time24Btn" type="button">24 Hour</button>
+                </div>
+            </div>
+
+            
+       
+
+           
+        </section>
+
+        <section class="settings-section">
+            <div class="section-label">Entry Behavior</div>
+
+            <div class="setting-card">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <strong>Confirm Before Saving</strong>
+                        <span>Keep the warning popup when required fields are empty.</span>
+                    </div>
+
+                    <button class="switch active" id="confirmSwitch" type="button" aria-label="Toggle save confirmations">
+                        <span></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <strong>Auto-fill Current Time</strong>
+                        <span>Automatically fill the current time on entry pages.</span>
+                    </div>
+
+                    <button class="switch active" id="autoTimeSwitch" type="button" aria-label="Toggle automatic time">
+                        <span></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <strong>Show Entry Hints</strong>
+                        <span>Show helper text on pages like Tour Boat and Kayak.</span>
+                    </div>
+
+                    <button class="switch active" id="hintsSwitch" type="button" aria-label="Toggle entry hints">
+                        <span></span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-section">
+            <div class="section-label">Storage</div>
+
+            <div class="setting-card">
+                <div class="setting-info">
+                    <strong>Storage Tools</strong>
+                    <span>Export, reset, or delete data stored on this device.</span>
+                </div>
+
+                <div class="action-grid" style="margin-top:12px;">
+                    <button class="action-btn primary" id="exportLogsBtn" type="button">Export Logs JSON</button>
+                    <button class="action-btn" id="resetSettingsBtn" type="button">Reset Settings</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-section">
+            <div class="section-label">App Info</div>
+
+            <div class="setting-card">
+                <div class="app-info">
+                    <div class="info-line">
+                        <span>App</span>
+                        <strong>Sault Locks Ship Tracker</strong>
+                    </div>
+
+                    <div class="info-line">
+                        <span>Version</span>
+                        <strong>Mobile Local</strong>
+                    </div>
+
+                    <div class="info-line">
+                        <span>Storage</span>
+                        <strong id="storageSize">Calculating...</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="note">
+            Settings save automatically on this device.
+        </div>
+
+    </main>
+</div>
+
+<div class="popup-overlay" id="resetSettingsPopup">
+    <div class="popup-box">
+        <h3>Reset Settings?</h3>
+        <p>This will reset theme, time format, defaults, and behavior options.</p>
+
+        <div class="popup-actions">
+            <button class="cancel-btn" id="cancelResetSettings" type="button">Cancel</button>
+            <button class="confirm-reset-btn" id="confirmResetSettings" type="button">Reset</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="settingsToast">Saved</div>
+
+<script src="assets/app.js?v=20260707pairpage2"></script>
+
+<script>
+const SETTINGS_STORAGE_KEY = "ssmCanalDashboard.settings.v2";
+
+const LOG_KEYS_TO_CLEAR = [
+    "saultLocksLogs",
+    "saultLocksTrackerLogs",
+    "logs",
+    "entries",
+    "records",
+    "lockLogs",
+    "saultLogs",
+    "savedEntries",
+    "ssmCanalDashboard.logs",
+    "ssmCanalDashboard.entries",
+    "ssmCanalDashboard.records"
+];
+
+const DEFAULT_SETTINGS = {
+    theme:"dark",
+    timeFormat:"12",
+    accent:"blue",
+    compact:false,
+    defaultCanal:"Sault Canada Locks",
+    defaultDirection:"",
+    confirmBeforeSave:true,
+    autoCurrentTime:true,
+    showEntryHints:true
+};
+
+const settingsToast = document.getElementById("settingsToast");
+const saveStatus = document.getElementById("saveStatus");
+
+function readSettings(){
+    let saved = {};
+
+    try{
+        saved = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) || "{}") || {};
+    }catch(e){
+        saved = {};
+    }
+
+    if(window.getAppSettings){
+        try{
+            saved = Object.assign({}, saved, window.getAppSettings() || {});
+        }catch(e){}
+    }
+
+    const legacyTheme = localStorage.getItem("appTheme") ||
+        localStorage.getItem("theme") ||
+        localStorage.getItem("ssmCanalDashboard.theme") ||
+        saved.theme ||
+        DEFAULT_SETTINGS.theme;
+
+    const legacyTime = localStorage.getItem("timeFormat") ||
+        localStorage.getItem("ssmCanalDashboard.timeFormat") ||
+        saved.timeFormat ||
+        DEFAULT_SETTINGS.timeFormat;
+
+    const legacyAccent = localStorage.getItem("accent") ||
+        localStorage.getItem("ssmCanalDashboard.accent") ||
+        saved.accent ||
+        DEFAULT_SETTINGS.accent;
+
+    return Object.assign({}, DEFAULT_SETTINGS, saved, {
+        theme:legacyTheme === "light" ? "light" : "dark",
+        timeFormat:legacyTime === "24" ? "24" : "12",
+        accent:["blue", "purple", "green"].includes(legacyAccent) ? legacyAccent : DEFAULT_SETTINGS.accent,
+        compact:saved.compact === true || saved.compact === "true",
+        confirmBeforeSave:saved.confirmBeforeSave !== false && saved.confirmBeforeSave !== "false",
+        autoCurrentTime:saved.autoCurrentTime !== false && saved.autoCurrentTime !== "false",
+        showEntryHints:saved.showEntryHints !== false && saved.showEntryHints !== "false"
+    });
+}
+
+let settings = readSettings();
+
+function saveSettings(message){
+    /* Write the clicked values first, then let the shared app helper normalize.
+       This prevents old legacy keys like appTheme/theme from overriding the
+       button the user just clicked. */
+    const next = Object.assign({}, DEFAULT_SETTINGS, settings);
+
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem("appTheme", next.theme);
+    localStorage.setItem("theme", next.theme);
+    localStorage.setItem("timeFormat", next.timeFormat);
+    localStorage.setItem("accent", next.accent);
+    localStorage.setItem("ssmCanalDashboard.theme", next.theme);
+    localStorage.setItem("ssmCanalDashboard.accent", next.accent);
+    localStorage.setItem("ssmCanalDashboard.timeFormat", next.timeFormat);
+    localStorage.setItem("ssmCanalDashboard.darkMode", next.theme === "dark" ? "true" : "false");
+
+    if(window.saveAppSettings){
+        window.saveAppSettings(next);
+        settings = window.getAppSettings ? window.getAppSettings() : next;
+    }else{
+        settings = next;
+    }
+
+    showSaved(message || "Settings saved");
+    applySettings();
+}
+
+function showSaved(message){
+    if(saveStatus){
+        saveStatus.textContent = "Saved";
+    }
+
+    if(settingsToast){
+        settingsToast.textContent = message || "Saved";
+        settingsToast.classList.add("show");
+
+        setTimeout(() => {
+            settingsToast.classList.remove("show");
+        }, 1500);
+    }
+}
+
+function setActive(id, active){
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle("active", !!active);
+}
+
+function setSwitch(id, active){
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle("active", !!active);
+}
+
+function applyAccent(accent){
+    const palettes = {
+        blue:{blue:"#348DBC", hover:"#3F9FCE", soft:"#E8F5FC", border:"#5CADDA", rgb:"52,141,188"},
+        purple:{blue:"#6C5CE7", hover:"#7C6EF0", soft:"#EFEBFF", border:"#8B7CF6", rgb:"108,92,231"},
+        green:{blue:"#168A4A", hover:"#1FA85B", soft:"#E9F8EF", border:"#27B768", rgb:"22,138,74"}
+    };
+    const key = ["blue", "purple", "green"].includes(accent) ? accent : "blue";
+    const p = palettes[key] || palettes.blue;
+    [document.documentElement, document.body].forEach(root => {
+        if(!root || !root.style) return;
+        root.style.setProperty("--blue", p.blue);
+        root.style.setProperty("--blue-hover", p.hover);
+        root.style.setProperty("--blue-soft", p.soft);
+        root.style.setProperty("--blue-border", p.border);
+        root.style.setProperty("--accent-rgb", p.rgb);
+        root.style.setProperty("--purple", p.blue);
+        root.style.setProperty("--purple-light", p.hover);
+        root.style.setProperty("--soft-purple", p.soft);
+        root.style.setProperty("--accent", p.blue);
+        root.style.setProperty("--accent-hover", p.hover);
+        root.style.setProperty("--accent-soft", p.soft);
+        root.style.setProperty("--accent-border", p.border);
+    });
+}
+
+function applySettings(){
+    if(window.applySavedTheme){
+        window.applySavedTheme();
+    }
+
+    const isLight = settings.theme === "light";
+
+    document.documentElement.classList.toggle("theme-light", isLight);
+    document.documentElement.classList.toggle("theme-dark", !isLight);
+    document.documentElement.classList.toggle("app-dark", !isLight);
+    document.documentElement.dataset.theme = isLight ? "light" : "dark";
+    document.documentElement.dataset.accent = settings.accent || "blue";
+
+    document.body.classList.toggle("light", isLight);
+    document.body.classList.toggle("settings-compact", !!settings.compact);
+    document.body.classList.toggle("hide-entry-hints", !settings.showEntryHints);
+
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if(themeMeta){
+        themeMeta.setAttribute("content", isLight ? "#f7fbff" : "#111111");
+    }
+
+    applyAccent(settings.accent);
+
+    setActive("darkBtn", settings.theme === "dark");
+    setActive("lightBtn", settings.theme === "light");
+    setActive("time12Btn", settings.timeFormat === "12");
+    setActive("time24Btn", settings.timeFormat === "24");
+
+    document.querySelectorAll("[data-accent]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.accent === settings.accent);
+    });
+
+    setSwitch("compactSwitch", settings.compact);
+    setSwitch("confirmSwitch", settings.confirmBeforeSave);
+    setSwitch("autoTimeSwitch", settings.autoCurrentTime);
+    setSwitch("hintsSwitch", settings.showEntryHints);
+
+    const defaultCanalEl = document.getElementById("defaultCanal");
+    if(defaultCanalEl){
+        defaultCanalEl.value = settings.defaultCanal || DEFAULT_SETTINGS.defaultCanal;
+    }
+
+    const defaultDirectionEl = document.getElementById("defaultDirection");
+    if(defaultDirectionEl){
+        defaultDirectionEl.value = settings.defaultDirection || DEFAULT_SETTINGS.defaultDirection;
+    }
+
+    updatePreviewTime();
+    updateLogStats();
+}
+
+function pad(n){
+    return String(n).padStart(2, "0");
+}
+
+function formatPreviewTime(date){
+    if(settings.timeFormat === "24"){
+        return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    return date.toLocaleTimeString([], {
+        hour:"2-digit",
+        minute:"2-digit",
+        hour12:true
+    });
+}
+
+function updatePreviewTime(){
+    const preview = document.getElementById("previewTime");
+    if(preview){
+        preview.textContent = formatPreviewTime(new Date());
+    }
+}
+
+function deepCollectEntries(value, found = [], depth = 0){
+    if(!value || typeof value !== "object" || depth > 8) return found;
+
+    if(Array.isArray(value)){
+        value.forEach(item => deepCollectEntries(item, found, depth + 1));
+        return found;
+    }
+
+    const keys = Object.keys(value).map(k => String(k).toLowerCase());
+    const looksLikeEntry = (
+        keys.some(k => ["id","type","entrytype","recordtype","vessel","vesselname","boat","boatname","name","registry","registration","direction","canal"].includes(k)) &&
+        keys.some(k => ["date","time","createdat","timestamp","datetime","savedat","entrytime"].includes(k))
+    );
+
+    if(looksLikeEntry){
+        found.push(value);
+    }
+
+    Object.values(value).forEach(child => deepCollectEntries(child, found, depth + 1));
+    return found;
+}
+
+function getAllLogEntries(){
+    const entries = [];
+    const keys = new Set(LOG_KEYS_TO_CLEAR);
+
+    try{
+        for(let i = 0; i < localStorage.length; i++){
+            const key = localStorage.key(i);
+            if(key && /log|entry|record|ssm|sault/i.test(key)){
+                keys.add(key);
+            }
+        }
+    }catch(e){}
+
+    keys.forEach(key => {
+        try{
+            const raw = localStorage.getItem(key);
+            if(!raw || raw.length < 2) return;
+            const parsed = JSON.parse(raw);
+            entries.push(...deepCollectEntries(parsed));
+        }catch(e){}
+    });
+
+    const seen = new Set();
+
+    return entries.filter(entry => {
+        const id = entry.id || [
+            entry.date || entry.createdAt || entry.timestamp || entry.dateTime || "",
+            entry.time || entry.entryTime || "",
+            entry.vessel || entry.vesselName || entry.name || "",
+            entry.type || entry.entryType || ""
+        ].join("|");
+
+        if(seen.has(id)) return false;
+        seen.add(id);
+        return true;
+    });
+}
+
+function updateLogStats(){
+    const count = getAllLogEntries().length;
+    const logCount = document.getElementById("logCount");
+    if(logCount) logCount.textContent = count;
+
+    let total = 0;
+
+    try{
+        for(let i = 0; i < localStorage.length; i++){
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key) || "";
+            total += key.length + value.length;
+        }
+    }catch(e){}
+
+    const storageSize = document.getElementById("storageSize");
+    if(storageSize){
+        if(total > 1024 * 1024){
+            storageSize.textContent = (total / 1024 / 1024).toFixed(2) + " MB";
+        }else{
+            storageSize.textContent = Math.max(1, Math.round(total / 1024)) + " KB";
+        }
+    }
+}
+
+document.getElementById("darkBtn").addEventListener("click", function(){
+    settings.theme = "dark";
+    saveSettings("Dark mode enabled");
+});
+
+document.getElementById("lightBtn").addEventListener("click", function(){
+    settings.theme = "light";
+    saveSettings("Light mode enabled");
+});
+
+document.getElementById("time12Btn").addEventListener("click", function(){
+    settings.timeFormat = "12";
+    saveSettings("12 hour time enabled");
+});
+
+document.getElementById("time24Btn").addEventListener("click", function(){
+    settings.timeFormat = "24";
+    saveSettings("24 hour time enabled");
+});
+
+document.querySelectorAll("[data-accent]").forEach(btn => {
+    btn.addEventListener("click", function(){
+        settings.accent = this.dataset.accent;
+        saveSettings("Accent updated");
+    });
+});
+
+document.getElementById("compactSwitch").addEventListener("click", function(){
+    settings.compact = !settings.compact;
+    saveSettings("Compact mode updated");
+});
+
+document.getElementById("confirmSwitch").addEventListener("click", function(){
+    settings.confirmBeforeSave = !settings.confirmBeforeSave;
+    saveSettings("Save confirmation updated");
+});
+
+document.getElementById("autoTimeSwitch").addEventListener("click", function(){
+    settings.autoCurrentTime = !settings.autoCurrentTime;
+    saveSettings("Auto time updated");
+});
+
+document.getElementById("hintsSwitch").addEventListener("click", function(){
+    settings.showEntryHints = !settings.showEntryHints;
+    saveSettings("Entry hints updated");
+});
+
+const defaultCanalEl = document.getElementById("defaultCanal");
+if(defaultCanalEl){
+    defaultCanalEl.addEventListener("change", function(){
+        settings.defaultCanal = this.value;
+        saveSettings("Default canal updated");
+    });
+}
+
+const defaultDirectionEl = document.getElementById("defaultDirection");
+if(defaultDirectionEl){
+    defaultDirectionEl.addEventListener("change", function(){
+        settings.defaultDirection = this.value;
+        saveSettings("Default direction updated");
+    });
+}
+
+const resetSettingsPopup = document.getElementById("resetSettingsPopup");
+
+function openPopup(popup){
+    popup.classList.add("active");
+}
+
+function closePopup(popup){
+    popup.classList.remove("active");
+}
+
+
+document.getElementById("resetSettingsBtn").addEventListener("click", function(){
+    openPopup(resetSettingsPopup);
+});
+
+document.getElementById("cancelResetSettings").addEventListener("click", function(){
+    closePopup(resetSettingsPopup);
+});
+
+document.getElementById("confirmResetSettings").addEventListener("click", function(){
+    settings = Object.assign({}, DEFAULT_SETTINGS);
+    localStorage.removeItem(SETTINGS_STORAGE_KEY);
+    localStorage.removeItem("appTheme");
+    localStorage.removeItem("theme");
+    localStorage.removeItem("timeFormat");
+    localStorage.removeItem("accent");
+    localStorage.removeItem("ssmCanalDashboard.theme");
+    localStorage.removeItem("ssmCanalDashboard.accent");
+    localStorage.removeItem("ssmCanalDashboard.timeFormat");
+    localStorage.removeItem("ssmCanalDashboard.darkMode");
+    closePopup(resetSettingsPopup);
+    saveSettings("Settings reset");
+});
+
+resetSettingsPopup.addEventListener("click", function(e){
+    if(e.target === resetSettingsPopup){
+        closePopup(resetSettingsPopup);
+    }
+});
+
+document.getElementById("exportLogsBtn").addEventListener("click", function(){
+    const entries = getAllLogEntries();
+    const payload = {
+        exportedAt:new Date().toISOString(),
+        app:"Sault Locks Ship Tracker",
+        count:entries.length,
+        entries:entries
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type:"application/json"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0,10);
+
+    a.href = url;
+    a.download = "sault-locks-logs-" + date + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+    showSaved("Export started");
+});
+
+applySettings();
+setInterval(updatePreviewTime, 1000);
+window.addEventListener("storage", updateLogStats);
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+    });
+}
+</script>
+
+</body>
+</html>

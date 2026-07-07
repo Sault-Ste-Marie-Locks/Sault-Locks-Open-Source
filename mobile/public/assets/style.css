@@ -1,0 +1,3110 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Poppins:wght@400;500;600;700;800;900&display=swap');
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins', Arial, Helvetica, sans-serif;
+    -webkit-tap-highlight-color:transparent;
+}
+
+:root{
+    /* Taskcy dark mode: deep purple-navy instead of flat black */
+    --bg:#151225;
+    --page:#151225;
+
+    --card:#1E1B33;
+    --card-2:#252140;
+    --card-3:#2D2850;
+
+    --text:#F4F2FF;
+    --muted:#9C97BE;
+    --soft:#C9C4E8;
+
+    --border:#2D2850;
+    --border-strong:#3A3460;
+
+    --blue:#6C5CE7;
+    --blue-hover:#7C6EF0;
+    --blue-soft:#4A3F9E;
+    --blue-border:#8B7CF6;
+
+    --danger:#8C3B5E;
+    --danger-hover:#A34670;
+
+    --input:#252140;
+    --input-focus:#2D2850;
+
+    --shadow:0 10px 24px rgba(20,10,50,.45);
+    --shadow-soft:0 8px 18px rgba(20,10,50,.35);
+
+    --inner:inset 0 1px 0 rgba(255,255,255,.03);
+}
+
+body.light{
+    /* Taskcy light mode: soft off-white with lavender accents */
+    --bg:#FAFAFC;
+    --page:#FAFAFC;
+
+    --card:#ffffff;
+    --card-2:#ffffff;
+    --card-3:#F5F3FF;
+
+    --text:#1A1A2E;
+    --muted:#9B9BAE;
+    --soft:#5B5B75;
+
+    --border:#EFEEFA;
+    --border-strong:#E1DCFA;
+
+    --blue:#6C5CE7;
+    --blue-hover:#7C6EF0;
+    --blue-soft:#EFEBFF;
+    --blue-border:#8B7CF6;
+
+    --danger:#E85D8A;
+    --danger-hover:#F0709A;
+
+    --input:#ffffff;
+    --input-focus:#FAF9FF;
+
+    --shadow:0 10px 24px rgba(108,92,231,.14);
+    --shadow-soft:0 8px 18px rgba(108,92,231,.09);
+    --inner:inset 0 1px 0 rgba(255,255,255,.7);
+}
+
+html,
+body{
+    width:100%;
+    min-height:100%;
+    overflow-x:hidden;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+}
+
+/* APP / PAGE */
+
+.app,
+.page{
+    width:100%;
+    max-width:430px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--page);
+}
+
+body.light .app,
+body.light .page{
+    background:linear-gradient(180deg, #FAFAFC 0%, #F5F3FF 100%);
+}
+
+.app{
+    padding:18px;
+}
+
+/* TITLE / HEADER */
+
+.title{
+    font-family:'Fredoka', 'Poppins', sans-serif;
+    background:linear-gradient(135deg, #8B7CF6 0%, #6C5CE7 60%, #5B4FE0 100%);
+    color:#ffffff;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:24px;
+    padding:22px 24px;
+    margin-bottom:17px;
+    font-size:28px;
+    line-height:1.08;
+    font-weight:600;
+    letter-spacing:-.4px;
+    box-shadow:
+        0 14px 28px rgba(108,92,231,.30),
+        inset 0 1px 0 rgba(255,255,255,.15);
+    position:relative;
+    overflow:hidden;
+}
+
+body.light .title{
+    background:linear-gradient(135deg, #8B7CF6 0%, #6C5CE7 60%, #5B4FE0 100%);
+    color:#ffffff;
+    border:1px solid rgba(255,255,255,.15);
+    box-shadow:0 14px 28px rgba(108,92,231,.24);
+}
+
+.title::after{
+    content:"";
+    position:absolute;
+    left:22px;
+    right:22px;
+    bottom:0;
+    height:3px;
+    background:rgba(255,255,255,.18);
+    border-radius:999px 999px 0 0;
+}
+
+body.light .title::after{
+    background:rgba(108,92,231,.25);
+}
+
+.title span{
+    display:block;
+}
+
+.title small{
+    display:block;
+    margin-top:5px;
+    color:rgba(255,255,255,.78);
+    font-size:17px;
+    line-height:1;
+    font-weight:800;
+    letter-spacing:.2px;
+}
+
+body.light .title small{
+    color:#5B5B75;
+}
+
+/* GRID */
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:11px;
+}
+
+/* BUTTONS */
+
+.btn{
+    min-height:82px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:var(--card-2);
+    color:var(--text);
+
+    border:1px solid var(--border);
+
+    border-radius:20px;
+    padding:15px 10px;
+
+    text-decoration:none;
+    text-align:center;
+
+    font-size:15px;
+    line-height:1.16;
+    font-weight:700;
+
+    cursor:pointer;
+    user-select:none;
+
+    box-shadow:var(--shadow-soft), var(--inner);
+
+    transition:
+        background .15s ease,
+        transform .15s ease,
+        border-color .15s ease,
+        box-shadow .15s ease;
+}
+
+.btn:active{
+    transform:scale(.97);
+    background:var(--card-3);
+    border-color:var(--blue-border);
+}
+
+body.light .btn{
+    background:#ffffff;
+    color:#1A1A2E;
+    border:1px solid #EFEEFA;
+    box-shadow:0 8px 18px rgba(108,92,231,.08);
+}
+
+body.light .btn:active{
+    background:#F5F3FF;
+    border-color:var(--blue-border);
+}
+
+/* soft rotating pastel top-accent per card, echoing the Taskcy project tiles */
+.grid .btn{
+    position:relative;
+    border-top:3px solid var(--blue-border);
+}
+
+.grid .btn:nth-child(2){ border-top-color:#3DD6C4; }
+.grid .btn:nth-child(3){ border-top-color:#F0B95A; }
+.grid .btn:nth-child(4){ border-top-color:#F5A9C0; }
+.grid .btn:nth-child(5){ border-top-color:#8FCB9B; }
+.grid .btn:nth-child(6){ border-top-color:#7C9EE8; }
+
+.full{
+    width:100%;
+    margin-top:14px;
+}
+
+/* DIVIDER */
+
+.divider{
+    height:1px;
+    background:linear-gradient(
+        to right,
+        transparent,
+        rgba(255,255,255,.16),
+        transparent
+    );
+    margin:16px 0;
+}
+
+body.light .divider{
+    background:linear-gradient(
+        to right,
+        transparent,
+        rgba(108,92,231,.22),
+        transparent
+    );
+}
+
+/* INFO BOXES */
+
+.info{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:11px;
+}
+
+.box{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:18px;
+
+    padding:15px;
+
+    color:var(--muted);
+    font-size:11.5px;
+    line-height:1;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+
+    box-shadow:var(--shadow-soft), var(--inner);
+}
+
+body.light .box{
+    background:#ffffff;
+    color:#9B9BAE;
+    border:1px solid #EFEEFA;
+    box-shadow:0 8px 18px rgba(108,92,231,.06);
+}
+
+.box:first-child{
+    grid-column:span 2;
+}
+
+.box span{
+    display:block;
+    color:var(--text);
+    font-size:22px;
+    line-height:1;
+    margin-top:11px;
+    letter-spacing:.35px;
+}
+
+body.light .box span{
+    color:#1A1A2E;
+}
+
+/* ACTION BUTTONS */
+
+.action-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:11px;
+}
+
+.action-link{
+    min-height:49px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+
+    border-radius:14px;
+    padding:11px 10px;
+
+    text-decoration:none;
+    font-size:13px;
+    font-weight:900;
+    line-height:1;
+
+    transition:
+        background .15s ease,
+        transform .15s ease,
+        border-color .15s ease,
+        box-shadow .15s ease;
+}
+
+.action-link:active{
+    transform:scale(.98);
+}
+
+.manage-link{
+    background:linear-gradient(135deg, #8B7CF6, #6C5CE7);
+    color:#ffffff;
+    border:1px solid var(--blue-border);
+    box-shadow:0 10px 20px rgba(108,92,231,.30), inset 0 1px 0 rgba(255,255,255,.15);
+}
+
+.manage-link:active{
+    background:linear-gradient(135deg, #7C6EF0, #5B4FE0);
+}
+
+body.light .manage-link{
+    background:linear-gradient(135deg, #8B7CF6, #6C5CE7);
+    color:#ffffff;
+    border:1px solid var(--blue-border);
+    box-shadow:0 10px 20px rgba(108,92,231,.24);
+}
+
+body.light .manage-link:active{
+    background:linear-gradient(135deg, #7C6EF0, #5B4FE0);
+}
+
+.settings-link{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    box-shadow:var(--shadow-soft), var(--inner);
+}
+
+.settings-link:active{
+    background:var(--card-3);
+    border-color:var(--blue-border);
+}
+
+body.light .settings-link{
+    background:#ffffff;
+    color:#1A1A2E;
+    border:1px solid #E1DCFA;
+    box-shadow:0 6px 16px rgba(108,92,231,.08);
+}
+
+body.light .settings-link:active{
+    background:#F5F3FF;
+    border-color:#8B7CF6;
+}
+
+.icon{
+    width:22px;
+    height:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    font-size:12px;
+    line-height:1;
+    flex-shrink:0;
+}
+
+.manage-link .icon{
+    background:rgba(255,255,255,.15);
+}
+
+body.light .manage-link .icon{
+    background:rgba(255,255,255,.2);
+}
+
+.settings-link .icon{
+    background:var(--card-3);
+    border:1px solid var(--border-strong);
+}
+
+body.light .settings-link .icon{
+    background:#F5F3FF;
+    border:1px solid #E1DCFA;
+}
+
+/* LOGO */
+
+.logo-wrap{
+    width:170px;
+    height:68px;
+    max-width:55%;
+    margin:34px auto 0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.logo-wrap .bottom-logo{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    margin:0;
+    opacity:.95;
+}
+
+body.light .logo-wrap .bottom-logo{
+    opacity:1;
+}
+
+@media(max-width:370px){
+    .logo-wrap{
+        width:155px;
+        height:62px;
+        margin-top:30px;
+    }
+}
+/* fallback if old pages still use .bottom-logo directly */
+
+.bottom-logo{
+    display:block;
+    width:150px;
+    max-width:52%;
+    margin:23px auto 0;
+    opacity:.95;
+}
+
+.logo-wrap .bottom-logo{
+    width:100%;
+    max-width:100%;
+    margin:0;
+}
+
+/* TOPBAR */
+
+.topbar{
+    position:sticky;
+    top:0;
+    z-index:10;
+
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    padding:16px 18px;
+
+    background:var(--page);
+    border-bottom:1px solid var(--border);
+}
+
+body.light .topbar{
+    background:#FAFAFC;
+    border-bottom-color:#EFEEFA;
+}
+
+.topbar h2{
+    color:var(--text);
+    font-size:20px;
+    font-weight:900;
+}
+
+/* BACK BUTTON */
+
+.back{
+    width:42px;
+    min-width:42px;
+    height:42px;
+
+    background:var(--card-2);
+    color:var(--text);
+
+    border:1px solid var(--border);
+    outline:none;
+    border-radius:14px;
+
+    font-size:22px;
+    font-weight:900;
+    text-decoration:none;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    cursor:pointer;
+    box-shadow:
+        0 8px 18px rgba(0,0,0,.32),
+        inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.back:active{
+    transform:scale(.96);
+}
+
+body.light .back{
+    background:#ffffff;
+    color:#1A1A2E;
+    border-color:#E1DCFA;
+    box-shadow:0 6px 16px rgba(108,92,231,.08);
+}
+
+/* DELETE BUTTON */
+
+.delete{
+    margin-left:auto;
+
+    background:var(--danger) !important;
+    color:#ffffff !important;
+
+    min-height:auto !important;
+    width:auto !important;
+
+    padding:10px 12px !important;
+    border-radius:10px !important;
+
+    font-size:13px !important;
+}
+
+.delete:active{
+    background:var(--danger-hover) !important;
+}
+
+/* FORM */
+
+.form{
+    padding:18px;
+    padding-bottom:40px;
+}
+
+label{
+    display:block;
+    margin-bottom:6px;
+
+    color:var(--muted);
+    font-size:14px;
+    font-weight:800;
+}
+
+/* INPUTS */
+
+input,
+select,
+textarea{
+    width:100%;
+
+    background:var(--input);
+    color:var(--text);
+
+    border:1px solid var(--border);
+    outline:none;
+
+    border-radius:12px;
+
+    padding:14px;
+
+    font-size:16px;
+
+    margin-bottom:14px;
+
+    appearance:none;
+    -webkit-appearance:none;
+}
+
+input::placeholder,
+textarea::placeholder{
+    color:var(--muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+    outline:none;
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(108,92,231,.18);
+    background:var(--input-focus);
+}
+
+textarea{
+    min-height:100px;
+    resize:none;
+}
+
+/* SELECTS INSIDE BOXES */
+
+.box select{
+    width:100%;
+    margin-top:10px;
+    margin-bottom:0;
+    padding:12px;
+
+    border:1px solid var(--border);
+    border-radius:12px;
+
+    background:var(--input);
+    color:var(--text);
+
+    font-size:15px;
+    font-family:inherit;
+    outline:none;
+}
+
+.box select:focus{
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(108,92,231,.18);
+}
+
+/* REMOVE CHROME AUTOFILL COLORS */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus{
+    -webkit-text-fill-color:var(--text);
+    -webkit-box-shadow:0 0 0 1000px var(--input) inset;
+    box-shadow:0 0 0 1000px var(--input) inset;
+    border:1px solid var(--blue);
+}
+
+/* TIME ROW */
+
+.time-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-bottom:14px;
+}
+
+.time-row input{
+    margin-bottom:0;
+}
+
+.time-btn{
+    height:51px;
+
+    background:var(--card-2);
+    color:var(--text);
+
+    border:1px solid var(--border-strong);
+    outline:none;
+    border-radius:12px;
+
+    padding:0 14px;
+
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+
+    cursor:pointer;
+    box-shadow:var(--inner);
+}
+
+.time-btn:active{
+    transform:scale(.97);
+    background:var(--card-3);
+}
+
+body.light .time-btn{
+    background:#ffffff;
+    border-color:#E1DCFA;
+}
+
+/* LOGS */
+
+.log{
+    background:var(--card);
+    border:1px solid var(--border);
+
+    padding:14px;
+    border-radius:14px;
+
+    margin-bottom:12px;
+    box-shadow:var(--shadow-soft), var(--inner);
+}
+
+.log b{
+    color:var(--text);
+    font-size:16px;
+    font-weight:900;
+}
+
+.small{
+    color:var(--muted);
+    font-size:13px;
+    margin-top:4px;
+}
+
+/* STATUS */
+
+.status{
+    display:inline-block;
+
+    margin-top:8px;
+
+    padding:5px 10px;
+
+    border-radius:999px;
+
+    color:#ffffff;
+    font-size:12px;
+    font-weight:900;
+}
+
+.pending{
+    background:#B8862F;
+}
+
+.done{
+    background:#3DB07A;
+}
+
+/* EMPTY */
+
+.empty{
+    color:var(--muted);
+    text-align:center;
+    padding:40px 0;
+}
+
+/* AUTO DRAFT SYSTEM */
+
+#draftNotice{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+
+    background:rgba(108,92,231,.14);
+    border:1px solid rgba(108,92,231,.38);
+    border-radius:16px;
+
+    padding:13px;
+    margin-bottom:14px;
+}
+
+#draftNotice .draft-text{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+}
+
+#draftNotice strong{
+    color:var(--text);
+    font-size:14px;
+}
+
+#draftNotice span{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.3;
+}
+
+#clearDraftBtn{
+    background:var(--card-2);
+    color:var(--text);
+
+    border:1px solid var(--border-strong);
+    border-radius:12px;
+
+    padding:10px 12px;
+
+    font-size:12px;
+    font-weight:900;
+    white-space:nowrap;
+}
+
+#draftStatus{
+    color:var(--muted);
+    font-size:12px;
+    margin:-4px 0 12px;
+    text-align:right;
+}
+
+/* SCROLLBAR */
+
+html,
+body,
+.page{
+    scrollbar-width:thin;
+    scrollbar-color:var(--border-strong) var(--bg);
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.page::-webkit-scrollbar{
+    width:6px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+.page::-webkit-scrollbar-track{
+    background:var(--bg);
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+.page::-webkit-scrollbar-thumb{
+    background:var(--border-strong);
+    border-radius:999px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+.page::-webkit-scrollbar-thumb:hover{
+    background:var(--blue);
+}
+
+/* MOBILE */
+
+@media(max-width:430px){
+    .app{
+        padding:18px;
+    }
+
+    .title{
+        font-size:28px;
+    }
+
+    .btn{
+        min-height:76px;
+        font-size:15px;
+    }
+
+    .box span{
+        font-size:22px;
+    }
+
+    .topbar{
+        padding:16px 18px;
+    }
+
+    .topbar h2{
+        font-size:20px;
+    }
+}
+
+@media(max-width:370px){
+    .app{
+        padding:16px 15px 20px;
+    }
+
+    .title{
+        font-size:25px;
+        padding:19px 20px;
+        border-radius:17px;
+        margin-bottom:15px;
+    }
+
+    .title small{
+        font-size:16px;
+    }
+
+    .grid,
+    .info,
+    .action-row{
+        gap:10px;
+    }
+
+    .btn{
+        min-height:70px;
+        font-size:14px;
+        border-radius:15px;
+        padding:13px 9px;
+    }
+
+    .divider{
+        margin:14px 0;
+    }
+
+    .box{
+        padding:14px;
+        border-radius:15px;
+        font-size:11px;
+    }
+
+    .box span{
+        font-size:20px;
+        margin-top:10px;
+    }
+
+    .action-link{
+        min-height:46px;
+        font-size:12px;
+        border-radius:13px;
+    }
+
+    .icon{
+        width:20px;
+        height:20px;
+        font-size:11px;
+    }
+
+    .logo-wrap,
+    .bottom-logo{
+        width:135px;
+        margin-top:20px;
+    }
+
+    .logo-wrap .bottom-logo{
+        width:100%;
+        margin:0;
+    }
+}
+
+/* HOME TITLE MATCHES MANAGE ENTRIES BUTTON */
+
+.home-page .title{
+    background:linear-gradient(135deg, #8B7CF6 0%, #6C5CE7 60%, #5B4FE0 100%);
+    border:1px solid var(--blue-border);
+}
+
+.home-page .title::after{
+    background:rgba(255,255,255,.18);
+}
+
+body.light .home-page .title{
+    background:linear-gradient(135deg, #8B7CF6 0%, #6C5CE7 60%, #5B4FE0 100%);
+    color:#ffffff;
+    border:1px solid #8B7CF6;
+    box-shadow:0 8px 18px rgba(108,92,231,.18);
+}
+
+body.light .home-page .title small{
+    color:rgba(255,255,255,.82);
+}
+
+body.light .home-page .title::after{
+    background:rgba(255,255,255,.24);
+}
+
+body.light .btn,
+body.light .settings-link,
+body.light .back{
+    border:1px solid #E1DCFA;
+}
+
+body.light .box{
+    border:1px solid #EFEEFA;
+}
+
+/* MOBILE OVERFLOW FIX */
+html,
+body{
+    max-width:100%;
+    overflow-x:hidden;
+}
+
+.app,
+.page{
+    max-width:430px;
+    width:100%;
+    overflow-x:hidden;
+}
+
+/* keeps every field/button inside the screen */
+input,
+select,
+textarea,
+button,
+.btn,
+.action-link{
+    max-width:100%;
+    min-width:0;
+}
+
+/* fixes dropdowns bleeding sideways */
+select{
+    display:block;
+    width:100%;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+/* fixes 2-column buttons on small phones */
+.grid,
+.info,
+.action-row{
+    width:100%;
+    min-width:0;
+}
+
+.grid > *,
+.info > *,
+.action-row > *{
+    min-width:0;
+}
+
+/* make long button/dropdown text wrap instead of pushing off screen */
+.btn,
+.action-link{
+    overflow:hidden;
+    word-break:break-word;
+}
+
+/* extra small phones */
+@media(max-width:370px){
+    .app{
+        padding-left:14px;
+        padding-right:14px;
+    }
+
+    .grid,
+    .info,
+    .action-row{
+        gap:9px;
+    }
+
+    .btn{
+        font-size:13px;
+        padding-left:8px;
+        padding-right:8px;
+    }
+
+    select,
+    input,
+    textarea{
+        font-size:15px;
+        padding:13px;
+    }
+}
+
+select{
+    display:block;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+
+    appearance:none;
+    -webkit-appearance:none;
+
+    background-color:var(--input);
+    color:var(--text);
+
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position:
+        calc(100% - 24px) 50%,
+        calc(100% - 16px) 50%;
+    background-size:
+        8px 8px,
+        8px 8px;
+    background-repeat:no-repeat;
+
+    padding-right:46px;
+
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+/* =========================================================
+   2026 App Theme Refresh - matches new home screen
+   ========================================================= */
+:root{
+    --bg:#f8f5ff;
+    --page:#f8f5ff;
+    --card:rgba(255,255,255,.88);
+    --card-2:rgba(255,255,255,.92);
+    --card-3:#ffffff;
+    --text:#22233d;
+    --muted:#8a8ca2;
+    --soft:#5f6178;
+    --border:rgba(100,76,160,.10);
+    --border-strong:rgba(100,76,160,.18);
+    --blue:#7c3aed;
+    --blue-hover:#8b5cf6;
+    --blue-soft:#f1ebff;
+    --blue-border:#9b5cff;
+    --danger:#ef476f;
+    --danger-hover:#dc315c;
+    --input:rgba(255,255,255,.92);
+    --input-focus:#ffffff;
+    --shadow:0 12px 30px rgba(74,45,145,.10);
+    --shadow-soft:0 8px 20px rgba(74,45,145,.08);
+    --inner:inset 0 1px 0 rgba(255,255,255,.72);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+}
+
+body,
+body.light{
+    background:
+        radial-gradient(circle at 16% -8%, rgba(124,58,237,.18), transparent 38%),
+        radial-gradient(circle at 100% 20%, rgba(255,118,88,.10), transparent 34%),
+        linear-gradient(180deg, #fbf9ff 0%, #f6f1ff 100%);
+    color:var(--text);
+}
+
+.app,
+.page,
+body.light .app,
+body.light .page{
+    background:transparent;
+    max-width:460px;
+    min-height:100dvh;
+}
+
+.page{
+    padding-bottom:calc(16px + var(--safe-bottom));
+}
+
+.topbar,
+body.light .topbar{
+    position:sticky;
+    top:0;
+    z-index:20;
+    padding:calc(12px + env(safe-area-inset-top, 0px)) 14px 12px;
+    background:rgba(255,255,255,.74);
+    border-bottom:1px solid rgba(100,76,160,.10);
+    backdrop-filter:blur(22px);
+    -webkit-backdrop-filter:blur(22px);
+}
+
+.topbar h2,
+.settings-title h1{
+    color:var(--text);
+    font-size:18px;
+    font-weight:950;
+    letter-spacing:-.04em;
+}
+
+.back,
+body.light .back,
+.header-btn{
+    width:38px;
+    min-width:38px;
+    height:38px;
+    border-radius:14px;
+    background:rgba(255,255,255,.84);
+    color:#262740;
+    border:1px solid rgba(100,76,160,.10);
+    box-shadow:0 6px 16px rgba(84,48,160,.06);
+    font-size:20px;
+}
+
+.back:active,
+.header-btn:active{
+    transform:scale(.94);
+    background:#fff;
+}
+
+.form{
+    padding:16px 14px 32px;
+}
+
+label{
+    margin:0 0 7px 2px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:850;
+    letter-spacing:.01em;
+}
+
+input,
+select,
+textarea,
+.manual-input,
+body.light input,
+body.light select,
+body.light textarea{
+    min-height:48px;
+    background:rgba(255,255,255,.90);
+    color:var(--text);
+    border:1px solid rgba(100,76,160,.11);
+    border-radius:17px;
+    padding:13px 14px;
+    margin-bottom:13px;
+    box-shadow:0 7px 18px rgba(84,48,160,.045), inset 0 1px 0 rgba(255,255,255,.72);
+    font-size:15px;
+    font-weight:650;
+}
+
+select{
+    padding-right:46px;
+}
+
+textarea{
+    min-height:92px;
+    line-height:1.4;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.manual-input:focus{
+    background:#fff;
+    border-color:rgba(124,58,237,.45);
+    box-shadow:0 0 0 4px rgba(124,58,237,.12), 0 8px 20px rgba(84,48,160,.07);
+}
+
+input[readonly]{
+    color:#73758a;
+    background:rgba(255,255,255,.64);
+}
+
+.time-row{
+    gap:9px;
+}
+
+.time-btn,
+body.light .time-btn{
+    height:48px;
+    border-radius:17px;
+    background:rgba(255,255,255,.90);
+    border:1px solid rgba(100,76,160,.12);
+    color:var(--purple, #7c3aed);
+    box-shadow:0 7px 18px rgba(84,48,160,.045);
+}
+
+.btn,
+body.light .btn{
+    min-height:54px;
+    border-radius:18px;
+    background:rgba(255,255,255,.88);
+    border:1px solid rgba(100,76,160,.10);
+    color:var(--text);
+    box-shadow:0 8px 20px rgba(74,45,145,.08);
+}
+
+.btn.full,
+button.btn.full{
+    min-height:54px;
+    background:linear-gradient(135deg, #9b5cff, #7227eb);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow:0 12px 27px rgba(124,58,237,.26);
+}
+
+.btn:active,
+button:active,
+a:active{
+    transform:scale(.975);
+}
+
+.log,
+.stat-card,
+.controls-card,
+.setting-card,
+.preview-card,
+.storage-card,
+.return-card,
+body.light .setting-card,
+body.light .preview-card,
+body.light .storage-card{
+    background:rgba(255,255,255,.88);
+    border:1px solid rgba(100,76,160,.10);
+    border-radius:20px;
+    box-shadow:0 9px 24px rgba(74,45,145,.08);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+}
+
+.log{
+    padding:14px;
+    border-radius:18px;
+}
+
+.status,
+.meta-pill,
+.entry-status{
+    border-radius:999px;
+}
+
+.popup-overlay{
+    background:rgba(37,25,64,.34) !important;
+    backdrop-filter:blur(12px) !important;
+    -webkit-backdrop-filter:blur(12px) !important;
+}
+
+.popup-box,
+body.light .popup-box{
+    background:rgba(255,255,255,.94);
+    color:var(--text);
+    border:1px solid rgba(100,76,160,.12);
+    border-radius:24px;
+    box-shadow:0 24px 70px rgba(74,45,145,.22);
+}
+
+.missing-list,
+body.light .missing-list{
+    background:#f7f3ff;
+    border:1px solid rgba(100,76,160,.10);
+    color:var(--text);
+}
+
+.cancel-btn,
+body.light .cancel-btn{
+    background:#f7f3ff;
+    color:var(--text);
+    border:1px solid rgba(100,76,160,.12) !important;
+}
+
+.continue-btn,
+body.light .continue-btn,
+.confirm-delete-btn{
+    background:linear-gradient(135deg, #9b5cff, #7227eb) !important;
+    color:#fff !important;
+    border:1px solid rgba(255,255,255,.18) !important;
+}
+
+/* Recreational return helper */
+.return-card{
+    padding:13px;
+    margin:0 0 15px;
+}
+
+.return-head{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start;
+    margin-bottom:10px;
+}
+
+.return-head strong{
+    display:block;
+    color:var(--text);
+    font-size:14px;
+    font-weight:950;
+    letter-spacing:-.02em;
+}
+
+.return-head span{
+    display:block;
+    margin-top:2px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:700;
+    line-height:1.3;
+}
+
+.return-pill{
+    flex:0 0 auto;
+    border-radius:999px;
+    padding:6px 9px;
+    background:#f1ebff;
+    color:#7c3aed;
+    font-size:10px;
+    font-weight:900;
+}
+
+.return-select-row{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:8px;
+    align-items:center;
+}
+
+.return-select-row select{
+    margin:0;
+}
+
+.return-clear{
+    height:48px;
+    border:none;
+    border-radius:16px;
+    padding:0 13px;
+    background:#f7f3ff;
+    color:#7c3aed;
+    font-size:12px;
+    font-weight:900;
+    box-shadow:0 7px 18px rgba(84,48,160,.045);
+}
+
+.return-empty{
+    margin-top:8px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:700;
+    line-height:1.35;
+}
+
+/* Settings refresh */
+.settings-page{
+    padding:calc(12px + env(safe-area-inset-top, 0px)) 14px calc(20px + var(--safe-bottom));
+}
+
+.settings-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:16px;
+}
+
+.settings-title p,
+.note,
+.setting-info span{
+    color:var(--muted) !important;
+}
+
+.toggle-btn.active,
+body.light .toggle-btn.active{
+    background:linear-gradient(135deg, #9b5cff, #7227eb) !important;
+    color:#fff !important;
+}
+
+@media(max-width:370px){
+    .form{padding-left:12px;padding-right:12px;}
+    input,select,textarea{font-size:14px;padding:12px 13px;}
+    .return-select-row{grid-template-columns:1fr;}
+    .return-clear{width:100%;}
+}
+
+/* App-wide settings support */
+body.hide-entry-hints .help-text,
+body.hide-entry-hints .kayak-info,
+body.hide-entry-hints .return-panel,
+body.hide-entry-hints .auto-card h3,
+body.hide-entry-hints .settings-title p,
+body.hide-entry-hints .setting-info span{
+    display:none !important;
+}
+
+body.settings-compact .page,
+body.settings-compact .app{
+    max-width:430px;
+}
+
+body.settings-compact .form,
+body.settings-compact .settings-section{
+    gap:8px;
+}
+
+body.settings-compact label{
+    margin-bottom:4px;
+    font-size:11px;
+}
+
+body.settings-compact input,
+body.settings-compact select,
+body.settings-compact textarea{
+    min-height:43px;
+    border-radius:11px;
+}
+
+body.settings-compact .btn.full,
+body.settings-compact .time-btn{
+    min-height:44px;
+}
+
+
+/* GLOBAL SETTINGS OVERRIDES V4 */
+html.theme-light, html.theme-light body{ background:var(--page) !important; color:var(--text) !important; }
+html.theme-dark, html.theme-dark body{ background:var(--page) !important; color:var(--text) !important; }
+html[data-accent="blue"]{ --blue:#348DBC; --blue-hover:#3F9FCE; --blue-soft:#E8F5FC; --blue-border:#5CADDA; --purple:#348DBC; --purple-light:#4AA3D4; --soft-purple:#E8F5FC; }
+html[data-accent="purple"]{ --blue:#6C5CE7; --blue-hover:#7C6EF0; --blue-soft:#EFEBFF; --blue-border:#8B7CF6; --purple:#6C5CE7; --purple-light:#8B7CF6; --soft-purple:#EFEBFF; }
+html[data-accent="green"]{ --blue:#168A4A; --blue-hover:#1FA85B; --blue-soft:#E9F8EF; --blue-border:#27B768; --purple:#168A4A; --purple-light:#27B768; --soft-purple:#E9F8EF; }
+body.hide-entry-hints .help-text, body.hide-entry-hints .kayak-info, body.hide-entry-hints .return-panel{ display:none !important; }
+
+/* SETTINGS GLOBAL FIX V5 - makes every settings option visible across every page */
+html.theme-light{
+    --bg:#f6f9fc; --page:#f6f9fc; --card:#ffffff; --card-2:#f8fbff; --card-3:#eef5fb;
+    --text:#172033; --muted:#64748b; --soft:#334155; --border:#dce7f2; --border-strong:#c8d7e6;
+    --input:#ffffff; --input-focus:#f8fbff; --shadow:0 10px 24px rgba(15,70,120,.12); --shadow-soft:0 8px 18px rgba(15,70,120,.08);
+}
+html.theme-dark{
+    --bg:#111827; --page:#111827; --card:#172033; --card-2:#1f2a3d; --card-3:#263449;
+    --text:#f8fafc; --muted:#94a3b8; --soft:#cbd5e1; --border:#263449; --border-strong:#334155;
+    --input:#1f2a3d; --input-focus:#263449; --shadow:0 10px 24px rgba(2,8,23,.36); --shadow-soft:0 8px 18px rgba(2,8,23,.28);
+}
+html[data-accent="blue"]{ --blue:#348DBC; --blue-hover:#3F9FCE; --blue-soft:#E8F5FC; --blue-border:#5CADDA; --purple:#348DBC; --purple-light:#4AA3D4; --soft-purple:#E8F5FC; }
+html[data-accent="purple"]{ --blue:#6C5CE7; --blue-hover:#7C6EF0; --blue-soft:#EFEBFF; --blue-border:#8B7CF6; --purple:#6C5CE7; --purple-light:#8B7CF6; --soft-purple:#EFEBFF; }
+html[data-accent="green"]{ --blue:#168A4A; --blue-hover:#1FA85B; --blue-soft:#E9F8EF; --blue-border:#27B768; --purple:#168A4A; --purple-light:#27B768; --soft-purple:#E9F8EF; }
+html.theme-light body, html.theme-light .app, html.theme-light .page,
+html.theme-dark body, html.theme-dark .app, html.theme-dark .page{ background:var(--page) !important; color:var(--text) !important; }
+html.theme-light .title, html.theme-dark .title,
+html.theme-light .today-card, html.theme-dark .today-card,
+html.theme-light .entry-hero, html.theme-dark .entry-hero,
+html.theme-light .home-hero, html.theme-dark .home-hero{
+    background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+    color:#fff !important;
+    border-color:var(--blue-border) !important;
+}
+html.theme-light .btn.full, html.theme-dark .btn.full,
+html.theme-light .action-btn.primary, html.theme-dark .action-btn.primary,
+html.theme-light .continue-btn, html.theme-dark .continue-btn,
+html.theme-light .confirm-reset-btn, html.theme-dark .confirm-reset-btn,
+html.theme-light .toggle-btn.active, html.theme-dark .toggle-btn.active,
+html.theme-light body.light .toggle-btn.active, html.theme-dark body.light .toggle-btn.active{
+    background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+    color:#fff !important;
+    border-color:var(--blue-border) !important;
+}
+html.theme-light .btn, html.theme-light .back, html.theme-light .header-btn, html.theme-light .setting-card,
+html.theme-light .summary-card, html.theme-light .preview-card, html.theme-light .storage-card, html.theme-light .auto-card,
+html.theme-light .kayak-info, html.theme-light .form-section, html.theme-light .return-panel, html.theme-light .log,
+html.theme-dark .btn, html.theme-dark .back, html.theme-dark .header-btn, html.theme-dark .setting-card,
+html.theme-dark .summary-card, html.theme-dark .preview-card, html.theme-dark .storage-card, html.theme-dark .auto-card,
+html.theme-dark .kayak-info, html.theme-dark .form-section, html.theme-dark .return-panel, html.theme-dark .log{
+    background:var(--card) !important;
+    color:var(--text) !important;
+    border-color:var(--border) !important;
+}
+html.theme-light input, html.theme-light select, html.theme-light textarea,
+html.theme-dark input, html.theme-dark select, html.theme-dark textarea{
+    background:var(--input) !important;
+    color:var(--text) !important;
+    border-color:var(--border-strong) !important;
+}
+html.theme-light .btn-icon, html.theme-dark .btn-icon,
+html.theme-light .nav-link.active, html.theme-dark .nav-link.active{ color:var(--blue) !important; }
+html.theme-light .btn.return-btn .btn-icon, html.theme-dark .btn.return-btn .btn-icon,
+html.theme-light .panel-icon, html.theme-dark .panel-icon{ background:var(--blue) !important; color:#fff !important; }
+body.hide-entry-hints .help-text, body.hide-entry-hints .kayak-info, body.hide-entry-hints .return-panel, body.hide-entry-hints .auto-card{ display:none !important; }
+body.settings-compact .app, body.settings-compact .page{ max-width:420px; }
+body.settings-compact .title{ padding:16px 18px !important; border-radius:18px !important; font-size:23px !important; }
+body.settings-compact .btn, body.settings-compact .setting-card, body.settings-compact .summary-card, body.settings-compact .form-section{ border-radius:14px !important; padding:11px !important; }
+body.settings-compact input, body.settings-compact select, body.settings-compact textarea{ min-height:42px !important; padding:10px 12px !important; }
+
+
+/* SETTINGS GLOBAL FIX V6 - final force layer for all pages, not just home */
+html.theme-dark{
+    color-scheme:dark;
+    --bg:#0f172a; --page:#0f172a; --card:#172033; --card-2:#1f2a3d; --card-3:#263449;
+    --text:#f8fafc; --muted:#94a3b8; --soft:#cbd5e1; --border:#263449; --border-strong:#334155;
+    --input:#1f2a3d; --input-focus:#263449; --shadow:0 10px 24px rgba(2,8,23,.38); --shadow-soft:0 8px 18px rgba(2,8,23,.3);
+}
+html.theme-light{
+    color-scheme:light;
+    --bg:#f6f9fc; --page:#f6f9fc; --card:#ffffff; --card-2:#f8fbff; --card-3:#eef5fb;
+    --text:#172033; --muted:#64748b; --soft:#334155; --border:#dce7f2; --border-strong:#c8d7e6;
+    --input:#ffffff; --input-focus:#f8fbff; --shadow:0 10px 24px rgba(15,70,120,.12); --shadow-soft:0 8px 18px rgba(15,70,120,.08);
+}
+html.theme-dark body, html.theme-dark .app, html.theme-dark .page, html.theme-dark .form,
+html.theme-dark main, html.theme-dark section, html.theme-dark .topbar, html.theme-dark .bottom-nav{
+    background:var(--page) !important;
+    color:var(--text) !important;
+}
+html.theme-light body, html.theme-light .app, html.theme-light .page, html.theme-light .form,
+html.theme-light main, html.theme-light section{
+    background:var(--page) !important;
+    color:var(--text) !important;
+}
+html.theme-dark .btn, html.theme-dark .back, html.theme-dark .header-btn, html.theme-dark .setting-card,
+html.theme-dark .summary-card, html.theme-dark .preview-card, html.theme-dark .storage-card, html.theme-dark .auto-card,
+html.theme-dark .kayak-info, html.theme-dark .form-section, html.theme-dark .return-panel, html.theme-dark .log,
+html.theme-dark .box, html.theme-dark .entry-card, html.theme-dark .popup-box, html.theme-dark .missing-list{
+    background:var(--card) !important;
+    color:var(--text) !important;
+    border-color:var(--border) !important;
+}
+html.theme-light .btn, html.theme-light .back, html.theme-light .header-btn, html.theme-light .setting-card,
+html.theme-light .summary-card, html.theme-light .preview-card, html.theme-light .storage-card, html.theme-light .auto-card,
+html.theme-light .kayak-info, html.theme-light .form-section, html.theme-light .return-panel, html.theme-light .log,
+html.theme-light .box, html.theme-light .entry-card, html.theme-light .popup-box, html.theme-light .missing-list{
+    background:var(--card) !important;
+    color:var(--text) !important;
+    border-color:var(--border) !important;
+}
+html.theme-dark input, html.theme-dark select, html.theme-dark textarea,
+html.theme-light input, html.theme-light select, html.theme-light textarea{
+    background:var(--input) !important;
+    color:var(--text) !important;
+    border-color:var(--border-strong) !important;
+}
+html.theme-dark label, html.theme-dark p, html.theme-dark span, html.theme-dark small,
+html.theme-light label, html.theme-light p, html.theme-light span, html.theme-light small{
+    border-color:inherit;
+}
+html.theme-dark .muted, html.theme-dark .help-text, html.theme-dark .setting-info span, html.theme-dark .settings-title p{ color:var(--muted) !important; }
+html.theme-light .muted, html.theme-light .help-text, html.theme-light .setting-info span, html.theme-light .settings-title p{ color:var(--muted) !important; }
+html.theme-dark .title, html.theme-dark .home-hero, html.theme-dark .entry-hero, html.theme-dark .today-card,
+html.theme-light .title, html.theme-light .home-hero, html.theme-light .entry-hero, html.theme-light .today-card{
+    background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+    color:#fff !important;
+    border-color:var(--blue-border) !important;
+}
+html.theme-dark .btn.full, html.theme-dark .action-btn.primary, html.theme-dark .continue-btn, html.theme-dark .confirm-reset-btn, html.theme-dark .toggle-btn.active,
+html.theme-light .btn.full, html.theme-light .action-btn.primary, html.theme-light .continue-btn, html.theme-light .confirm-reset-btn, html.theme-light .toggle-btn.active{
+    background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+    color:#fff !important;
+    border-color:var(--blue-border) !important;
+}
+
+/* CSS FIX V7 - clean entry pages and stop dark pages from showing light header/background */
+html.theme-dark,
+html.theme-dark body{
+    background:#0f172a !important;
+}
+html.theme-light,
+html.theme-light body{
+    background:#f6f9fc !important;
+}
+
+html.theme-dark body,
+html.theme-light body{
+    margin:0 !important;
+    overflow-x:hidden !important;
+}
+
+html.theme-dark .page,
+html.theme-dark .app{
+    background:#0f172a !important;
+    color:#f8fafc !important;
+    box-shadow:none !important;
+}
+html.theme-light .page,
+html.theme-light .app{
+    background:#f6f9fc !important;
+    color:#172033 !important;
+    box-shadow:none !important;
+}
+
+/* Make the phone pages fill the screen cleanly without the grey frame */
+.page,
+.app{
+    width:100% !important;
+    max-width:480px !important;
+    margin:0 auto !important;
+    min-height:100dvh !important;
+}
+@media(max-width:520px){
+    .page,
+    .app{
+        max-width:none !important;
+        margin:0 !important;
+    }
+}
+
+/* Header/topbar - dark mode was being overridden by an older translucent light rule */
+html.theme-dark .topbar{
+    background:#111827 !important;
+    border-bottom:1px solid #263449 !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    box-shadow:0 8px 22px rgba(2,8,23,.18) !important;
+}
+html.theme-light .topbar{
+    background:#ffffff !important;
+    border-bottom:1px solid #dce7f2 !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    box-shadow:0 8px 22px rgba(15,70,120,.06) !important;
+}
+.topbar{
+    padding:14px 16px !important;
+    gap:12px !important;
+}
+.topbar h2{
+    font-size:19px !important;
+    line-height:1.1 !important;
+    font-weight:800 !important;
+    letter-spacing:-.02em !important;
+    color:var(--text) !important;
+}
+
+/* Back button */
+html.theme-dark .back,
+html.theme-dark .header-btn{
+    background:#1f2a3d !important;
+    color:#f8fafc !important;
+    border:1px solid #334155 !important;
+    box-shadow:0 8px 18px rgba(2,8,23,.30) !important;
+}
+html.theme-light .back,
+html.theme-light .header-btn{
+    background:#ffffff !important;
+    color:#172033 !important;
+    border:1px solid #dce7f2 !important;
+    box-shadow:0 8px 18px rgba(15,70,120,.08) !important;
+}
+.back,
+.header-btn{
+    width:42px !important;
+    min-width:42px !important;
+    height:42px !important;
+    border-radius:16px !important;
+    font-size:24px !important;
+}
+
+/* Entry forms - less oversized and more consistent */
+.form{
+    padding:18px 16px 34px !important;
+}
+label{
+    margin:0 0 7px 3px !important;
+    font-size:13px !important;
+    font-weight:750 !important;
+    letter-spacing:.01em !important;
+    color:var(--muted) !important;
+}
+input,
+select,
+textarea,
+.manual-input{
+    min-height:52px !important;
+    border-radius:16px !important;
+    padding:13px 15px !important;
+    margin-bottom:16px !important;
+    font-size:16px !important;
+    font-weight:600 !important;
+    line-height:1.25 !important;
+    box-shadow:none !important;
+}
+html.theme-dark input,
+html.theme-dark select,
+html.theme-dark textarea,
+html.theme-dark .manual-input{
+    background:#1f2a3d !important;
+    color:#f8fafc !important;
+    border:1px solid #42526a !important;
+}
+html.theme-light input,
+html.theme-light select,
+html.theme-light textarea,
+html.theme-light .manual-input{
+    background:#ffffff !important;
+    color:#172033 !important;
+    border:1px solid #c8d7e6 !important;
+}
+input:focus,
+select:focus,
+textarea:focus,
+.manual-input:focus{
+    border-color:var(--blue-border) !important;
+    box-shadow:0 0 0 3px rgba(52,141,188,.20) !important;
+}
+
+/* Draft box was too purple and bulky */
+#draftNotice{
+    border-radius:18px !important;
+    padding:14px !important;
+    margin-bottom:18px !important;
+    gap:12px !important;
+}
+html.theme-dark #draftNotice{
+    background:#172033 !important;
+    border:1px solid #334155 !important;
+}
+html.theme-light #draftNotice{
+    background:#ffffff !important;
+    border:1px solid #dce7f2 !important;
+}
+#draftNotice strong{
+    font-size:15px !important;
+    font-weight:800 !important;
+}
+#draftNotice span{
+    font-size:13px !important;
+    line-height:1.35 !important;
+}
+#clearDraftBtn{
+    min-height:44px !important;
+    border-radius:14px !important;
+    padding:10px 13px !important;
+    font-size:13px !important;
+    font-weight:800 !important;
+}
+
+/* Auto details card */
+.auto-card{
+    border-radius:20px !important;
+    padding:16px !important;
+    margin:8px 0 18px !important;
+    box-shadow:none !important;
+}
+html.theme-dark .auto-card{
+    background:#172033 !important;
+    border:1px solid #263449 !important;
+}
+html.theme-light .auto-card{
+    background:#ffffff !important;
+    border:1px solid #dce7f2 !important;
+}
+.auto-card h3{
+    font-size:18px !important;
+    font-weight:800 !important;
+    margin:0 0 14px !important;
+}
+.auto-grid{
+    gap:12px !important;
+}
+.auto-item{
+    border-radius:16px !important;
+    padding:13px 14px !important;
+    min-width:0 !important;
+}
+html.theme-dark .auto-item{
+    background:#162033 !important;
+    border:1px solid #263449 !important;
+}
+html.theme-light .auto-item{
+    background:#f8fbff !important;
+    border:1px solid #dce7f2 !important;
+}
+.auto-item span{
+    font-size:12px !important;
+    font-weight:750 !important;
+    color:var(--muted) !important;
+}
+.auto-item strong{
+    font-size:16px !important;
+    font-weight:750 !important;
+    line-height:1.25 !important;
+    overflow-wrap:anywhere !important;
+}
+@media(max-width:360px){
+    .auto-grid{
+        grid-template-columns:1fr !important;
+    }
+}
+
+/* Save button */
+.btn.full,
+button.btn.full{
+    min-height:58px !important;
+    border-radius:18px !important;
+    font-size:18px !important;
+    font-weight:800 !important;
+    box-shadow:0 14px 28px rgba(22,138,74,.20) !important;
+}
+
+/* Keep text readable but not cartoon huge */
+body,
+button,
+input,
+select,
+textarea{
+    font-family:'Poppins', Arial, Helvetica, sans-serif !important;
+}
+
+/* HEADER DARK FIX V8 - force mobile entry headers to obey dark mode */
+html.theme-dark .topbar,
+html.theme-dark body .topbar,
+html.theme-dark .page > .topbar,
+html.theme-dark .app > .topbar,
+html.app-dark .topbar,
+body:not(.light) .topbar{
+    background:#0f172a !important;
+    background-color:#0f172a !important;
+    border-bottom:1px solid #263449 !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+}
+
+html.theme-dark .topbar h1,
+html.theme-dark .topbar h2,
+html.theme-dark .topbar .title,
+html.theme-dark .topbar span,
+html.app-dark .topbar h1,
+html.app-dark .topbar h2,
+html.app-dark .topbar span,
+body:not(.light) .topbar h1,
+body:not(.light) .topbar h2,
+body:not(.light) .topbar span{
+    color:#f8fafc !important;
+}
+
+html.theme-dark .back,
+html.theme-dark .topbar .back,
+html.app-dark .back,
+body:not(.light) .topbar .back{
+    background:#172033 !important;
+    color:#f8fafc !important;
+    border:1px solid #334155 !important;
+    box-shadow:0 8px 18px rgba(2,8,23,.35) !important;
+}
+
+html.theme-light .topbar,
+html.theme-light body.light .topbar{
+    background:#ffffff !important;
+    background-color:#ffffff !important;
+    border-bottom:1px solid #dce7f2 !important;
+}
+
+
+/* ===== FULL APP THEME FIX 2026-07-06 =====
+   This is intentionally last so older page CSS cannot force light headers/cards in dark mode. */
+html.theme-dark,
+html.theme-dark body,
+html.theme-dark .page,
+html.theme-dark .app,
+html.theme-dark .screen,
+html.theme-dark .app-shell,
+html.app-dark,
+html.app-dark body{
+  background:#0f172a !important;
+  background-color:#0f172a !important;
+  color:#f8fafc !important;
+}
+
+html.theme-light,
+html.theme-light body,
+html.theme-light .page,
+html.theme-light .app,
+html.theme-light .screen,
+html.theme-light .app-shell{
+  background:#f6f9fc !important;
+  background-color:#f6f9fc !important;
+  color:#172033 !important;
+}
+
+html.theme-dark .topbar,
+html.theme-dark header,
+html.theme-dark .app-header,
+html.theme-dark .mobile-header,
+html.theme-dark .page-header,
+html.theme-dark .main-header,
+html.theme-dark .entry-header,
+html.app-dark .topbar,
+html.app-dark header,
+html.app-dark .app-header,
+html.app-dark .mobile-header,
+html.app-dark .page-header,
+body:not(.light) .topbar{
+  background:#0f172a !important;
+  background-color:#0f172a !important;
+  background-image:none !important;
+  border-color:#263449 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+html.theme-light .topbar,
+html.theme-light header,
+html.theme-light .app-header,
+html.theme-light .mobile-header,
+html.theme-light .page-header,
+html.theme-light .main-header,
+html.theme-light .entry-header,
+body.light .topbar{
+  background:#ffffff !important;
+  background-color:#ffffff !important;
+  background-image:none !important;
+  border-color:#dce7f2 !important;
+}
+
+html.theme-dark .topbar *,
+html.theme-dark header *,
+html.theme-dark .app-header *,
+html.theme-dark .mobile-header *,
+html.theme-dark .page-header *,
+html.theme-dark .entry-header *,
+html.app-dark .topbar *,
+html.app-dark header *{
+  color:#f8fafc !important;
+}
+
+html.theme-dark .back,
+html.theme-dark .header-btn,
+html.theme-dark .topbar a,
+html.theme-dark .topbar button,
+html.app-dark .back,
+html.app-dark .header-btn,
+body:not(.light) .topbar .back{
+  background:#172033 !important;
+  background-color:#172033 !important;
+  color:#f8fafc !important;
+  border:1px solid #334155 !important;
+  box-shadow:0 8px 18px rgba(2,8,23,.35) !important;
+}
+
+html.theme-dark input,
+html.theme-dark select,
+html.theme-dark textarea,
+html.theme-dark .manual-input,
+html.theme-dark .setting-input,
+html.theme-dark .setting-select{
+  background:#1f2a3d !important;
+  background-color:#1f2a3d !important;
+  color:#f8fafc !important;
+  border-color:#334155 !important;
+}
+
+html.theme-light input,
+html.theme-light select,
+html.theme-light textarea,
+html.theme-light .manual-input,
+html.theme-light .setting-input,
+html.theme-light .setting-select{
+  background:#ffffff !important;
+  background-color:#ffffff !important;
+  color:#172033 !important;
+  border-color:#c8d7e6 !important;
+}
+
+html.theme-dark .form,
+html.theme-dark .card,
+html.theme-dark .setting-card,
+html.theme-dark .summary-card,
+html.theme-dark .preview-card,
+html.theme-dark .storage-card,
+html.theme-dark .auto-card,
+html.theme-dark .auto-item,
+html.theme-dark .form-section,
+html.theme-dark .return-panel,
+html.theme-dark .kayak-info,
+html.theme-dark .entry-card,
+html.theme-dark .log,
+html.theme-dark .box,
+html.theme-dark .popup-box,
+html.theme-dark #draftNotice,
+html.theme-dark .draft-notice,
+html.theme-dark .missing-list{
+  background:#172033 !important;
+  background-color:#172033 !important;
+  color:#f8fafc !important;
+  border-color:#263449 !important;
+}
+
+html.theme-dark label,
+html.theme-dark .label,
+html.theme-dark p,
+html.theme-dark small,
+html.theme-dark .muted,
+html.theme-dark .help-text,
+html.theme-dark .subtext,
+html.theme-dark .setting-info span,
+html.theme-dark .settings-title p{
+  color:#94a3b8 !important;
+}
+
+html.theme-dark h1,
+html.theme-dark h2,
+html.theme-dark h3,
+html.theme-dark h4,
+html.theme-dark strong,
+html.theme-dark .title-text{
+  color:#f8fafc !important;
+}
+
+html.theme-dark .btn.full,
+html.theme-dark button.btn.full,
+html.theme-dark .action-btn.primary,
+html.theme-dark .continue-btn,
+html.theme-dark .confirm-reset-btn,
+html.theme-dark .toggle-btn.active{
+  background:#168a4a !important;
+  background-color:#168a4a !important;
+  color:#ffffff !important;
+  border-color:#27b768 !important;
+}
+
+/* stop the grey desktop-looking gutter on the phone app */
+html.theme-dark body::before,
+html.theme-dark body::after,
+html.theme-light body::before,
+html.theme-light body::after{ display:none !important; }
+
+@media (max-width: 900px){
+  body{ min-width:0 !important; overflow-x:hidden !important; }
+  .page,.app,.screen{ width:100% !important; max-width:100% !important; margin:0 !important; min-height:100vh !important; }
+  .topbar{ width:100% !important; max-width:100% !important; }
+}
+
+
+/* REAL FULL APP FIX 2026-07-06 - accent, selection, returning boat dark style */
+html[data-accent="blue"]{ --blue:#348DBC !important; --blue-hover:#3F9FCE !important; --blue-soft:#E8F5FC !important; --blue-border:#5CADDA !important; --purple:#348DBC !important; --purple-light:#3F9FCE !important; --soft-purple:#E8F5FC !important; --accent-rgb:52,141,188 !important; }
+html[data-accent="purple"]{ --blue:#6C5CE7 !important; --blue-hover:#7C6EF0 !important; --blue-soft:#EFEBFF !important; --blue-border:#8B7CF6 !important; --purple:#6C5CE7 !important; --purple-light:#7C6EF0 !important; --soft-purple:#EFEBFF !important; --accent-rgb:108,92,231 !important; }
+html[data-accent="green"]{ --blue:#168A4A !important; --blue-hover:#1FA85B !important; --blue-soft:#E9F8EF !important; --blue-border:#27B768 !important; --purple:#168A4A !important; --purple-light:#1FA85B !important; --soft-purple:#E9F8EF !important; --accent-rgb:22,138,74 !important; }
+
+.title, .title *, .app-header .title, .app-header .title *{
+  user-select:none !important; -webkit-user-select:none !important;
+}
+.title::selection, .title *::selection, .app-header .title::selection, .app-header .title *::selection{
+  background:transparent !important; color:inherit !important;
+}
+
+/* Accent applies in BOTH light and dark */
+html.theme-light .today-card, html.theme-dark .today-card,
+html.theme-light .entry-hero, html.theme-dark .entry-hero,
+html.theme-light .home-hero, html.theme-dark .home-hero,
+html.theme-light .title, html.theme-dark .title{
+  background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+  border-color:var(--blue-border) !important;
+}
+html.theme-light .btn.full, html.theme-dark .btn.full,
+html.theme-light .continue-btn, html.theme-dark .continue-btn,
+html.theme-light .action-btn.primary, html.theme-dark .action-btn.primary,
+html.theme-light .toggle-btn.active, html.theme-dark .toggle-btn.active,
+html.theme-light .btn.return-btn .btn-icon, html.theme-dark .btn.return-btn .btn-icon,
+html.theme-light .panel-icon, html.theme-dark .panel-icon{
+  background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+  color:#fff !important;
+  border-color:var(--blue-border) !important;
+}
+html.theme-light .btn-icon, html.theme-dark .btn-icon,
+html.theme-light .nav-link.active, html.theme-dark .nav-link.active{
+  color:var(--blue) !important;
+}
+
+/* Returning boat helper - real dark styling */
+html.theme-dark .return-card{
+  background:#172033 !important;
+  color:#f8fafc !important;
+  border:1px solid #263449 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html.theme-light .return-card{
+  background:#ffffff !important;
+  color:#172033 !important;
+  border:1px solid #dce7f2 !important;
+  box-shadow:0 10px 24px rgba(var(--accent-rgb,52,141,188), .08) !important;
+}
+html.theme-dark .return-head strong{ color:#f8fafc !important; }
+html.theme-dark .return-head span, html.theme-dark .return-empty{ color:#94a3b8 !important; }
+html.theme-light .return-head strong{ color:#172033 !important; }
+html.theme-light .return-head span, html.theme-light .return-empty{ color:#64748b !important; }
+html.theme-dark .return-pill{
+  background:rgba(var(--accent-rgb,52,141,188), .16) !important;
+  color:var(--blue-hover) !important;
+}
+html.theme-light .return-pill{
+  background:var(--blue-soft) !important;
+  color:var(--blue) !important;
+}
+html.theme-dark .return-select-row select{
+  background:#1f2a3d !important;
+  color:#f8fafc !important;
+  border:1px solid #334155 !important;
+}
+html.theme-light .return-select-row select{
+  background:#ffffff !important;
+  color:#172033 !important;
+  border:1px solid #c8d7e6 !important;
+}
+html.theme-dark .return-clear{
+  background:#1f2a3d !important;
+  color:var(--blue-hover) !important;
+  border:1px solid #334155 !important;
+  box-shadow:none !important;
+}
+html.theme-light .return-clear{
+  background:var(--blue-soft) !important;
+  color:var(--blue) !important;
+  border:1px solid var(--blue-border) !important;
+}
+html.theme-dark .form{ background:#0f172a !important; }
+html.theme-dark.return-mode .form, html.theme-dark body.return-mode .form{ background:#0f172a !important; }
+
+/* Keep dark pages from getting light gray cards from old rules */
+html.theme-dark .return-select-row, html.theme-dark .return-head{ background:transparent !important; }
+
+/* ACTUAL GLOBAL THEME FIX - 2026-07-06
+   Fixes: home title blue box, accent in light mode, returning boat dark styling. */
+
+/* The home logo/title must NEVER get a card/gradient background. */
+.home-page .app-header .title,
+.home-page .app-header .title span,
+.home-page .app-header .title small,
+.app-header .title,
+.app-header .title span,
+.app-header .title small{
+  background:transparent !important;
+  background-color:transparent !important;
+  background-image:none !important;
+  border:0 !important;
+  box-shadow:none !important;
+  outline:0 !important;
+  padding:0 !important;
+  user-select:none !important;
+  -webkit-user-select:none !important;
+}
+.home-page .app-header .title::before,
+.home-page .app-header .title::after,
+.app-header .title::before,
+.app-header .title::after{
+  display:none !important;
+  content:none !important;
+}
+.home-page .app-header .title::selection,
+.home-page .app-header .title *::selection,
+.app-header .title::selection,
+.app-header .title *::selection{
+  background:transparent !important;
+  color:inherit !important;
+}
+
+/* The accent color must affect light mode too, not only dark mode. */
+html[data-accent="blue"]{--blue:#348DBC !important;--blue-hover:#3F9FCE !important;--blue-soft:#E8F5FC !important;--blue-border:#5CADDA !important;--purple:#348DBC !important;--purple-light:#3F9FCE !important;--soft-purple:#E8F5FC !important;--accent-rgb:52,141,188 !important;}
+html[data-accent="purple"]{--blue:#6C5CE7 !important;--blue-hover:#7C6EF0 !important;--blue-soft:#EFEBFF !important;--blue-border:#8B7CF6 !important;--purple:#6C5CE7 !important;--purple-light:#7C6EF0 !important;--soft-purple:#EFEBFF !important;--accent-rgb:108,92,231 !important;}
+html[data-accent="green"]{--blue:#168A4A !important;--blue-hover:#1FA85B !important;--blue-soft:#E9F8EF !important;--blue-border:#27B768 !important;--purple:#168A4A !important;--purple-light:#1FA85B !important;--soft-purple:#E9F8EF !important;--accent-rgb:22,138,74 !important;}
+
+html.theme-light .today-card,
+body.light .today-card,
+html.theme-dark .today-card,
+body:not(.light) .today-card,
+html.theme-light .entry-hero,
+body.light .entry-hero,
+html.theme-dark .entry-hero,
+body:not(.light) .entry-hero,
+html.theme-light .home-hero,
+body.light .home-hero,
+html.theme-dark .home-hero,
+body:not(.light) .home-hero{
+  background:radial-gradient(circle at 92% 8%, rgba(255,255,255,.35), transparent 27%), linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+  border-color:var(--blue-border) !important;
+}
+
+html.theme-light .btn.full,
+body.light .btn.full,
+html.theme-dark .btn.full,
+body:not(.light) .btn.full,
+html.theme-light button.btn.full,
+body.light button.btn.full,
+html.theme-dark button.btn.full,
+body:not(.light) button.btn.full,
+html.theme-light .continue-btn,
+body.light .continue-btn,
+html.theme-dark .continue-btn,
+body:not(.light) .continue-btn,
+html.theme-light .action-btn.primary,
+body.light .action-btn.primary,
+html.theme-dark .action-btn.primary,
+body:not(.light) .action-btn.primary,
+html.theme-light .toggle-btn.active,
+body.light .toggle-btn.active,
+html.theme-dark .toggle-btn.active,
+body:not(.light) .toggle-btn.active,
+html.theme-light .panel-icon,
+body.light .panel-icon,
+html.theme-dark .panel-icon,
+body:not(.light) .panel-icon,
+html.theme-light .btn.return-btn .btn-icon,
+body.light .btn.return-btn .btn-icon,
+html.theme-dark .btn.return-btn .btn-icon,
+body:not(.light) .btn.return-btn .btn-icon{
+  background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+  border-color:var(--blue-border) !important;
+  color:#fff !important;
+}
+
+html.theme-light .btn-icon,
+body.light .btn-icon,
+html.theme-dark .btn-icon,
+body:not(.light) .btn-icon{
+  background:var(--blue-soft) !important;
+  color:var(--blue) !important;
+}
+html.theme-light .nav-link.active,
+body.light .nav-link.active,
+html.theme-dark .nav-link.active,
+body:not(.light) .nav-link.active,
+html.theme-light .time-btn,
+body.light .time-btn,
+html.theme-dark .time-btn,
+body:not(.light) .time-btn{
+  color:var(--blue) !important;
+}
+html.theme-light input:focus,
+body.light input:focus,
+html.theme-light select:focus,
+body.light select:focus,
+html.theme-light textarea:focus,
+body.light textarea:focus,
+html.theme-dark input:focus,
+body:not(.light) input:focus,
+html.theme-dark select:focus,
+body:not(.light) select:focus,
+html.theme-dark textarea:focus,
+body:not(.light) textarea:focus{
+  border-color:var(--blue-border) !important;
+  box-shadow:0 0 0 4px rgba(var(--accent-rgb), .16) !important;
+}
+
+/* Returning Boat page: force the helper card to match dark mode even if old body classes are used. */
+html.theme-dark .return-card,
+html.app-dark .return-card,
+body:not(.light) .return-card{
+  background:#172033 !important;
+  background-image:none !important;
+  color:#f8fafc !important;
+  border:1px solid #2b3a52 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html.theme-dark .return-head,
+html.app-dark .return-head,
+body:not(.light) .return-head,
+html.theme-dark .return-select-row,
+html.app-dark .return-select-row,
+body:not(.light) .return-select-row{
+  background:transparent !important;
+  background-image:none !important;
+}
+html.theme-dark .return-head strong,
+html.app-dark .return-head strong,
+body:not(.light) .return-head strong{
+  color:#f8fafc !important;
+}
+html.theme-dark .return-head span,
+html.app-dark .return-head span,
+body:not(.light) .return-head span,
+html.theme-dark .return-empty,
+html.app-dark .return-empty,
+body:not(.light) .return-empty{
+  color:#9fb0c5 !important;
+}
+html.theme-dark .return-pill,
+html.app-dark .return-pill,
+body:not(.light) .return-pill{
+  background:rgba(var(--accent-rgb,52,141,188), .16) !important;
+  color:var(--blue-hover) !important;
+}
+html.theme-dark .return-select-row select,
+html.app-dark .return-select-row select,
+body:not(.light) .return-select-row select,
+html.theme-dark .return-clear,
+html.app-dark .return-clear,
+body:not(.light) .return-clear{
+  background:#1f2a3d !important;
+  background-image:none !important;
+  color:#f8fafc !important;
+  border:1px solid #334155 !important;
+  box-shadow:none !important;
+}
+html.theme-dark .return-clear,
+html.app-dark .return-clear,
+body:not(.light) .return-clear{
+  color:var(--blue-hover) !important;
+}
+
+/* Returning Boat light mode still uses accent, not purple hard-coding. */
+html.theme-light .return-card,
+body.light .return-card{
+  background:#ffffff !important;
+  color:#172033 !important;
+  border:1px solid #d9e6f2 !important;
+  box-shadow:0 10px 24px rgba(var(--accent-rgb,52,141,188), .08) !important;
+}
+html.theme-light .return-pill,
+body.light .return-pill,
+html.theme-light .return-clear,
+body.light .return-clear{
+  background:var(--blue-soft) !important;
+  color:var(--blue) !important;
+  border-color:var(--blue-border) !important;
+}
+
+/* Stop old page headers from using light gray in dark mode. */
+html.theme-dark .topbar,
+html.app-dark .topbar,
+body:not(.light) .topbar,
+html.theme-dark header,
+html.app-dark header,
+body:not(.light) header{
+  background:#0f172a !important;
+  background-image:none !important;
+  color:#f8fafc !important;
+  border-color:#253247 !important;
+}
+
+
+/* TITLE REAL FIX 2026-07-06
+   The home/new-entry header label is a text logo. Do not let the global .title card/accent rules style it. */
+.app-header .title,
+.app-header .title span,
+.app-header .title small,
+.app-header .app-logo-title,
+.app-header .app-logo-title span,
+.app-header .app-logo-title small{
+  background:transparent !important;
+  background-color:transparent !important;
+  background-image:none !important;
+  border:0 !important;
+  box-shadow:none !important;
+  outline:0 !important;
+  padding:0 !important;
+  margin:0 !important;
+  border-radius:0 !important;
+  user-select:none !important;
+  -webkit-user-select:none !important;
+}
+.app-header .title::before,
+.app-header .title::after,
+.app-header .app-logo-title::before,
+.app-header .app-logo-title::after{
+  display:none !important;
+  content:none !important;
+}
+.app-header .title::selection,
+.app-header .title *::selection,
+.app-header .app-logo-title::selection,
+.app-header .app-logo-title *::selection{
+  background:transparent !important;
+  color:inherit !important;
+}
+html.theme-dark .app-header .title,
+html.theme-dark .app-header .title span,
+html.theme-dark .app-header .app-logo-title,
+html.theme-dark .app-header .app-logo-title span{
+  color:#fff !important;
+}
+html.theme-light .app-header .title,
+html.theme-light .app-header .title span,
+html.theme-light .app-header .app-logo-title,
+html.theme-light .app-header .app-logo-title span,
+body.light .app-header .title,
+body.light .app-header .title span,
+body.light .app-header .app-logo-title,
+body.light .app-header .app-logo-title span{
+  color:#172033 !important;
+}
+.app-header .title small,
+.app-header .app-logo-title small{
+  color:var(--muted) !important;
+}
+
+/* Returning boat dark-mode card and controls */
+html.theme-dark .return-panel,
+html.theme-dark .return-head,
+html.theme-dark .return-select-row{
+  background:#172033 !important;
+  color:#f8fafc !important;
+  border-color:#334155 !important;
+  box-shadow:none !important;
+}
+html.theme-dark .return-panel h2,
+html.theme-dark .return-panel p,
+html.theme-dark .return-count{ color:#f8fafc !important; }
+html.theme-dark .return-select{
+  background:#1f2a3d !important;
+  color:#f8fafc !important;
+  border-color:#334155 !important;
+}
+html.theme-dark .return-clear,
+html.theme-dark .return-pill{
+  background:#1f2a3d !important;
+  color:#f8fafc !important;
+  border-color:#334155 !important;
+}
+
+
+/* LIGHT MODE ACCENT VISIBILITY FIX 2026-07-06
+   Accent colour is now visible in light mode without turning the logo into a coloured block. */
+html.theme-light,
+html.theme-light body,
+body.light{
+  --accent-shadow:rgba(var(--accent-rgb,52,141,188), .18);
+  --accent-soft-shadow:rgba(var(--accent-rgb,52,141,188), .10);
+}
+
+/* Keep the text logo clean. The accent must not paint behind the title. */
+html.theme-light .app-header .app-logo-title,
+html.theme-light .app-header .app-logo-title span,
+html.theme-light .app-header .app-logo-title small,
+body.light .app-header .app-logo-title,
+body.light .app-header .app-logo-title span,
+body.light .app-header .app-logo-title small{
+  background:transparent !important;
+  background-image:none !important;
+  box-shadow:none !important;
+  outline:0 !important;
+}
+
+html.theme-light .app-header,
+body.light .app-header{
+  border-bottom:2px solid rgba(var(--accent-rgb,52,141,188), .22) !important;
+}
+
+html.theme-light .header-btn,
+html.theme-light .back,
+body.light .header-btn,
+body.light .back{
+  background:linear-gradient(180deg, #ffffff, var(--blue-soft)) !important;
+  color:var(--blue) !important;
+  border:1px solid rgba(var(--accent-rgb,52,141,188), .34) !important;
+  box-shadow:0 8px 18px rgba(var(--accent-rgb,52,141,188), .10) !important;
+}
+
+html.theme-light .today-card,
+body.light .today-card,
+html.theme-light .entry-hero,
+body.light .entry-hero,
+html.theme-light .home-hero,
+body.light .home-hero{
+  background:radial-gradient(circle at 92% 8%, rgba(255,255,255,.35), transparent 27%), linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+  border:1px solid rgba(var(--accent-rgb,52,141,188), .32) !important;
+  box-shadow:0 18px 36px rgba(var(--accent-rgb,52,141,188), .24) !important;
+  color:#fff !important;
+}
+
+html.theme-light .mini-icon,
+body.light .mini-icon{
+  background:rgba(255,255,255,.24) !important;
+  color:#fff !important;
+}
+
+html.theme-light .section-title small,
+body.light .section-title small,
+html.theme-light .settings-status,
+body.light .settings-status{
+  color:var(--blue) !important;
+}
+
+html.theme-light .settings-status,
+body.light .settings-status{
+  background:var(--blue-soft) !important;
+  border-color:rgba(var(--accent-rgb,52,141,188), .34) !important;
+}
+
+html.theme-light .btn,
+body.light .btn,
+html.theme-light .setting-card,
+body.light .setting-card,
+html.theme-light .summary-card,
+body.light .summary-card,
+html.theme-light .preview-card,
+body.light .preview-card,
+html.theme-light .storage-card,
+body.light .storage-card,
+html.theme-light .auto-card,
+body.light .auto-card,
+html.theme-light .form-section,
+body.light .form-section,
+html.theme-light .return-card,
+body.light .return-card,
+html.theme-light .return-panel,
+body.light .return-panel,
+html.theme-light .kayak-info,
+body.light .kayak-info,
+html.theme-light .entry-card,
+body.light .entry-card,
+html.theme-light .log,
+body.light .log,
+html.theme-light .box,
+body.light .box{
+  border-color:rgba(var(--accent-rgb,52,141,188), .26) !important;
+  box-shadow:0 10px 24px rgba(var(--accent-rgb,52,141,188), .08) !important;
+}
+
+html.theme-light .btn-icon,
+body.light .btn-icon,
+html.theme-light .btn:nth-child(1) .btn-icon,
+html.theme-light .btn:nth-child(2) .btn-icon,
+html.theme-light .btn:nth-child(3) .btn-icon,
+html.theme-light .btn:nth-child(4) .btn-icon,
+html.theme-light .btn:nth-child(5) .btn-icon,
+html.theme-light .btn:nth-child(6) .btn-icon,
+html.theme-light .btn:nth-child(7) .btn-icon,
+html.theme-light .btn:nth-child(8) .btn-icon,
+body.light .btn:nth-child(1) .btn-icon,
+body.light .btn:nth-child(2) .btn-icon,
+body.light .btn:nth-child(3) .btn-icon,
+body.light .btn:nth-child(4) .btn-icon,
+body.light .btn:nth-child(5) .btn-icon,
+body.light .btn:nth-child(6) .btn-icon,
+body.light .btn:nth-child(7) .btn-icon,
+body.light .btn:nth-child(8) .btn-icon{
+  background:linear-gradient(180deg, #ffffff, var(--blue-soft)) !important;
+  color:var(--blue) !important;
+  border:1px solid rgba(var(--accent-rgb,52,141,188), .30) !important;
+  box-shadow:0 8px 18px rgba(var(--accent-rgb,52,141,188), .10) !important;
+}
+
+html.theme-light .btn.return-btn .btn-icon,
+body.light .btn.return-btn .btn-icon,
+html.theme-light .panel-icon,
+body.light .panel-icon,
+html.theme-light .toggle-btn.active,
+body.light .toggle-btn.active,
+html.theme-light .switch.active,
+body.light .switch.active,
+html.theme-light .action-btn.primary,
+body.light .action-btn.primary,
+html.theme-light .continue-btn,
+body.light .continue-btn,
+html.theme-light .confirm-reset-btn,
+body.light .confirm-reset-btn,
+html.theme-light .btn.full,
+body.light .btn.full,
+html.theme-light button.btn.full,
+body.light button.btn.full{
+  background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+  color:#fff !important;
+  border-color:var(--blue-border) !important;
+  box-shadow:0 12px 26px rgba(var(--accent-rgb,52,141,188), .20) !important;
+}
+
+html.theme-light .bottom-nav,
+body.light .bottom-nav{
+  background:rgba(255,255,255,.94) !important;
+  border-top:2px solid rgba(var(--accent-rgb,52,141,188), .24) !important;
+  box-shadow:0 -12px 28px rgba(var(--accent-rgb,52,141,188), .08) !important;
+}
+
+html.theme-light .nav-link.active,
+body.light .nav-link.active{
+  color:var(--blue) !important;
+  background:var(--blue-soft) !important;
+  border-radius:14px !important;
+}
+
+html.theme-light input:focus,
+body.light input:focus,
+html.theme-light select:focus,
+body.light select:focus,
+html.theme-light textarea:focus,
+body.light textarea:focus,
+html.theme-light .setting-input:focus,
+body.light .setting-input:focus,
+html.theme-light .setting-select:focus,
+body.light .setting-select:focus{
+  border-color:var(--blue-border) !important;
+  box-shadow:0 0 0 4px rgba(var(--accent-rgb,52,141,188), .16) !important;
+}
+
+html.theme-light .return-pill,
+body.light .return-pill,
+html.theme-light .return-clear,
+body.light .return-clear{
+  background:var(--blue-soft) !important;
+  color:var(--blue) !important;
+  border-color:rgba(var(--accent-rgb,52,141,188), .34) !important;
+}
+
+
+/* =========================================================
+   FINAL ACCENT + ALIGNMENT FIX 2026-07-06
+   Root cause: body.light had its own hardcoded purple variables, so children
+   ignored the selected accent on html. These rules force the chosen accent
+   onto body too and make the form action rows consistent on every page.
+   ========================================================= */
+html[data-accent="blue"], html[data-accent="blue"] body{
+  --blue:#348DBC !important;
+  --blue-hover:#3F9FCE !important;
+  --blue-soft:#E8F5FC !important;
+  --blue-border:#5CADDA !important;
+  --accent-rgb:52,141,188 !important;
+  --purple:#348DBC !important;
+  --purple-light:#3F9FCE !important;
+  --soft-purple:#E8F5FC !important;
+}
+html[data-accent="purple"], html[data-accent="purple"] body{
+  --blue:#6C5CE7 !important;
+  --blue-hover:#7C6EF0 !important;
+  --blue-soft:#EFEBFF !important;
+  --blue-border:#8B7CF6 !important;
+  --accent-rgb:108,92,231 !important;
+  --purple:#6C5CE7 !important;
+  --purple-light:#7C6EF0 !important;
+  --soft-purple:#EFEBFF !important;
+}
+html[data-accent="green"], html[data-accent="green"] body{
+  --blue:#168A4A !important;
+  --blue-hover:#1FA85B !important;
+  --blue-soft:#E9F8EF !important;
+  --blue-border:#27B768 !important;
+  --accent-rgb:22,138,74 !important;
+  --purple:#168A4A !important;
+  --purple-light:#1FA85B !important;
+  --soft-purple:#E9F8EF !important;
+}
+
+/* Accent colour should be visible in BOTH themes. */
+html.theme-light .today-card,
+html.theme-light .home-hero,
+html.theme-light .entry-hero,
+html.theme-dark .today-card,
+html.theme-dark .home-hero,
+html.theme-dark .entry-hero{
+  background:radial-gradient(circle at 88% 10%, rgba(255,255,255,.28), transparent 30%), linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+  border-color:rgba(var(--accent-rgb), .35) !important;
+  box-shadow:0 18px 38px rgba(var(--accent-rgb), .22) !important;
+}
+
+html.theme-light .toggle-btn.active,
+html.theme-light .switch.active,
+html.theme-light .action-btn.primary,
+html.theme-light .continue-btn,
+html.theme-light .confirm-reset-btn,
+html.theme-light .confirm-delete-btn,
+html.theme-light .btn.full,
+html.theme-light button.btn.full,
+html.theme-light .save-edit-btn,
+html.theme-dark .toggle-btn.active,
+html.theme-dark .switch.active,
+html.theme-dark .action-btn.primary,
+html.theme-dark .continue-btn,
+html.theme-dark .confirm-reset-btn,
+html.theme-dark .btn.full,
+html.theme-dark button.btn.full,
+html.theme-dark .save-edit-btn{
+  background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+  color:#fff !important;
+  border-color:var(--blue-border) !important;
+  box-shadow:0 12px 26px rgba(var(--accent-rgb), .22) !important;
+}
+
+html.theme-light .settings-status,
+html.theme-light .nav-link.active,
+html.theme-light .time-btn,
+html.theme-light .return-clear,
+html.theme-light .return-pill,
+html.theme-light .btn-icon,
+html.theme-dark .settings-status,
+html.theme-dark .nav-link.active,
+html.theme-dark .time-btn,
+html.theme-dark .return-clear,
+html.theme-dark .return-pill,
+html.theme-dark .btn-icon{
+  color:var(--blue) !important;
+}
+
+html.theme-light .settings-status,
+html.theme-light .nav-link.active,
+html.theme-light .return-clear,
+html.theme-light .return-pill,
+html.theme-light .header-btn,
+html.theme-light .back{
+  background:var(--blue-soft) !important;
+  border-color:rgba(var(--accent-rgb), .32) !important;
+}
+
+html.theme-light .btn,
+html.theme-light .setting-card,
+html.theme-light .summary-card,
+html.theme-light .preview-card,
+html.theme-light .storage-card,
+html.theme-light .auto-card,
+html.theme-light .form-section,
+html.theme-light .return-card,
+html.theme-light .return-panel,
+html.theme-light .kayak-info,
+html.theme-light .entry-card,
+html.theme-light .log,
+html.theme-light .box,
+html.theme-light .other-details,
+html.theme-light .detail-box{
+  border-color:rgba(var(--accent-rgb), .22) !important;
+  box-shadow:0 10px 24px rgba(var(--accent-rgb), .08) !important;
+}
+
+html.theme-light input:focus,
+html.theme-light select:focus,
+html.theme-light textarea:focus,
+html.theme-light .setting-input:focus,
+html.theme-light .setting-select:focus,
+html.theme-dark input:focus,
+html.theme-dark select:focus,
+html.theme-dark textarea:focus,
+html.theme-dark .setting-input:focus,
+html.theme-dark .setting-select:focus{
+  border-color:var(--blue-border) !important;
+  box-shadow:0 0 0 4px rgba(var(--accent-rgb), .16) !important;
+}
+
+/* Keep title/logo text clean. Accent is for controls, not a coloured block behind the name. */
+.app-header .title,
+.app-header .title span,
+.app-header .title small,
+.app-header .app-logo-title,
+.app-header .app-logo-title span,
+.app-header .app-logo-title small{
+  background:transparent !important;
+  background-image:none !important;
+  box-shadow:none !important;
+  border:0 !important;
+  outline:0 !important;
+  padding:0 !important;
+}
+.app-header .title::before,
+.app-header .title::after,
+.app-header .app-logo-title::before,
+.app-header .app-logo-title::after{
+  display:none !important;
+  content:none !important;
+}
+
+/* Button/action row alignment across every entry page. */
+.time-row{
+  display:grid !important;
+  grid-template-columns:minmax(0, 1fr) auto !important;
+  align-items:stretch !important;
+  gap:12px !important;
+  margin-bottom:16px !important;
+  width:100% !important;
+}
+.time-row input,
+.time-row select,
+.time-row .time-btn,
+.time-btn{
+  min-height:56px !important;
+  height:56px !important;
+  margin:0 !important;
+}
+.time-row input,
+.time-row select{
+  width:100% !important;
+  min-width:0 !important;
+}
+.time-btn{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  align-self:stretch !important;
+  padding:0 18px !important;
+  border-radius:18px !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+}
+
+.return-select-row{
+  display:grid !important;
+  grid-template-columns:minmax(0, 1fr) auto !important;
+  align-items:stretch !important;
+  gap:12px !important;
+  width:100% !important;
+}
+.return-select-row select,
+.return-clear{
+  min-height:56px !important;
+  height:56px !important;
+  margin:0 !important;
+}
+.return-select-row select{
+  min-width:0 !important;
+  width:100% !important;
+}
+.return-clear{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:0 20px !important;
+  border-radius:18px !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+}
+
+.popup-actions,
+.confirm-actions,
+.edit-actions,
+.record-actions,
+.action-row{
+  display:flex !important;
+  align-items:stretch !important;
+  gap:10px !important;
+}
+.popup-actions button,
+.confirm-actions button,
+.edit-actions button,
+.record-actions button,
+.action-row button,
+.action-row .btn{
+  min-height:48px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:1.05 !important;
+}
+
+/* Make settings segmented buttons equal-height and centered. */
+.toggle-row{
+  align-items:stretch !important;
+}
+.toggle-btn,
+.switch,
+.action-btn,
+.settings-status{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.switch{
+  justify-content:flex-start !important;
+}
+.switch.active{
+  justify-content:flex-start !important;
+}
+
+@media(max-width:370px){
+  .time-row,
+  .return-select-row{
+    gap:8px !important;
+  }
+  .time-btn,
+  .return-clear{
+    padding:0 12px !important;
+    font-size:12px !important;
+  }
+}
+
+/* FINAL TIME DEFAULT CLEANUP 2026-07-06
+   Time fields auto-fill on entry pages. */
+.time-row{
+  display:grid !important;
+  grid-template-columns:minmax(0, 1fr) auto !important;
+  align-items:stretch !important;
+  gap:12px !important;
+  width:100% !important;
+}
+.time-row input,
+.time-row select,
+.time-row .time-btn,
+.time-btn{
+  min-height:56px !important;
+  height:56px !important;
+  margin:0 !important;
+}
+.time-btn,
+html.theme-light .time-btn,
+body.light .time-btn,
+html.theme-dark .time-btn,
+body:not(.light) .time-btn{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  align-self:stretch !important;
+  min-width:126px !important;
+  padding:0 18px !important;
+  border-radius:18px !important;
+  border:1px solid var(--blue-border) !important;
+  background:linear-gradient(135deg, var(--blue), var(--blue-hover)) !important;
+  color:#fff !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+  box-shadow:0 14px 28px rgba(var(--accent-rgb,52,141,188), .22) !important;
+}
+.time-btn:hover,
+.time-btn:focus-visible{
+  transform:translateY(-1px) !important;
+  box-shadow:0 18px 34px rgba(var(--accent-rgb,52,141,188), .28) !important;
+  outline:none !important;
+}
+.time-btn:active{
+  transform:scale(.98) !important;
+  background:linear-gradient(135deg, var(--blue-hover), var(--blue)) !important;
+}
+@media(max-width:430px){
+  .time-row{
+    grid-template-columns:minmax(0, 1fr) auto !important;
+    gap:10px !important;
+  }
+  .time-btn{
+    min-width:112px !important;
+    padding:0 12px !important;
+    font-size:13px !important;
+  }
+}
+@media(max-width:350px){
+  .time-row{
+    grid-template-columns:1fr !important;
+  }
+  .time-btn{
+    width:100% !important;
+  }
+}
+
+/* FINAL MOBILE PAIRING + DRAFT CLEANUP 2026-07-07
+   Clear Draft is themed consistently and retired manual time controls are hidden cleanly. */
+#syncTimeBtn,
+.time-row .time-btn{
+  display:none !important;
+}
+.time-row{
+  display:block !important;
+  grid-template-columns:1fr !important;
+  gap:0 !important;
+  width:100% !important;
+  margin-bottom:14px !important;
+}
+.time-row input,
+.time-row select{
+  width:100% !important;
+  min-height:54px !important;
+  height:auto !important;
+  margin:0 !important;
+}
+#draftNotice{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto !important;
+  align-items:center !important;
+  gap:12px !important;
+  width:100% !important;
+  padding:14px !important;
+  margin:0 0 16px !important;
+  border-radius:18px !important;
+  border:1px solid rgba(var(--accent-rgb,52,141,188), .28) !important;
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)), var(--card, #172033) !important;
+  box-shadow:0 12px 26px rgba(0,0,0,.10) !important;
+  box-sizing:border-box !important;
+}
+#draftNotice .draft-text{
+  min-width:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:4px !important;
+}
+#draftNotice strong{
+  color:var(--text) !important;
+  font-size:14px !important;
+  font-weight:950 !important;
+  letter-spacing:-.02em !important;
+}
+#draftNotice span{
+  color:var(--muted) !important;
+  font-size:12px !important;
+  line-height:1.35 !important;
+}
+#clearDraftBtn{
+  appearance:none !important;
+  -webkit-appearance:none !important;
+  min-height:42px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:0 14px !important;
+  border-radius:14px !important;
+  border:1px solid rgba(var(--accent-rgb,52,141,188), .36) !important;
+  background:linear-gradient(180deg, var(--card-2, #233047), var(--card, #172033)) !important;
+  color:var(--text) !important;
+  font-size:12px !important;
+  font-weight:950 !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 8px 18px rgba(0,0,0,.10) !important;
+}
+#clearDraftBtn:active{
+  transform:scale(.97) !important;
+}
+#clearDraftBtn:focus-visible{
+  outline:none !important;
+  box-shadow:0 0 0 4px rgba(var(--accent-rgb,52,141,188), .20), 0 8px 18px rgba(0,0,0,.10) !important;
+}
+#draftStatus{
+  width:100% !important;
+  color:var(--muted) !important;
+  font-size:11px !important;
+  font-weight:800 !important;
+  margin:-6px 0 12px !important;
+  text-align:right !important;
+}
+html.theme-light #draftNotice,
+body.light #draftNotice{
+  background:#ffffff !important;
+  border-color:rgba(var(--accent-rgb,52,141,188), .24) !important;
+  box-shadow:0 10px 24px rgba(var(--accent-rgb,52,141,188), .08) !important;
+}
+html.theme-light #clearDraftBtn,
+body.light #clearDraftBtn{
+  background:linear-gradient(180deg, #ffffff, var(--blue-soft, #e8f5fc)) !important;
+  color:var(--blue, #348dbc) !important;
+  border-color:rgba(var(--accent-rgb,52,141,188), .34) !important;
+  box-shadow:0 8px 18px rgba(var(--accent-rgb,52,141,188), .10) !important;
+}
+html.theme-dark #draftNotice,
+html.app-dark #draftNotice{
+  background:#172033 !important;
+  border-color:#263449 !important;
+}
+html.theme-dark #clearDraftBtn,
+html.app-dark #clearDraftBtn{
+  background:linear-gradient(180deg, #233047, #172033) !important;
+  color:#f8fafc !important;
+  border-color:#334155 !important;
+}
+@media(max-width:390px){
+  #draftNotice{
+    grid-template-columns:1fr !important;
+  }
+  #clearDraftBtn{
+    width:100% !important;
+    min-height:44px !important;
+  }
+  #draftStatus{
+    text-align:left !important;
+  }
+}

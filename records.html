@@ -1,0 +1,2407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>All Records</title>
+
+  <script>
+    try {
+      if (localStorage.getItem("ssmCanalDashboard.darkMode") === "true") {
+        document.documentElement.classList.add("app-dark");
+      }
+    } catch (e) {}
+  </script>
+
+  <link rel="stylesheet" href="assets/style.css" />
+
+  <style>
+    /*
+      Records page final rebuild.
+      Important: this page intentionally DOES NOT override .main, .topbar,
+      or .page-nav widths. The global style.css controls those so the nav
+      lines up with every other page.
+    */
+
+    .records-layout {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .records-controls,
+    .records-preview {
+      min-width: 0;
+    }
+
+    .records-preview .panel-title {
+      align-items: center;
+    }
+
+    .records-preview-title {
+      min-width: 0;
+    }
+
+    .records-preview-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .records-preview-actions .btn {
+      min-height: 34px;
+      padding: 7px 12px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .report-type-list {
+      display: grid;
+      gap: 8px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .report-choice {
+      width: 100%;
+      min-height: 58px;
+      padding: 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      box-shadow: none;
+    }
+
+    .report-choice:hover {
+      background: var(--surface-hover);
+    }
+
+    .report-choice.active {
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+    }
+
+    .report-choice strong {
+      display: block;
+      margin: 0;
+      color: inherit;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.15;
+    }
+
+    .report-choice span {
+      display: block;
+      margin-top: 4px;
+      color: var(--text-soft);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .record-date-stack {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .report-field {
+      display: none;
+    }
+
+    .report-field.is-active {
+      display: grid;
+      gap: 12px;
+    }
+
+    .range-fields {
+      grid-template-columns: 1fr;
+    }
+
+    .record-date-stack .field,
+    .range-fields .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .records-help-card {
+      display: grid;
+      gap: 4px;
+      margin: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-alt);
+      color: var(--text);
+    }
+
+    .records-help-card strong {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .records-help-card span {
+      color: var(--text-soft);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .records-side-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 0 14px 14px;
+    }
+
+    .records-side-actions .btn {
+      width: 100%;
+    }
+
+    .compact-report-paper,
+    #reportArea.report-paper {
+      margin: 18px;
+      padding: 22px;
+      overflow: hidden;
+    }
+
+    #reportArea .report-head {
+      text-align: center;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 2px solid var(--text);
+    }
+
+    #reportArea .report-head h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: 20px;
+      line-height: 1.15;
+      font-weight: 650;
+    }
+
+    #reportArea .report-head h3 {
+      margin: 6px 0 0;
+      color: var(--text-soft);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    #reportArea .report-summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0 0 14px;
+    }
+
+    #reportArea .report-summary span {
+      min-width: 0;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-alt);
+      color: var(--text-soft);
+      font-size: 12px;
+      line-height: 1.15;
+    }
+
+    #reportArea .report-summary b {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 650;
+    }
+
+    #reportArea .report-table-wrap,
+    .records-preview .report-table-wrap {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: visible;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    #reportArea table {
+      width: 100%;
+      min-width: 860px;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+
+    body[data-report-kind="monthlyReport"] #reportArea table {
+      min-width: 780px;
+    }
+
+    #reportArea table th,
+    #reportArea table td {
+      height: 32px;
+      padding: 6px 8px;
+      font-size: 12px;
+      line-height: 1.2;
+      vertical-align: middle;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #reportArea table th {
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    #reportArea .report-footer {
+      margin-top: 12px;
+      color: var(--text-soft);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    /* Monthly preview widths */
+    body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(1),
+    body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(1) {
+      width: 120px;
+    }
+
+    body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(2),
+    body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(2),
+    body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(3),
+    body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(3) {
+      width: 92px;
+    }
+
+    body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(n+4),
+    body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(n+4) {
+      text-align: center;
+    }
+
+    /* Floating row action menu */
+    #reportArea table tr.has-report-row-menu td:first-child {
+      overflow: visible;
+    }
+
+    .report-row-menu-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+    }
+
+    .report-menu-btn {
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      min-height: 24px;
+      padding: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .report-menu-btn:hover {
+      background: var(--surface-hover);
+    }
+
+    .report-row-date-text {
+      display: inline-block;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .report-action-menu.records-floating-menu {
+      position: fixed;
+      z-index: 2147483647;
+      min-width: 144px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow-flyout);
+      display: none;
+    }
+
+    .report-action-menu.records-floating-menu.open {
+      display: grid;
+      gap: 5px;
+    }
+
+    .report-action-menu.records-floating-menu button {
+      width: 100%;
+      min-height: 32px;
+      justify-content: flex-start;
+      text-align: left;
+      border-radius: 6px;
+      font-size: 12px;
+      padding: 6px 9px;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .report-action-menu.records-floating-menu .danger {
+      color: var(--danger);
+    }
+
+    /* Dark mode: only Records-specific pieces */
+    html.app-dark .records-help-card,
+    body.dark-mode .records-help-card,
+    html.app-dark #reportArea .report-summary span,
+    body.dark-mode #reportArea .report-summary span,
+    html.app-dark .report-menu-btn,
+    body.dark-mode .report-menu-btn,
+    html.app-dark .report-action-menu.records-floating-menu,
+    body.dark-mode .report-action-menu.records-floating-menu {
+      background: var(--surface);
+      border-color: var(--line);
+      color: var(--text);
+    }
+
+    html.app-dark #reportArea table td,
+    body.dark-mode #reportArea table td {
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    /* Print/PDF: isolated from screen layout */
+    @media print {
+      @page {
+        size: letter landscape;
+        margin: 0.3in;
+      }
+
+      html,
+      body {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        color: #111827 !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+        overflow: visible !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .topbar,
+      .page-nav,
+      .page-intro,
+      .records-controls,
+      .records-preview > .panel-title,
+      .toast,
+      .report-menu-btn,
+      .report-action-menu,
+      .btn,
+      .pill {
+        display: none !important;
+      }
+
+      .app-shell,
+      .main,
+      .section,
+      #reports,
+      .records-layout,
+      .records-preview,
+      .panel,
+      .report-paper,
+      .compact-report-paper,
+      #reportArea {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        overflow: visible !important;
+      }
+
+      #reportArea .report-head {
+        position: relative !important;
+        display: block !important;
+        margin: 0 0 0.12in !important;
+        padding: 0 0 0.1in !important;
+        border: 0 !important;
+        border-bottom: 2px solid #111827 !important;
+        text-align: left !important;
+      }
+
+      #reportArea .report-head::before {
+        content: "SAULT STE. MARIE CANAL";
+        display: block !important;
+        margin: 0 0 0.05in !important;
+        color: #0f172a !important;
+        font-size: 15pt !important;
+        line-height: 1 !important;
+        font-weight: 900 !important;
+        letter-spacing: .04em !important;
+        text-transform: uppercase !important;
+      }
+
+      #reportArea .report-head h2 {
+        display: none !important;
+      }
+
+      #reportArea .report-head h3 {
+        margin: 0 !important;
+        color: #334155 !important;
+        font-size: 9pt !important;
+        line-height: 1.15 !important;
+        font-weight: 700 !important;
+        text-align: left !important;
+      }
+
+      #reportArea .report-head::after {
+        content: "Generated " attr(data-printed);
+        position: absolute !important;
+        right: 0 !important;
+        bottom: 0.1in !important;
+        color: #64748b !important;
+        font-size: 7pt !important;
+        font-weight: 600 !important;
+      }
+
+      #reportArea .report-summary {
+        display: grid !important;
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        gap: 0.055in !important;
+        margin: 0 0 0.1in !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      #reportArea .report-summary span {
+        padding: 0.05in 0.06in !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 0 !important;
+        background: #f8fafc !important;
+        color: #475569 !important;
+        font-size: 6.7pt !important;
+        line-height: 1.05 !important;
+        overflow: hidden !important;
+      }
+
+      #reportArea .report-summary b {
+        display: block !important;
+        color: #020617 !important;
+        font-size: 10.5pt !important;
+        font-weight: 900 !important;
+        line-height: 1 !important;
+        margin-bottom: 1px !important;
+      }
+
+      #reportArea .report-table-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+      }
+
+      #reportArea table {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+      }
+
+      #reportArea thead {
+        display: table-header-group !important;
+      }
+
+      #reportArea tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      #reportArea table th,
+      #reportArea table td {
+        box-sizing: border-box !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 2.5px 3px !important;
+        border: 1px solid #cbd5e1 !important;
+        background: #fff !important;
+        color: #111827 !important;
+        font-size: 6.1pt !important;
+        line-height: 1.06 !important;
+        text-align: left !important;
+        vertical-align: top !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+      }
+
+      #reportArea table th {
+        background: #eaf1f8 !important;
+        color: #0f172a !important;
+        font-size: 5.9pt !important;
+        font-weight: 900 !important;
+        text-transform: uppercase !important;
+      }
+
+      #reportArea .badge {
+        display: inline !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        color: #111827 !important;
+        font: inherit !important;
+        font-weight: 900 !important;
+      }
+
+      /* Daily/range reports */
+      #reportArea table th:nth-child(1), #reportArea table td:nth-child(1) { width: 10% !important; }
+      #reportArea table th:nth-child(2), #reportArea table td:nth-child(2) { width: 6% !important; }
+      #reportArea table th:nth-child(3), #reportArea table td:nth-child(3) { width: 6.5% !important; }
+      #reportArea table th:nth-child(4), #reportArea table td:nth-child(4) { width: 13% !important; }
+      #reportArea table th:nth-child(5), #reportArea table td:nth-child(5) { width: 5% !important; }
+      #reportArea table th:nth-child(6), #reportArea table td:nth-child(6) { width: 4.8% !important; }
+      #reportArea table th:nth-child(7), #reportArea table td:nth-child(7) { width: 4.8% !important; }
+      #reportArea table th:nth-child(8), #reportArea table td:nth-child(8) { width: 7.4% !important; }
+      #reportArea table th:nth-child(9), #reportArea table td:nth-child(9) { width: 17.5% !important; }
+      #reportArea table th:nth-child(10), #reportArea table td:nth-child(10) { width: 25% !important; }
+
+      /* Monthly report */
+      body[data-report-kind="monthlyReport"] #reportArea table th,
+      body[data-report-kind="monthlyReport"] #reportArea table td {
+        font-size: 6pt !important;
+        line-height: 1.05 !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+        text-align: center !important;
+      }
+
+      body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(1),
+      body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(1) {
+        width: 13% !important;
+        text-align: left !important;
+      }
+
+      body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(2),
+      body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(2),
+      body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(3),
+      body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(3) {
+        width: 10% !important;
+      }
+
+      body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(n+4),
+      body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(n+4) {
+        width: 6.7% !important;
+      }
+
+      #reportArea .report-footer {
+        margin: 0.07in 0 0 !important;
+        padding: 0.04in 0 0 !important;
+        border-top: 1px solid #e5e7eb !important;
+        color: #64748b !important;
+        font-size: 7pt !important;
+        text-align: right !important;
+      }
+
+      a[href]::after {
+        content: "" !important;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .records-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .records-main .page-intro {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .report-type-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .report-type-list {
+        grid-template-columns: 1fr;
+      }
+
+      .records-preview .panel-title {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .records-preview-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .records-preview-actions .btn {
+        flex: 1;
+      }
+    }
+  
+/* =========================================================
+   Final visual polish after screenshot
+   - remove duplicate title-card buttons
+   - only show the correct date input for the selected report
+   - clean up report preview spacing
+========================================================= */
+
+/* Keep title card like the other pages: text only */
+.records-intro-actions {
+  display: none !important;
+}
+
+/* Report fields: app.js changes body[data-report-kind], so use that */
+.record-date-stack .report-field {
+  display: none !important;
+}
+
+body:not([data-report-kind]) .record-date-stack [data-for-report="dailyReport"],
+body[data-report-kind="dailyReport"] .record-date-stack [data-for-report="dailyReport"],
+body[data-report-kind="monthlyReport"] .record-date-stack [data-for-report="monthlyReport"],
+body[data-report-kind="betweenReport"] .record-date-stack [data-for-report="betweenReport"] {
+  display: grid !important;
+}
+
+/* Make the left controls feel less tall/awkward */
+.records-help-card {
+  margin-top: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.records-side-actions {
+  padding-top: 0 !important;
+}
+
+/* Preview polish */
+.records-preview .panel-title {
+  min-height: 56px !important;
+}
+
+.compact-report-paper,
+#reportArea.report-paper {
+  margin: 14px !important;
+  padding: 18px !important;
+}
+
+#reportArea .report-head {
+  margin-bottom: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+#reportArea .report-summary {
+  gap: 7px !important;
+  margin-bottom: 12px !important;
+}
+
+#reportArea .report-summary span {
+  padding: 8px 10px !important;
+}
+
+#reportArea table {
+  min-width: 820px !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table {
+  min-width: 760px !important;
+}
+
+/* Make destination/homeport less likely to feel cut off on screen */
+#reportArea table th:nth-child(9),
+#reportArea table td:nth-child(9) {
+  width: 140px !important;
+}
+
+#reportArea table th:nth-child(10),
+#reportArea table td:nth-child(10) {
+  width: 160px !important;
+}
+
+/* Keep scrollbar inside report card only */
+.records-preview {
+  overflow: hidden !important;
+}
+
+#reportArea .report-table-wrap {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+/* Better mobile stack */
+@media (max-width: 980px) {
+  .records-intro-actions {
+    display: none !important;
+  }
+}
+
+
+
+/* =========================================================
+   SAFE FINAL RECORDS FIX
+   No topbar/nav styling here. Global assets/style.css owns the header.
+========================================================= */
+
+/* Keep title duplicate buttons hidden */
+.records-intro-actions {
+  display: none !important;
+}
+
+/* Records layout only */
+.records-layout {
+  display: grid !important;
+  grid-template-columns: 320px minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: start !important;
+}
+
+.records-controls,
+.records-preview {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Only selected date field shows */
+.record-date-stack .report-field {
+  display: none !important;
+}
+
+body:not([data-report-kind]) .record-date-stack [data-for-report="dailyReport"],
+body[data-report-kind="dailyReport"] .record-date-stack [data-for-report="dailyReport"],
+body[data-report-kind="monthlyReport"] .record-date-stack [data-for-report="monthlyReport"],
+body[data-report-kind="betweenReport"] .record-date-stack [data-for-report="betweenReport"] {
+  display: grid !important;
+}
+
+/* Preview compacting so data fits */
+#reportArea.report-paper,
+.compact-report-paper {
+  margin: 14px !important;
+  padding: 14px !important;
+  overflow: hidden !important;
+}
+
+#reportArea .report-head {
+  margin-bottom: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+#reportArea .report-head h2 {
+  font-size: 17px !important;
+}
+
+#reportArea .report-head h3 {
+  font-size: 12px !important;
+}
+
+#reportArea .report-summary {
+  gap: 6px !important;
+  margin-bottom: 10px !important;
+}
+
+#reportArea .report-summary span {
+  padding: 6px 8px !important;
+  font-size: 10px !important;
+}
+
+#reportArea .report-summary b {
+  font-size: 14px !important;
+}
+
+#reportArea .report-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+}
+
+#reportArea table {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#reportArea table th,
+#reportArea table td {
+  height: 26px !important;
+  min-height: 26px !important;
+  padding: 3px 4px !important;
+  font-size: 9.4px !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  vertical-align: middle !important;
+}
+
+#reportArea table th {
+  font-size: 8.8px !important;
+  font-weight: 700 !important;
+}
+
+/* Screen column widths for daily/range tables */
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(1),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(1) { width: 11% !important; }
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(2),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(2) { width: 6.3% !important; }
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(3),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(3) { width: 6.7% !important; }
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(4),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(4) { width: 12.4% !important; }
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(5),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(5) { width: 5.4% !important; }
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(6),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(6),
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(7),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(7) { width: 4.8% !important; }
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(8),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(8) { width: 7.5% !important; }
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(9),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(9) { width: 18.5% !important; }
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(10),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(10) { width: 22.6% !important; }
+
+/* Keep menu clickable without widening table */
+#reportArea table td:first-child {
+  overflow: visible !important;
+}
+
+.report-row-date-text {
+  display: inline-block !important;
+  max-width: 58px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Monthly compact */
+body[data-report-kind="monthlyReport"] #reportArea table th,
+body[data-report-kind="monthlyReport"] #reportArea table td {
+  font-size: 8.8px !important;
+  padding: 3px !important;
+  text-align: center !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table th:first-child,
+body[data-report-kind="monthlyReport"] #reportArea table td:first-child {
+  text-align: left !important;
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  .records-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .report-type-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .report-type-list {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Print remains single-dialog through app.js only */
+@media print {
+  #reportArea table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+  }
+
+  #reportArea table th,
+  #reportArea table td {
+    font-size: 5.7pt !important;
+    line-height: 1.03 !important;
+    padding: 2px !important;
+  }
+
+  #reportArea table th {
+    font-size: 5.5pt !important;
+  }
+}
+
+
+/* =========================================================
+   CLEAN REPORT PREVIEWS
+   Applies to Daily, Monthly, and Range previews.
+   Header/nav stay controlled by assets/style.css.
+========================================================= */
+
+/* Preview panel feels cleaner and less cramped */
+.records-preview {
+  overflow: hidden !important;
+}
+
+.records-preview .panel-title {
+  min-height: 54px !important;
+  padding: 12px 16px !important;
+}
+
+.records-preview .panel-title h3 {
+  font-size: 16px !important;
+  font-weight: 650 !important;
+}
+
+.records-preview .panel-title small {
+  font-size: 12px !important;
+  color: var(--text-soft) !important;
+}
+
+/* Report paper card */
+#reportArea.report-paper,
+.compact-report-paper {
+  margin: 14px !important;
+  padding: 16px !important;
+  border-radius: 10px !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+/* Report title */
+#reportArea .report-head {
+  margin: 0 0 12px !important;
+  padding: 0 0 12px !important;
+  border-bottom: 2px solid var(--text) !important;
+  text-align: center !important;
+}
+
+#reportArea .report-head h2 {
+  margin: 0 0 5px !important;
+  color: var(--text) !important;
+  font-size: 19px !important;
+  line-height: 1.1 !important;
+  font-weight: 650 !important;
+  letter-spacing: -.02em !important;
+}
+
+#reportArea .report-head h3 {
+  margin: 0 !important;
+  color: var(--text-soft) !important;
+  font-size: 12.5px !important;
+  line-height: 1.25 !important;
+  font-weight: 500 !important;
+}
+
+/* Summary cards */
+#reportArea .report-summary {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  margin: 0 0 12px !important;
+}
+
+#reportArea .report-summary span {
+  min-width: 0 !important;
+  padding: 8px 10px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  background: var(--surface-alt) !important;
+  color: var(--text-soft) !important;
+  font-size: 11px !important;
+  line-height: 1.12 !important;
+  overflow: hidden !important;
+}
+
+#reportArea .report-summary b {
+  display: block !important;
+  margin: 0 0 3px !important;
+  color: var(--text) !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  font-weight: 700 !important;
+}
+
+/* Table wrapper */
+#reportArea .report-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  background: var(--surface) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
+}
+
+#reportArea .report-table-wrap::-webkit-scrollbar {
+  height: 8px !important;
+}
+
+#reportArea .report-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--line-strong) !important;
+  border-radius: 999px !important;
+}
+
+/* Base table look */
+#reportArea table {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  background: var(--surface) !important;
+}
+
+#reportArea table th,
+#reportArea table td {
+  height: 29px !important;
+  min-height: 29px !important;
+  padding: 4px 5px !important;
+  border-bottom: 1px solid var(--line) !important;
+  color: var(--text) !important;
+  font-size: 10.2px !important;
+  line-height: 1.1 !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#reportArea table th {
+  background: var(--surface-alt) !important;
+  color: var(--text-soft) !important;
+  font-size: 9.6px !important;
+  font-weight: 750 !important;
+}
+
+#reportArea table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+#reportArea table tbody tr:hover td {
+  background: var(--surface-hover) !important;
+}
+
+/* DAILY + RANGE PREVIEW: 10 columns */
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(1),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(1) {
+  width: 11.8% !important;
+}
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(2),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(2) {
+  width: 6.6% !important;
+}
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(3),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(3) {
+  width: 6.8% !important;
+}
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(4),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(4) {
+  width: 12.5% !important;
+}
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(5),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(5) {
+  width: 5.7% !important;
+  text-align: center !important;
+}
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(6),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(6),
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(7),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(7) {
+  width: 4.7% !important;
+  text-align: center !important;
+}
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(8),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(8) {
+  width: 7.8% !important;
+  text-align: center !important;
+}
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(9),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(9) {
+  width: 18.4% !important;
+}
+
+body:not([data-report-kind="monthlyReport"]) #reportArea table th:nth-child(10),
+body:not([data-report-kind="monthlyReport"]) #reportArea table td:nth-child(10) {
+  width: 21% !important;
+}
+
+/* Keep date action menu usable */
+#reportArea table td:first-child {
+  overflow: visible !important;
+}
+
+.report-row-menu-wrap {
+  max-width: 100% !important;
+}
+
+.report-row-date-text {
+  display: inline-block !important;
+  max-width: 62px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Make type badges smaller/cleaner in previews */
+#reportArea .badge {
+  min-width: 0 !important;
+  padding: 2px 6px !important;
+  border-radius: 5px !important;
+  font-size: 9.5px !important;
+  line-height: 1.1 !important;
+}
+
+/* MONTHLY PREVIEW: 11 columns */
+body[data-report-kind="monthlyReport"] #reportArea .report-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table {
+  table-layout: fixed !important;
+  min-width: 0 !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table th,
+body[data-report-kind="monthlyReport"] #reportArea table td {
+  height: 28px !important;
+  padding: 4px 4px !important;
+  font-size: 9.4px !important;
+  line-height: 1.05 !important;
+  text-align: center !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table th {
+  font-size: 8.7px !important;
+  line-height: 1.05 !important;
+  font-weight: 750 !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(1),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(1) {
+  width: 13% !important;
+  text-align: left !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(2),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(2),
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(3),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(3) {
+  width: 10% !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(4),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(4),
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(5),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(5),
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(6),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(6),
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(7),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(7),
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(8),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(8),
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(9),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(9) {
+  width: 6.6% !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(10),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(10) {
+  width: 8% !important;
+}
+
+body[data-report-kind="monthlyReport"] #reportArea table th:nth-child(11),
+body[data-report-kind="monthlyReport"] #reportArea table td:nth-child(11) {
+  width: 9.4% !important;
+}
+
+/* Footer */
+#reportArea .report-footer {
+  margin-top: 10px !important;
+  color: var(--text-soft) !important;
+  font-size: 11px !important;
+  text-align: right !important;
+}
+
+/* Empty state */
+#reportArea .report-empty,
+#reportArea td.report-empty {
+  color: var(--text-soft) !important;
+  text-align: center !important;
+  font-style: italic !important;
+}
+
+/* Dark mode */
+html.app-dark #reportArea.report-paper,
+body.dark-mode #reportArea.report-paper,
+html.app-dark #reportArea .report-summary span,
+body.dark-mode #reportArea .report-summary span,
+html.app-dark #reportArea .report-table-wrap,
+body.dark-mode #reportArea .report-table-wrap {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+}
+
+html.app-dark #reportArea table th,
+body.dark-mode #reportArea table th {
+  background: var(--surface-alt) !important;
+  color: var(--text-soft) !important;
+}
+
+html.app-dark #reportArea table td,
+body.dark-mode #reportArea table td {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+
+/* Print/PDF previews cleaned too */
+@media print {
+  #reportArea.report-paper,
+  .compact-report-paper {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #reportArea .report-head {
+    margin: 0 0 0.12in !important;
+    padding-bottom: 0.1in !important;
+  }
+
+  #reportArea .report-summary {
+    gap: 0.055in !important;
+    margin-bottom: 0.1in !important;
+  }
+
+  #reportArea .report-summary span {
+    padding: 0.045in 0.055in !important;
+    font-size: 6.3pt !important;
+    line-height: 1.05 !important;
+  }
+
+  #reportArea .report-summary b {
+    font-size: 9.8pt !important;
+  }
+
+  #reportArea table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+  }
+
+  #reportArea table th,
+  #reportArea table td {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 2px !important;
+    font-size: 5.6pt !important;
+    line-height: 1.03 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word !important;
+  }
+
+  #reportArea table th {
+    font-size: 5.4pt !important;
+  }
+
+  #reportArea .badge {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #111827 !important;
+    font: inherit !important;
+    font-weight: 900 !important;
+  }
+}
+
+
+/* All report previews now show all traffic types */
+#reportArea .report-summary.report-summary-full {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+#reportArea .report-summary.report-summary-full span {
+  padding: 7px 8px !important;
+}
+
+#reportArea .report-summary.report-summary-full b {
+  font-size: 14px !important;
+}
+
+@media (max-width: 760px) {
+  #reportArea .report-summary.report-summary-full {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media print {
+  #reportArea .report-summary.report-summary-full {
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+    gap: 0.04in !important;
+  }
+
+  #reportArea .report-summary.report-summary-full span {
+    padding: 0.04in 0.045in !important;
+    font-size: 5.8pt !important;
+  }
+
+  #reportArea .report-summary.report-summary-full b {
+    font-size: 8.8pt !important;
+  }
+}
+
+
+/* Daily / Monthly / Range all show all traffic type cards */
+#reportArea .report-summary.report-summary-full {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+#reportArea .report-summary.report-summary-full span {
+  padding: 7px 8px !important;
+  font-size: 10px !important;
+}
+
+#reportArea .report-summary.report-summary-full b {
+  font-size: 14px !important;
+}
+
+@media (max-width: 760px) {
+  #reportArea .report-summary.report-summary-full {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media print {
+  #reportArea .report-summary.report-summary-full {
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+    gap: 0.04in !important;
+  }
+
+  #reportArea .report-summary.report-summary-full span {
+    padding: 0.04in 0.045in !important;
+    font-size: 5.8pt !important;
+  }
+
+  #reportArea .report-summary.report-summary-full b {
+    font-size: 8.8pt !important;
+  }
+}
+
+
+/* =========================================================
+   Force Print / Save as PDF to Light Mode
+   Even if the app is currently in dark mode.
+========================================================= */
+
+@media print {
+  :root,
+  html,
+  html.app-dark,
+  body,
+  body.dark-mode {
+    --app-bg: #ffffff !important;
+    --surface: #ffffff !important;
+    --surface-alt: #f8fafc !important;
+    --surface-hover: #f8fafc !important;
+    --line: #d7dde6 !important;
+    --line-strong: #b9c3d0 !important;
+    --text: #111827 !important;
+    --text-soft: #475569 !important;
+    --text-faint: #64748b !important;
+    --accent: #0f6cbd !important;
+    --accent-hover: #0f6cbd !important;
+    --accent-soft: #eff6ff !important;
+    --shadow-card: none !important;
+    --shadow-flyout: none !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #reportArea,
+  #reportArea *,
+  .report-paper,
+  .report-paper *,
+  .compact-report-paper,
+  .compact-report-paper * {
+    color-scheme: light !important;
+  }
+
+  #reportArea,
+  #reportArea.report-paper,
+  .report-paper,
+  .compact-report-paper {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #d7dde6 !important;
+  }
+
+  #reportArea .report-head {
+    background: #ffffff !important;
+    border-bottom-color: #111827 !important;
+  }
+
+  #reportArea .report-head::before,
+  #reportArea .report-head h2,
+  #reportArea .report-head h3 {
+    color: #111827 !important;
+  }
+
+  #reportArea .report-head::after,
+  #reportArea .report-footer {
+    color: #64748b !important;
+  }
+
+  #reportArea .report-summary span {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border-color: #d7dde6 !important;
+  }
+
+  #reportArea .report-summary b {
+    color: #020617 !important;
+  }
+
+  #reportArea .report-table-wrap {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  #reportArea table,
+  #reportArea thead,
+  #reportArea tbody,
+  #reportArea tr {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  #reportArea table th {
+    background: #eaf1f8 !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  #reportArea table td {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  #reportArea table tbody tr:nth-child(even) td {
+    background: #fbfdff !important;
+  }
+
+  #reportArea .badge,
+  #reportArea .badge.tb,
+  #reportArea .badge.rb,
+  #reportArea .badge.gov,
+  #reportArea .badge.com,
+  #reportArea .badge.lr,
+  #reportArea .badge.lt {
+    background: transparent !important;
+    border: 0 !important;
+    color: #111827 !important;
+  }
+}
+
+
+/* Temporary light report while print dialog opens */
+html.force-light-print #reportArea,
+body.force-light-print #reportArea,
+html.force-light-print #reportArea *,
+body.force-light-print #reportArea * {
+  color-scheme: light !important;
+}
+
+html.force-light-print #reportArea.report-paper,
+body.force-light-print #reportArea.report-paper {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #d7dde6 !important;
+}
+
+html.force-light-print #reportArea table th,
+body.force-light-print #reportArea table th {
+  background: #eaf1f8 !important;
+  color: #0f172a !important;
+}
+
+html.force-light-print #reportArea table td,
+body.force-light-print #reportArea table td {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+
+/* =========================================================
+   ABSOLUTE FINAL PRINT LIGHT MODE OVERRIDE
+   This must stay at the bottom of the style block.
+   It forces printed / Save as PDF output to white even in dark mode.
+========================================================= */
+
+@media print {
+  @page {
+    size: letter landscape;
+    margin: 0.32in;
+    background: #ffffff;
+  }
+
+  html,
+  html.app-dark,
+  body,
+  body.dark-mode {
+    background: #ffffff !important;
+    color: #111827 !important;
+    color-scheme: light !important;
+  }
+
+  body::before,
+  body::after,
+  html::before,
+  html::after {
+    display: none !important;
+    background: transparent !important;
+  }
+
+  .app-shell,
+  .easy-only,
+  .main,
+  .section,
+  #reports,
+  .records-layout,
+  .records-preview,
+  .panel,
+  .report-paper,
+  .compact-report-paper,
+  #reportArea {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #d7dde6 !important;
+    box-shadow: none !important;
+    color-scheme: light !important;
+  }
+
+  #reportArea,
+  #reportArea *,
+  #reportArea *::before,
+  #reportArea *::after {
+    color-scheme: light !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  #reportArea.report-paper,
+  body.dark-mode #reportArea.report-paper,
+  html.app-dark #reportArea.report-paper,
+  body.dark-mode .report-paper,
+  html.app-dark .report-paper,
+  body.dark-mode .compact-report-paper,
+  html.app-dark .compact-report-paper {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #d7dde6 !important;
+  }
+
+  #reportArea .report-head,
+  body.dark-mode #reportArea .report-head,
+  html.app-dark #reportArea .report-head {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-bottom-color: #111827 !important;
+  }
+
+  #reportArea .report-head::before {
+    color: #0f172a !important;
+    background: transparent !important;
+  }
+
+  #reportArea .report-head::after {
+    color: #64748b !important;
+    background: transparent !important;
+  }
+
+  #reportArea .report-head h2,
+  #reportArea .report-head h3,
+  body.dark-mode #reportArea .report-head h2,
+  body.dark-mode #reportArea .report-head h3,
+  html.app-dark #reportArea .report-head h2,
+  html.app-dark #reportArea .report-head h3 {
+    color: #111827 !important;
+    background: transparent !important;
+  }
+
+  /* This is the important part: summary cards must never print dark. */
+  #reportArea .report-summary,
+  body.dark-mode #reportArea .report-summary,
+  html.app-dark #reportArea .report-summary {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  #reportArea .report-summary span,
+  body.dark-mode #reportArea .report-summary span,
+  html.app-dark #reportArea .report-summary span,
+  #reportArea .report-summary.report-summary-full span,
+  body.dark-mode #reportArea .report-summary.report-summary-full span,
+  html.app-dark #reportArea .report-summary.report-summary-full span {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  #reportArea .report-summary span b,
+  body.dark-mode #reportArea .report-summary span b,
+  html.app-dark #reportArea .report-summary span b,
+  #reportArea .report-summary.report-summary-full span b,
+  body.dark-mode #reportArea .report-summary.report-summary-full span b,
+  html.app-dark #reportArea .report-summary.report-summary-full span b {
+    color: #020617 !important;
+    background: transparent !important;
+  }
+
+  #reportArea .report-table-wrap,
+  body.dark-mode #reportArea .report-table-wrap,
+  html.app-dark #reportArea .report-table-wrap {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  #reportArea table,
+  #reportArea thead,
+  #reportArea tbody,
+  #reportArea tr,
+  body.dark-mode #reportArea table,
+  body.dark-mode #reportArea thead,
+  body.dark-mode #reportArea tbody,
+  body.dark-mode #reportArea tr,
+  html.app-dark #reportArea table,
+  html.app-dark #reportArea thead,
+  html.app-dark #reportArea tbody,
+  html.app-dark #reportArea tr {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  #reportArea table th,
+  body.dark-mode #reportArea table th,
+  html.app-dark #reportArea table th {
+    background: #eaf1f8 !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  #reportArea table td,
+  body.dark-mode #reportArea table td,
+  html.app-dark #reportArea table td {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  #reportArea table tbody tr:nth-child(even) td,
+  body.dark-mode #reportArea table tbody tr:nth-child(even) td,
+  html.app-dark #reportArea table tbody tr:nth-child(even) td {
+    background: #fbfdff !important;
+    color: #111827 !important;
+  }
+
+  #reportArea strong,
+  #reportArea b,
+  body.dark-mode #reportArea strong,
+  body.dark-mode #reportArea b,
+  html.app-dark #reportArea strong,
+  html.app-dark #reportArea b {
+    color: #020617 !important;
+  }
+
+  #reportArea .badge,
+  #reportArea .badge.tb,
+  #reportArea .badge.rb,
+  #reportArea .badge.gov,
+  #reportArea .badge.com,
+  #reportArea .badge.lr,
+  #reportArea .badge.lt,
+  body.dark-mode #reportArea .badge,
+  html.app-dark #reportArea .badge {
+    background: transparent !important;
+    border: 0 !important;
+    color: #111827 !important;
+  }
+
+  #reportArea .report-footer,
+  body.dark-mode #reportArea .report-footer,
+  html.app-dark #reportArea .report-footer {
+    background: #ffffff !important;
+    color: #64748b !important;
+    border-top-color: #e5e7eb !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+</style>
+</head>
+
+<body>
+  <div class="app-shell easy-only">
+    <main class="main">
+
+      <header class="topbar">
+        <a class="topbar-logo" href="index.html" aria-label="Go home">
+          <img class="logo-light" src="assets/ssm-logo.png" alt="Sault Ste. Marie logo" />
+          <img class="logo-dark" src="assets/ssm-logo-dark.png" alt="Sault Ste. Marie logo" />
+        </a>
+
+        <div class="searchbar">
+          <span>Search</span>
+          <input
+            id="globalSearch"
+            type="search"
+            placeholder="Search vessel, owner, registration, destination..."
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="top-actions">
+          <div class="pill" id="clock">--:--:--</div>
+          <a class="pill primary" href="daily.html">New Entry</a>
+        </div>
+      </header>
+
+      <nav class="page-nav">
+        <a href="index.html">Home</a>
+        <a href="search.html">Search</a>
+        <a href="daily.html">New Entry</a>
+        <a href="records.html" class="active">All Records</a>
+        <a href="phone-link.html">Phone Link</a>
+        <a href="management.html">Management</a>
+        <a href="settings.html">Settings</a>
+      </nav>
+
+      <div class="page-intro">
+        <div>
+          <div class="eyebrow">Records Workspace</div>
+          <h1>Reports</h1>
+          <p>Pick a report, check the preview, then print or save it as PDF.</p>
+        </div>
+      </div>
+
+      <section class="section active" id="reports">
+        <div class="records-layout">
+          <aside class="panel records-controls">
+            <div class="panel-title">
+              <h3>Report Type</h3>
+            </div>
+
+            <div class="report-type-list" role="tablist" aria-label="Report type">
+              <button class="tab report-choice active" data-report="dailyReport" type="button">
+                <strong>Daily</strong>
+                <span>One selected day</span>
+              </button>
+
+              <button class="tab report-choice" data-report="monthlyReport" type="button">
+                <strong>Monthly</strong>
+                <span>Summary by date</span>
+              </button>
+
+              <button class="tab report-choice" data-report="betweenReport" type="button">
+                <strong>Range</strong>
+                <span>Start and end date</span>
+              </button>
+            </div>
+
+            <div class="record-date-stack">
+              <div class="field report-field is-active" data-for-report="dailyReport">
+                <label>Day</label>
+                <input type="date" id="reportDate" />
+              </div>
+
+              <div class="field report-field" data-for-report="monthlyReport">
+                <label>Month</label>
+                <input type="month" id="reportMonth" />
+              </div>
+
+              <div class="report-field range-fields" data-for-report="betweenReport">
+                <div class="field">
+                  <label>Start</label>
+                  <input type="date" id="startDate" />
+                </div>
+
+                <div class="field">
+                  <label>End</label>
+                  <input type="date" id="endDate" />
+                </div>
+              </div>
+            </div>
+
+            <div class="records-help-card">
+              <strong>Editing</strong>
+              <span>Use the ⋯ menu beside a report entry date to edit or delete it.</span>
+            </div>
+
+            <div class="records-help-card">
+              <strong>Printing</strong>
+              <span>Print or download the current preview as a PDF.</span>
+            </div>
+
+            <div class="records-side-actions">
+              <button class="btn" id="printDailyReport" type="button">Print Daily</button>
+              <button class="btn" id="printMonthlyReport" type="button">Print Monthly</button>
+              <button class="btn primary" id="downloadPdfSide" type="button">Download PDF</button>
+            </div>
+          </aside>
+
+          <div class="panel records-preview">
+            <div class="panel-title">
+              <div class="records-preview-title">
+                <h3>Preview</h3>
+                <small id="recordsPreviewHint">Updates automatically</small>
+              </div>
+
+              <div class="records-preview-actions">
+                <button class="btn" id="downloadPdfReport" type="button">Download PDF</button>
+                <button class="btn primary" id="printCurrentReport" type="button">Print Report</button>
+              </div>
+            </div>
+
+            <div id="reportArea" class="report-paper compact-report-paper"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <datalist id="vesselList"></datalist>
+  <div class="toast" id="toast">Saved</div>
+
+  <script src="assets/old-db-data.js"></script>
+  <script src="assets/app.js"></script>
+
+  <script>
+    /*
+      Records row menu:
+      waits for app.js, then adds ⋯ Edit/Delete menu to daily/range report rows.
+    */
+    (function () {
+      const reportArea = document.getElementById("reportArea");
+      if (!reportArea) return;
+
+      let openMenu = null;
+      let queued = false;
+
+      function closeOpenMenu() {
+        if (openMenu) {
+          openMenu.classList.remove("open");
+          openMenu = null;
+        }
+      }
+
+      function isAppReady() {
+        return (
+          typeof openEntryEditor === "function" ||
+          typeof editTrafficById === "function" ||
+          typeof deleteTrafficById === "function" ||
+          typeof renderReport === "function"
+        );
+      }
+
+      function waitForApp(callback, tries = 0) {
+        if (isAppReady() || tries > 50) {
+          callback();
+          return;
+        }
+
+        setTimeout(() => waitForApp(callback, tries + 1), 100);
+      }
+
+      function isMonthlySummaryTable(table) {
+        const text = (table.querySelector("thead")?.textContent || "").toLowerCase();
+        return text.includes("first lockage") || text.includes("last lockage") || text.includes("total");
+      }
+
+      function entryIdFromRow(row) {
+        return row.getAttribute("data-entry-id") || row.dataset.entryId || "";
+      }
+
+      function positionMenu(button, menu) {
+        const rect = button.getBoundingClientRect();
+        const menuWidth = 150;
+        const menuHeight = 82;
+
+        let left = rect.left;
+        let top = rect.bottom + 6;
+
+        if (left + menuWidth > window.innerWidth - 8) {
+          left = window.innerWidth - menuWidth - 8;
+        }
+
+        if (top + menuHeight > window.innerHeight - 8) {
+          top = rect.top - menuHeight - 6;
+        }
+
+        menu.style.setProperty("left", Math.max(8, left) + "px", "important");
+        menu.style.setProperty("top", Math.max(8, top) + "px", "important");
+      }
+
+      function openEditPopup(id) {
+        closeOpenMenu();
+
+        if (!id) {
+          if (typeof toast === "function") toast("Missing entry ID");
+          return;
+        }
+
+        if (typeof openEntryEditor === "function") {
+          openEntryEditor(id);
+          return;
+        }
+
+        if (typeof editTrafficById === "function") {
+          editTrafficById(id);
+          return;
+        }
+
+        const fake = document.createElement("button");
+        fake.type = "button";
+        fake.dataset.entryAction = "edit";
+        fake.dataset.entryId = id;
+        fake.style.position = "fixed";
+        fake.style.left = "-9999px";
+        fake.style.top = "-9999px";
+        document.body.appendChild(fake);
+        fake.click();
+        fake.remove();
+      }
+
+      function deleteEntry(id) {
+        closeOpenMenu();
+
+        if (!id) {
+          if (typeof toast === "function") toast("Missing entry ID");
+          return;
+        }
+
+        if (typeof deleteTrafficById === "function") {
+          deleteTrafficById(id);
+          return;
+        }
+
+        const fake = document.createElement("button");
+        fake.type = "button";
+        fake.dataset.entryAction = "delete";
+        fake.dataset.entryId = id;
+        fake.style.position = "fixed";
+        fake.style.left = "-9999px";
+        fake.style.top = "-9999px";
+        document.body.appendChild(fake);
+        fake.click();
+        fake.remove();
+      }
+
+      function buildMenus() {
+        const tables = Array.from(reportArea.querySelectorAll("table"));
+
+        tables.forEach(table => {
+          if (isMonthlySummaryTable(table)) return;
+
+          const rows = Array.from(table.querySelectorAll("tbody tr[data-entry-id], tr[data-entry-id]"));
+
+          rows.forEach(row => {
+            if (row.dataset.reportMenuReady === "true") return;
+
+            const id = entryIdFromRow(row);
+            if (!id) return;
+
+            const cells = Array.from(row.querySelectorAll("td"));
+            if (!cells.length) return;
+
+            const firstCell = cells[0];
+
+            row.dataset.reportMenuReady = "true";
+            row.classList.add("has-report-row-menu");
+
+            const originalDateContent = firstCell.innerHTML;
+
+            const wrapper = document.createElement("span");
+            wrapper.className = "report-row-menu-wrap";
+
+            const menuButton = document.createElement("button");
+            menuButton.type = "button";
+            menuButton.className = "report-menu-btn";
+            menuButton.setAttribute("aria-label", "Open record actions");
+            menuButton.textContent = "⋯";
+
+            const dateSpan = document.createElement("span");
+            dateSpan.className = "report-row-date-text";
+            dateSpan.innerHTML = originalDateContent;
+
+            const menu = document.createElement("div");
+            menu.className = "report-action-menu records-floating-menu";
+
+            const editButton = document.createElement("button");
+            editButton.type = "button";
+            editButton.className = "btn";
+            editButton.textContent = "Edit";
+
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.className = "btn danger";
+            deleteButton.textContent = "Delete";
+
+            editButton.addEventListener("click", function (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              openEditPopup(id);
+            });
+
+            deleteButton.addEventListener("click", function (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              deleteEntry(id);
+            });
+
+            menu.appendChild(editButton);
+            menu.appendChild(deleteButton);
+            document.body.appendChild(menu);
+
+            wrapper.appendChild(menuButton);
+            wrapper.appendChild(dateSpan);
+
+            firstCell.innerHTML = "";
+            firstCell.appendChild(wrapper);
+
+            menuButton.addEventListener("click", function (event) {
+              event.preventDefault();
+              event.stopPropagation();
+
+              const wasOpen = menu.classList.contains("open");
+              closeOpenMenu();
+
+              if (!wasOpen) {
+                menu.classList.add("open");
+                openMenu = menu;
+                positionMenu(menuButton, menu);
+
+                requestAnimationFrame(function () {
+                  positionMenu(menuButton, menu);
+                });
+              }
+            });
+
+            menu.addEventListener("click", function (event) {
+              event.stopPropagation();
+            });
+          });
+        });
+      }
+
+      function queueBuildMenus() {
+        if (queued) return;
+
+        queued = true;
+
+        requestAnimationFrame(function () {
+          queued = false;
+          buildMenus();
+        });
+      }
+
+      function initRecordsMenu() {
+        try {
+          if (typeof renderReport === "function") {
+            renderReport();
+          }
+        } catch (e) {
+          console.error("Could not call renderReport:", e);
+        }
+
+        setTimeout(buildMenus, 120);
+        setTimeout(buildMenus, 500);
+        setTimeout(buildMenus, 1000);
+      }
+
+      const observer = new MutationObserver(queueBuildMenus);
+      observer.observe(reportArea, { childList: true, subtree: true });
+
+      document.addEventListener("click", closeOpenMenu);
+      window.addEventListener("scroll", closeOpenMenu, true);
+      window.addEventListener("resize", closeOpenMenu);
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => waitForApp(initRecordsMenu));
+      } else {
+        waitForApp(initRecordsMenu);
+      }
+    })();
+  </script>
+
+  <script>
+    /*
+      Download PDF button.
+      Browser opens print dialog with report-only print CSS.
+      Choose Save as PDF.
+    */
+    (function () {
+      function getReportFilename() {
+        const kind = document.body.dataset.reportKind || "dailyReport";
+        const clean = value =>
+          String(value || "")
+            .replace(/[^\dA-Za-z_-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+
+        if (kind === "monthlyReport") {
+          return "Sault-Canal-Monthly-Report-" + clean(document.getElementById("reportMonth")?.value || "");
+        }
+
+        if (kind === "betweenReport") {
+          return (
+            "Sault-Canal-Range-Report-" +
+            clean(document.getElementById("startDate")?.value || "") +
+            "-to-" +
+            clean(document.getElementById("endDate")?.value || "")
+          );
+        }
+
+        return "Sault-Canal-Daily-Report-" + clean(document.getElementById("reportDate")?.value || "");
+      }
+
+      function stampReportHeader() {
+        const head = document.querySelector("#reportArea .report-head");
+        if (head) head.setAttribute("data-printed", new Date().toLocaleString());
+      }
+
+      async function downloadPdfReport() {
+        try {
+          if (typeof renderReport === "function") {
+            await renderReport();
+          }
+        } catch (e) {}
+
+        stampReportHeader();
+
+        const oldTitle = document.title;
+        document.title = getReportFilename();
+
+        document.body.classList.add("pdf-exporting", "printing-report");
+
+        setTimeout(function () {
+          window.print();
+
+          setTimeout(function () {
+            document.title = oldTitle;
+            document.body.classList.remove("pdf-exporting", "printing-report");
+          }, 800);
+        }, 160);
+      }
+
+      function bindPdfButtons() {
+        [
+          "downloadPdfReport",
+          "downloadPdfSide"
+        ].forEach(id => {
+          document.getElementById(id)?.addEventListener("click", downloadPdfReport);
+        });
+
+        [
+          "printCurrentReport",
+          "printDailyReport",
+          "printMonthlyReport"
+        ].forEach(id => {
+          document.getElementById(id)?.addEventListener("click", function () {
+            setTimeout(stampReportHeader, 80);
+          });
+        });
+
+        window.addEventListener("beforeprint", stampReportHeader);
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bindPdfButtons);
+      } else {
+        bindPdfButtons();
+      }
+    })();
+  </script>
+
+
+<script>
+(function () {
+  function textOf(el) {
+    return (el ? el.textContent : "").trim();
+  }
+
+  function normalizeType(typeText) {
+    const t = String(typeText || "").trim().toLowerCase();
+    if (t === "gov" || t.includes("government")) return "Gov";
+    if (t === "com" || t.includes("commercial")) return "Com";
+    if (t === "tb" || t.includes("tour")) return "TB";
+    if (t === "rb" || t.includes("recreational")) return "RB";
+    if (t === "k" || t.includes("kayak")) return "K";
+    if (t === "lr" || t.includes("reversal")) return "LR";
+    if (t === "lt" || t.includes("test")) return "LT";
+    return String(typeText || "").trim();
+  }
+
+  function getVisibleReportTypes() {
+    const area = document.getElementById("reportArea");
+    if (!area) return [];
+
+    const table = area.querySelector("table");
+    if (!table) return [];
+
+    const headers = Array.from(table.querySelectorAll("thead th")).map(th => textOf(th).toLowerCase());
+    const typeIndex = headers.findIndex(h => h === "type" || h.includes("type"));
+
+    if (typeIndex < 0) return [];
+
+    return Array.from(table.querySelectorAll("tbody tr")).map(row => {
+      const cells = Array.from(row.children);
+      return normalizeType(textOf(cells[typeIndex]));
+    }).filter(Boolean);
+  }
+
+  function countTypes(types) {
+    return {
+      TB: types.filter(t => t === "TB").length,
+      RB: types.filter(t => t === "RB").length,
+      Gov: types.filter(t => t === "Gov").length,
+      Com: types.filter(t => t === "Com").length,
+      LR: types.filter(t => t === "LR").length,
+      LT: types.filter(t => t === "LT").length
+    };
+  }
+
+  function ensureCard(summary, label, value) {
+    const exists = Array.from(summary.querySelectorAll("span")).some(span =>
+      textOf(span).toLowerCase().includes(label.toLowerCase())
+    );
+
+    if (exists) return;
+
+    const span = document.createElement("span");
+    span.innerHTML = `<b>${value}</b> ${label}`;
+    summary.appendChild(span);
+  }
+
+  function ensureAllSummaryCards() {
+    const area = document.getElementById("reportArea");
+    if (!area) return;
+
+    const summary = area.querySelector(".report-summary");
+    if (!summary) return;
+
+    const counts = countTypes(getVisibleReportTypes());
+
+    ensureCard(summary, "Government", counts.Gov);
+    ensureCard(summary, "Commercial", counts.Com);
+    ensureCard(summary, "Lock Tests", counts.LT);
+
+    summary.classList.add("report-summary-full");
+  }
+
+  function patchAfterRender() {
+    setTimeout(ensureAllSummaryCards, 30);
+    setTimeout(ensureAllSummaryCards, 140);
+    setTimeout(ensureAllSummaryCards, 350);
+  }
+
+  function hookRenderReport() {
+    if (typeof window.renderReport === "function" && window.renderReport.__allTypePatch !== true) {
+      const original = window.renderReport;
+      window.renderReport = function patchedRenderReport() {
+        const result = original.apply(this, arguments);
+        patchAfterRender();
+        return result;
+      };
+      window.renderReport.__allTypePatch = true;
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      hookRenderReport();
+      patchAfterRender();
+    });
+  } else {
+    hookRenderReport();
+    patchAfterRender();
+  }
+
+  const area = document.getElementById("reportArea");
+  if (area) {
+    const observer = new MutationObserver(patchAfterRender);
+    observer.observe(area, { childList: true, subtree: true });
+  }
+
+  document.addEventListener("click", function (event) {
+    if (event.target.closest("[data-report], #reportDate, #reportMonth, #startDate, #endDate")) {
+      patchAfterRender();
+    }
+  }, true);
+
+  ["change", "input"].forEach(type => {
+    document.addEventListener(type, function (event) {
+      if (event.target.matches("#reportDate, #reportMonth, #startDate, #endDate")) {
+        patchAfterRender();
+      }
+    }, true);
+  });
+})();
+</script>
+
+
+</body>
+</html>

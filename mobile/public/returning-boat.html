@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>Returning Boat</title>
+<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sault Locks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+
+<style>
+
+:root{
+    --safe-top:env(safe-area-inset-top, 0px);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+}
+
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,
+body{
+    margin:0;
+    width:100%;
+    min-height:100%;
+    overflow-x:hidden;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+}
+
+body.light{
+    background:var(--bg);
+    color:var(--text);
+}
+
+.page.returning-page{
+    width:100%;
+    max-width:460px;
+    min-height:100dvh;
+    margin:0 auto;
+    padding:calc(12px + var(--safe-top)) 14px calc(110px + var(--safe-bottom));
+    background:transparent;
+    overflow-x:hidden;
+}
+
+.clean-entry-header{
+    height:40px;
+    min-height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin:0 0 14px;
+    padding:0;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+}
+
+.clean-header-btn{
+    width:38px;
+    height:38px;
+    min-width:38px;
+    min-height:38px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    padding:0;
+    text-decoration:none;
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    box-shadow:var(--inner), 0 6px 16px rgba(0,0,0,.08);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+}
+
+.clean-header-btn:active{
+    transform:scale(.96);
+}
+
+.clean-header-btn svg{
+    width:21px;
+    height:21px;
+    stroke:currentColor;
+    stroke-width:2.35;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+.clean-header-spacer{
+    width:38px;
+    height:38px;
+    min-width:38px;
+}
+
+.clean-header-title{
+    flex:1;
+    min-width:0;
+    text-align:center;
+    line-height:1.05;
+}
+
+.clean-header-title span{
+    display:block;
+    color:var(--text);
+    font-size:17px;
+    font-weight:950;
+    letter-spacing:-.04em;
+}
+
+.clean-header-title small{
+    display:block;
+    margin-top:4px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+}
+
+html.theme-dark body,
+html.app-dark body{
+    background:linear-gradient(180deg,#0f172a 0%,#111827 100%) !important;
+    color:#f8fafc !important;
+}
+
+html.theme-dark .clean-header-btn,
+html.app-dark .clean-header-btn{
+    background:rgba(23,32,51,.94) !important;
+    border-color:rgba(148,163,184,.22) !important;
+    color:#f8fafc !important;
+    box-shadow:0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+html.theme-dark .clean-header-title span,
+html.app-dark .clean-header-title span{
+    color:#f8fafc !important;
+}
+
+html.theme-dark .clean-header-title small,
+html.app-dark .clean-header-title small{
+    color:#a9b8cb !important;
+}
+
+body.light .clean-header-btn,
+html.theme-light .clean-header-btn{
+    background:linear-gradient(180deg,#ffffff,var(--blue-soft,#E8F5FC)) !important;
+    border-color:rgba(var(--accent-rgb,52,141,188),.34) !important;
+    color:var(--blue,#348DBC) !important;
+    box-shadow:0 8px 18px rgba(var(--accent-rgb,52,141,188),.10) !important;
+}
+
+body.light .clean-header-title span,
+html.theme-light .clean-header-title span{
+    color:#22233d !important;
+}
+
+@media(max-width:370px){
+    .page.returning-page{
+        padding-left:12px;
+        padding-right:12px;
+    }
+
+    .clean-header-title span{
+        font-size:16px;
+    }
+}
+
+.time-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-bottom:14px;
+}
+
+.time-row input{
+    margin-bottom:0;
+    flex:1;
+}
+
+.time-btn{
+    height:51px;
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    border-radius:12px;
+    padding:0 14px;
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+    box-shadow:var(--inner);
+}
+
+.time-btn:active{
+    transform:scale(.97);
+    background:var(--card-3);
+}
+
+input::placeholder,
+textarea::placeholder{
+    color:var(--muted);
+    opacity:1;
+}
+
+select{
+    color:var(--text);
+}
+
+select.placeholder{
+    color:var(--muted);
+}
+
+.popup-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9999;
+}
+
+body.light .popup-overlay{
+    background:rgba(16,32,48,.35);
+}
+
+.popup-overlay.active{
+    display:flex;
+}
+
+.popup-box{
+    width:100%;
+    max-width:360px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    animation:popupIn .18s ease;
+}
+
+body.light .popup-box{
+    box-shadow:0 20px 60px rgba(47,134,183,.18);
+}
+
+@keyframes popupIn{
+    from{
+        opacity:0;
+        transform:scale(.94) translateY(8px);
+    }
+    to{
+        opacity:1;
+        transform:scale(1) translateY(0);
+    }
+}
+
+.popup-box h3{
+    color:var(--text);
+    font-size:20px;
+    margin-bottom:8px;
+    font-weight:900;
+}
+
+.popup-box p{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.5;
+    margin-bottom:14px;
+    font-weight:700;
+}
+
+.missing-list{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px;
+    margin-bottom:18px;
+    color:var(--text);
+    font-size:14px;
+    font-weight:800;
+}
+
+.missing-list div{
+    padding:4px 0;
+}
+
+.popup-actions{
+    display:flex;
+    gap:10px;
+}
+
+.popup-actions button{
+    flex:1;
+    border:none;
+    border-radius:14px;
+    padding:14px 12px;
+    font-size:14px;
+    font-weight:900;
+}
+
+.cancel-btn{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong) !important;
+}
+
+.continue-btn{
+    background:var(--blue);
+    color:#fff;
+    border:1px solid var(--blue-border) !important;
+}
+
+.cancel-btn:active,
+.continue-btn:active{
+    transform:scale(.98);
+}
+
+body.light .continue-btn{
+    background:#348dbc;
+    color:#fff;
+    border-color:#5cadd8 !important;
+}
+</style>
+</head>
+
+<body>
+
+<div class="page returning-page">
+
+    <header class="clean-entry-header" aria-label="Returning boat header">
+        <a class="clean-header-btn" href="index.html" aria-label="Back">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 18 9 12l6-6"></path>
+            </svg>
+        </a>
+
+        <div class="clean-header-title">
+            <span>Returning Boat</span>
+            <small>New Entry</small>
+        </div>
+
+        <div class="clean-header-spacer" aria-hidden="true"></div>
+    </header>
+
+    <form class="form" id="entryForm">
+
+        <label>Vessel Name</label>
+        <select id="vessel" class="placeholder">
+            <option value="">Select a boat to return</option>
+        </select>
+
+        <label>Registration</label>
+        <input 
+            id="reg" 
+            type="text" 
+            placeholder="Enter Registration">
+
+        <label>Canal</label>
+        <input id="canal" value="Sault Canada Locks" readonly>
+
+        <label>Direction</label>
+        <select id="dir" class="placeholder">
+            <option value="">Select Direction</option>
+            <option value="Up">Up</option>
+            <option value="Down">Down</option>
+        </select>
+
+        <label>Passenger Count</label>
+        <input 
+            id="pass" 
+            type="text" 
+            placeholder="Passenger Count">
+
+        <label>Destination</label>
+        <input 
+            id="dest" 
+            type="text" 
+            placeholder="Enter Destination">
+
+        <label>Home Port</label>
+        <input 
+            id="homePort" 
+            type="text" 
+            placeholder="Home Port">
+
+        <label>Time</label>
+        <div class="time-row">
+            <input 
+                id="entryTime" 
+                type="text"
+                placeholder="Example: 03:45 PM or 15:45">
+        </div>
+
+        <label>Notes</label>
+        <textarea 
+            id="notes" 
+            placeholder="Notes"></textarea>
+
+        <button class="btn full" type="submit">
+            Save Entry
+        </button>
+
+    </form>
+
+</div>
+
+<div class="popup-overlay" id="missingPopup">
+    <div class="popup-box">
+        <h3>Missing Information</h3>
+        <p>Some fields are not filled out. Are you sure you want to continue?</p>
+
+        <div class="missing-list" id="missingList"></div>
+
+        <div class="popup-actions">
+            <button class="cancel-btn" type="button" id="cancelSubmit">
+                Go Back
+            </button>
+
+            <button class="continue-btn" type="button" id="continueSubmit">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="assets/app.js?v=20260707pairpage2"></script>
+
+<script>
+(function(){
+    "use strict";
+
+    const RETURN_TYPE = "Returning Boat";
+
+    function getTimeSetting(){
+        try{
+            if(window.getTimeFormat) return window.getTimeFormat();
+            const settings = JSON.parse(localStorage.getItem("ssmCanalDashboard.settings.v2") || "{}");
+            return settings.timeFormat || localStorage.getItem("timeFormat") || "12";
+        }catch(e){
+            return localStorage.getItem("timeFormat") || "12";
+        }
+    }
+
+    function formatDisplayTime(date){
+        return date.toLocaleTimeString([], {
+            hour:"2-digit",
+            minute:"2-digit",
+            hour12:getTimeSetting() === "12"
+        });
+    }
+
+    function setCurrentTime(force){
+        const input = document.getElementById("entryTime");
+        if(!input) return;
+        if(force !== true && String(input.value || "").trim()) return;
+
+        input.value = formatDisplayTime(new Date());
+        fireFieldEvents(input);
+    }
+
+    function cleanManualTime(value){
+        return String(value || "").trim();
+    }
+
+    window.cleanManualTime = cleanManualTime;
+
+    function normalize(value){
+        return String(value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, " ");
+    }
+
+    function cleanValue(value){
+        const text = String(value ?? "").trim();
+        if(!text) return "";
+        if(/^n\/?a$/i.test(text)) return "";
+        if(/^none$/i.test(text)) return "";
+        if(/^null$/i.test(text)) return "";
+        if(/^undefined$/i.test(text)) return "";
+        return text;
+    }
+
+    function pick(obj, names){
+        for(const name of names){
+            if(obj && obj[name] !== undefined && obj[name] !== null){
+                const value = cleanValue(obj[name]);
+                if(value) return value;
+            }
+        }
+        return "";
+    }
+
+    function localDateKey(value){
+        if(!value) return "";
+
+        if(typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)){
+            return value.slice(0, 10);
+        }
+
+        const date = new Date(value);
+        if(isNaN(date)) return "";
+
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+    }
+
+    function todayKey(){
+        try{
+            if(typeof window.currentDate === "function") return window.currentDate();
+        }catch(e){}
+        return localDateKey(new Date());
+    }
+
+    function getEntryDate(entry){
+        return localDateKey(pick(entry, [
+            "date",
+            "entryDate",
+            "createdDate",
+            "createdAt",
+            "savedAt",
+            "timestamp",
+            "timeStamp",
+            "dateTime"
+        ]));
+    }
+
+    function isTodayEntry(entry){
+        return getEntryDate(entry) === todayKey();
+    }
+
+    function getEntryType(entry){
+        return pick(entry, [
+            "entryType",
+            "formType",
+            "boatType",
+            "category",
+            "type",
+            "entry_type"
+        ]);
+    }
+
+    function getEntryTypeNorm(entry){
+        return normalize(getEntryType(entry));
+    }
+
+    function isReturnEntry(entry){
+        const type = getEntryTypeNorm(entry);
+        return (
+            type === "returning boat" ||
+            type === "return boat" ||
+            type === "returned boat" ||
+            type === "return" ||
+            type === "ret" ||
+            type.includes("returning") ||
+            type.includes("returned")
+        );
+    }
+
+    function isSystemEntry(entry){
+        const type = getEntryTypeNorm(entry);
+        const vessel = normalize(getVesselName(entry));
+
+        return (
+            type === "lr" ||
+            type === "lt" ||
+            type.includes("lock reversal") ||
+            type.includes("lock test") ||
+            vessel === "lock reversal" ||
+            vessel === "lock test"
+        );
+    }
+
+    function isBoatEntry(entry){
+        if(!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
+        if(isReturnEntry(entry)) return false;
+        if(isSystemEntry(entry)) return false;
+        if(!isTodayEntry(entry)) return false;
+
+        const type = getEntryTypeNorm(entry);
+        const vessel = getVesselName(entry);
+
+        // Return Boat is only for recreational boats.
+        // Do NOT include Tour, Government, Commercial, Kayak, Lock Test, Lock Reversal, or generic boat entries.
+        if(!vessel) return false;
+
+        return (
+            type === "rb" ||
+            type === "rec" ||
+            type === "recreation" ||
+            type === "recreational" ||
+            type === "recreational boat" ||
+            type.includes("recreational")
+        );
+    }
+
+    function getVesselName(entry){
+        return pick(entry, [
+            "vessel",
+            "vesselName",
+            "boatName",
+            "name"
+        ]);
+    }
+
+    function getRegistration(entry){
+        return pick(entry, [
+            "reg",
+            "registration",
+            "registrationNumber",
+            "registration_number",
+            "vesselReg",
+            "vesselRegistration",
+            "vessel_reg"
+        ]);
+    }
+
+    function normalizeDirection(value){
+        const dir = normalize(value);
+        if(dir === "u" || dir === "up") return "Up";
+        if(dir === "d" || dir === "down") return "Down";
+        return "";
+    }
+
+    function oppositeDirection(value){
+        const dir = normalizeDirection(value);
+        if(dir === "Up") return "Down";
+        if(dir === "Down") return "Up";
+        return "";
+    }
+
+    function getDirection(entry){
+        return normalizeDirection(pick(entry, [
+            "dir",
+            "direction",
+            "reverseDir"
+        ]));
+    }
+
+    function getBoatKey(entryOrBoat){
+        const vessel = normalize(getVesselName(entryOrBoat));
+        const reg = normalize(getRegistration(entryOrBoat));
+
+        if(reg) return `${vessel}|${reg}`;
+        if(vessel) return `${vessel}|no-reg`;
+        return "";
+    }
+
+    function getEntryTime(entry){
+        return pick(entry, ["entryTime", "time", "createdAt", "timestamp"]);
+    }
+
+    function fireFieldEvents(el){
+        if(!el) return;
+        el.dispatchEvent(new Event("input", { bubbles:true }));
+        el.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    function setField(id, value){
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.value = value || "";
+        fireFieldEvents(el);
+    }
+
+    function safeParse(raw){
+        try{return JSON.parse(raw);}catch(e){return null;}
+    }
+
+    function looksLikeEntry(item){
+        if(!item || typeof item !== "object" || Array.isArray(item)) return false;
+
+        return !!(
+            item.entryType !== undefined ||
+            item.formType !== undefined ||
+            item.type !== undefined ||
+            item.category !== undefined ||
+            item.vessel !== undefined ||
+            item.vesselName !== undefined ||
+            item.boatName !== undefined ||
+            item.reg !== undefined ||
+            item.registration !== undefined ||
+            item.vesselReg !== undefined
+        );
+    }
+
+    function collectEntriesFromValue(value, found, seenObjects){
+        if(!value) return;
+
+        if(Array.isArray(value)){
+            value.forEach(item => collectEntriesFromValue(item, found, seenObjects));
+            return;
+        }
+
+        if(typeof value !== "object") return;
+
+        if(seenObjects.has(value)) return;
+        seenObjects.add(value);
+
+        if(looksLikeEntry(value)){
+            found.push(value);
+        }
+
+        Object.keys(value).forEach(key => {
+            if(["traffic", "logs", "entries", "records", "items", "data", "dailyTraffic", "phoneEvents"].includes(key) || Array.isArray(value[key])){
+                collectEntriesFromValue(value[key], found, seenObjects);
+            }
+        });
+    }
+
+    function readAllStoredEntries(){
+        const found = [];
+        const seenObjects = new WeakSet();
+
+        try{
+            if(typeof window.getLogs === "function"){
+                const logs = window.getLogs();
+                collectEntriesFromValue(logs, found, seenObjects);
+            }
+        }catch(e){}
+
+        const priorityKeys = [
+            "saultLocksLogs",
+            "saultLocksTrackerLogs",
+            "ssmCanalDashboard.v1",
+            "ssmCanalDashboard.logs",
+            "ssmCanalDashboard.entries",
+            "dailyTrafficLogs",
+            "logs",
+            "entries",
+            "savedEntries",
+            "lockLogs",
+            "saultLogs"
+        ];
+
+        const allKeys = [...new Set(priorityKeys.concat(Object.keys(localStorage)))];
+
+        allKeys.forEach(key => {
+            try{
+                const raw = localStorage.getItem(key);
+                if(!raw || raw.length > 2500000) return;
+                const parsed = safeParse(raw);
+                collectEntriesFromValue(parsed, found, seenObjects);
+            }catch(e){}
+        });
+
+        const unique = [];
+        const seenKeys = new Set();
+
+        found.forEach(entry => {
+            const key = [
+                getEntryTypeNorm(entry),
+                getBoatKey(entry),
+                getEntryDate(entry),
+                getEntryTime(entry),
+                normalize(pick(entry, ["id", "mobileId", "oldId"]))
+            ].join("|");
+
+            if(seenKeys.has(key)) return;
+            seenKeys.add(key);
+            unique.push(entry);
+        });
+
+        return unique;
+    }
+
+    function extractBoat(entry){
+        return {
+            vessel:getVesselName(entry),
+            reg:getRegistration(entry),
+            dir:getDirection(entry),
+            pass:pick(entry, ["pass", "passengers", "passengerCount", "passenger_count"]),
+            dest:pick(entry, ["dest", "destination"]),
+            homePort:pick(entry, ["homePort", "homeport", "home_port"]),
+            date:getEntryDate(entry),
+            time:getEntryTime(entry),
+            key:getBoatKey(entry)
+        };
+    }
+
+    function sortNewestFirst(a, b){
+        const at = Date.parse(`${a.date || todayKey()} ${a.time || "00:00"}`) || 0;
+        const bt = Date.parse(`${b.date || todayKey()} ${b.time || "00:00"}`) || 0;
+        return bt - at;
+    }
+
+    let returnBoatChoices = [];
+
+    function buildReturnDropdown(keepCurrent){
+        const vesselSelect = document.getElementById("vessel");
+        if(!vesselSelect) return;
+
+        const currentKey = keepCurrent ? vesselSelect.dataset.selectedBoatKey : "";
+        const todayEntries = readAllStoredEntries().filter(isTodayEntry);
+
+        const returnedKeys = new Set(
+            todayEntries
+                .filter(isReturnEntry)
+                .map(getBoatKey)
+                .filter(Boolean)
+        );
+
+        const addedKeys = new Set();
+
+        returnBoatChoices = todayEntries
+            .filter(isBoatEntry)
+            .map(extractBoat)
+            .filter(boat => {
+                if(!boat.vessel || !boat.key) return false;
+                if(returnedKeys.has(boat.key)) return false;
+                if(addedKeys.has(boat.key)) return false;
+                addedKeys.add(boat.key);
+                return true;
+            })
+            .sort(sortNewestFirst);
+
+        vesselSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = returnBoatChoices.length ? "Select a boat to return" : "No boats available to return";
+        vesselSelect.appendChild(placeholder);
+
+        returnBoatChoices.forEach((boat, index) => {
+            const option = document.createElement("option");
+            option.value = boat.vessel;
+            option.textContent = boat.vessel;
+            option.dataset.index = String(index);
+            option.dataset.key = boat.key;
+            vesselSelect.appendChild(option);
+        });
+
+        if(currentKey){
+            const option = [...vesselSelect.options].find(opt => opt.dataset.key === currentKey);
+            if(option){
+                vesselSelect.value = option.value;
+                option.selected = true;
+            }
+        }
+
+        vesselSelect.classList.toggle("placeholder", !vesselSelect.value);
+    }
+
+    function clearReturnFields(){
+        setField("reg", "");
+        setField("dir", "");
+        setField("pass", "");
+        setField("dest", "");
+        setField("homePort", "");
+
+        const dirSelect = document.getElementById("dir");
+        if(dirSelect) dirSelect.classList.add("placeholder");
+    }
+
+    function autofillReturnBoat(){
+        const vesselSelect = document.getElementById("vessel");
+        const dirSelect = document.getElementById("dir");
+        if(!vesselSelect) return;
+
+        const selected = vesselSelect.options[vesselSelect.selectedIndex];
+        const index = Number(selected && selected.dataset ? selected.dataset.index : NaN);
+        const boat = Number.isFinite(index) ? returnBoatChoices[index] : null;
+
+        if(!boat){
+            vesselSelect.dataset.selectedBoatKey = "";
+            vesselSelect.classList.add("placeholder");
+            clearReturnFields();
+            return;
+        }
+
+        vesselSelect.dataset.selectedBoatKey = boat.key;
+        vesselSelect.classList.remove("placeholder");
+
+        setField("reg", boat.reg);
+        setField("pass", boat.pass);
+        setField("dest", boat.dest);
+        setField("homePort", boat.homePort);
+
+        const flippedDir = oppositeDirection(boat.dir);
+        setField("dir", flippedDir);
+
+        if(dirSelect){
+            dirSelect.classList.toggle("placeholder", !flippedDir);
+        }
+    }
+
+    function setupReturnPage(){
+        const form = document.getElementById("entryForm");
+        const vesselSelect = document.getElementById("vessel");
+        const dirSelect = document.getElementById("dir");
+
+        if(!form || !vesselSelect) return;
+
+        try{
+            if(typeof window.setupRecreationalReturnSystem === "function"){
+                window.setupRecreationalReturnSystem = function(){};
+            }
+            if(typeof setupRecreationalReturnSystem === "function"){
+                setupRecreationalReturnSystem = function(){};
+            }
+        }catch(e){}
+
+        if(typeof window.setupNormalForm === "function"){
+            window.setupNormalForm(RETURN_TYPE);
+        }
+
+        const injectedCard = document.getElementById("returnBoatCard");
+        if(injectedCard) injectedCard.remove();
+
+        setCurrentTime(false);
+        buildReturnDropdown(false);
+
+
+        vesselSelect.addEventListener("change", autofillReturnBoat);
+
+        if(dirSelect){
+            dirSelect.addEventListener("change", function(){
+                this.classList.toggle("placeholder", !this.value);
+            });
+        }
+
+        setupMissingInfoPopup(form);
+
+        setTimeout(function(){
+            if(!vesselSelect.value) buildReturnDropdown(true);
+        }, 250);
+
+        setTimeout(function(){
+            if(!vesselSelect.value) buildReturnDropdown(true);
+        }, 900);
+    }
+
+    function getMissingFields(){
+        const requiredFields = [
+            { id:"vessel", name:"Vessel Name" },
+            { id:"reg", name:"Registration" },
+            { id:"dir", name:"Direction" },
+            { id:"pass", name:"Passenger Count" },
+            { id:"dest", name:"Destination" },
+            { id:"homePort", name:"Home Port" },
+            { id:"entryTime", name:"Time" }
+        ];
+
+        return requiredFields.filter(field => {
+            const el = document.getElementById(field.id);
+            return !String((el && el.value) || "").trim();
+        });
+    }
+
+    function setupMissingInfoPopup(form){
+        const popup = document.getElementById("missingPopup");
+        const missingList = document.getElementById("missingList");
+        const cancelSubmit = document.getElementById("cancelSubmit");
+        const continueSubmit = document.getElementById("continueSubmit");
+        let allowBypassSubmit = false;
+
+        function showMissingPopup(missing){
+            if(!popup || !missingList) return;
+            missingList.innerHTML = "";
+            missing.forEach(field => {
+                const item = document.createElement("div");
+                item.textContent = "• " + field.name;
+                missingList.appendChild(item);
+            });
+            popup.classList.add("active");
+        }
+
+        function hideMissingPopup(){
+            if(popup) popup.classList.remove("active");
+        }
+
+        form.addEventListener("submit", function(e){
+            if(allowBypassSubmit) return;
+
+            if(window.shouldConfirmBeforeSave && !window.shouldConfirmBeforeSave()){
+                return;
+            }
+
+            const missing = getMissingFields();
+
+            if(missing.length > 0){
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                showMissingPopup(missing);
+                return false;
+            }
+        }, true);
+
+        if(cancelSubmit){
+            cancelSubmit.addEventListener("click", hideMissingPopup);
+        }
+
+        if(continueSubmit){
+            continueSubmit.addEventListener("click", function(){
+                allowBypassSubmit = true;
+                hideMissingPopup();
+                form.requestSubmit();
+            });
+        }
+
+        if(popup){
+            popup.addEventListener("click", function(e){
+                if(e.target === popup) hideMissingPopup();
+            });
+        }
+    }
+
+    setupReturnPage();
+
+    if("serviceWorker" in navigator && location.protocol !== "file:"){
+        window.addEventListener("load", function(){
+            navigator.serviceWorker.register("service-worker.js").catch(function(){});
+        });
+    }
+})();
+</script>
+
+</body>
+</html>

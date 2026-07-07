@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Management</title>
+
+<script>
+try {
+  if (localStorage.getItem('ssmCanalDashboard.darkMode') === 'true') {
+    document.documentElement.classList.add('app-dark');
+    document.addEventListener('DOMContentLoaded', function () {
+      document.body.classList.add('dark-mode');
+    });
+  }
+} catch(e) {}
+</script>
+
+<link rel="stylesheet" href="assets/style.css" />
+
+<style>
+/* =========================================================
+   Management preset actions + clean page layout
+   - Keeps the ⋯ menu at the start of each row
+   - Hides the old right-side Actions column
+   - Prevents the buttons/table from bleeding through while scrolling
+   - Restores the Management page spacing/header/table sizing
+========================================================= */
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* keep this page aligned with the rest of the desktop app */
+.app-shell.easy-only .main {
+  width: min(1280px, 100%) !important;
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding: 16px 22px 36px !important;
+}
+
+.topbar {
+  width: 100vw !important;
+  margin: -16px calc(50% - 50vw) 0 !important;
+  padding: 10px max(22px, calc((100vw - 1280px) / 2 + 22px)) !important;
+  min-height: 64px !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--line, #edebe9) !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  overflow: visible !important;
+  z-index: 300 !important;
+}
+
+.topbar-logo {
+  flex: 0 0 auto !important;
+  min-width: 210px !important;
+}
+
+.searchbar {
+  flex: 1 1 420px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.searchbar input {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.top-actions {
+  flex: 0 0 auto !important;
+}
+
+.page-nav {
+  width: auto !important;
+  margin: 0 -22px 16px !important;
+  padding: 8px 22px !important;
+  position: sticky !important;
+  top: 64px !important;
+  z-index: 250 !important;
+  background: rgba(243, 242, 241, .96) !important;
+  border-bottom: 1px solid var(--line, #edebe9) !important;
+  backdrop-filter: blur(14px) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none;
+}
+
+.page-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.management-list-page {
+  padding: 0 0 44px !important;
+  overflow: visible !important;
+}
+
+.management-list-page .ms-page-header {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 20px !important;
+  margin: 0 0 16px !important;
+  padding: 20px 4px 18px !important;
+  border-bottom: 1px solid var(--line, #edebe9) !important;
+}
+
+.management-list-page .ms-page-header h1 {
+  margin: 2px 0 6px !important;
+  line-height: 1.15 !important;
+}
+
+.management-list-page .ms-page-header p {
+  max-width: 820px !important;
+}
+
+.management-list-page .ms-header-actions {
+  flex: 0 0 auto !important;
+}
+
+.management-list-page .ms-list-toolbar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 220px !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+.management-list-page .ms-search-field,
+.management-list-page .ms-list-toolbar select {
+  min-height: 40px !important;
+  border-radius: 5px !important;
+}
+
+.management-list-page .ms-list-panel {
+  position: relative !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--line, #edebe9) !important;
+  background: var(--surface, #fff) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06) !important;
+}
+
+.management-list-page .ms-list-head {
+  padding: 12px 16px !important;
+  min-height: 54px !important;
+}
+
+.management-list-page .ms-preset-table-wrap,
+.management-list-page .table-wrap.ms-preset-table-wrap {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  position: relative !important;
+  isolation: isolate;
+  background: var(--surface, #fff) !important;
+}
+
+#presetTable {
+  width: 100% !important;
+  min-width: 1180px !important;
+  table-layout: fixed !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+#presetTable th,
+#presetTable td {
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  vertical-align: middle !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* Column widths after the left menu column is injected */
+#presetTable th.preset-menu-col,
+#presetTable td.preset-menu-col {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 8 !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  padding: 8px 6px !important;
+  text-align: center !important;
+  overflow: hidden !important;
+  background: var(--surface, #fff) !important;
+  border-right: 1px solid var(--line, #edebe9) !important;
+  box-shadow: 8px 0 12px rgba(0,0,0,.035) !important;
+}
+
+#presetTable th.preset-menu-col {
+  z-index: 10 !important;
+  background: var(--surface-alt, #faf9f8) !important;
+  font-size: 0 !important;
+}
+
+#presetTable th.preset-menu-col::after {
+  content: '';
+}
+
+#presetTable tr:hover td.preset-menu-col {
+  background: var(--surface-hover, #f3f2f1) !important;
+}
+
+#presetTable th:nth-child(2),
+#presetTable td:nth-child(2) { width: 128px !important; }
+#presetTable th:nth-child(3),
+#presetTable td:nth-child(3) { width: 112px !important; }
+#presetTable th:nth-child(4),
+#presetTable td:nth-child(4) { width: 220px !important; }
+#presetTable th:nth-child(5),
+#presetTable td:nth-child(5) { width: 190px !important; }
+#presetTable th:nth-child(6),
+#presetTable td:nth-child(6) { width: 140px !important; }
+#presetTable th:nth-child(7),
+#presetTable td:nth-child(7) { width: 90px !important; }
+#presetTable th:nth-child(8),
+#presetTable td:nth-child(8) { width: 88px !important; }
+#presetTable th:nth-child(9),
+#presetTable td:nth-child(9) { width: 210px !important; }
+
+/* Hide original Actions column at the end but leave its buttons in the DOM for JS */
+#presetTable th.preset-original-actions,
+#presetTable td.preset-original-actions,
+#presetTable th:nth-child(10),
+#presetTable td:nth-child(10) {
+  display: none !important;
+}
+
+.preset-kebab-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 !important;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-soft, #605e5c);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: none !important;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.preset-kebab-btn:hover,
+.preset-kebab-btn.is-open {
+  background: var(--surface-hover, #f3f2f1) !important;
+  border-color: var(--line-strong, #c8c6c4) !important;
+  color: var(--text, #201f1e) !important;
+}
+
+/* This menu is attached to body, so it will not get clipped by the table */
+.preset-menu-portal {
+  position: fixed;
+  z-index: 2147483647;
+  min-width: 146px;
+  padding: 6px;
+  border: 1px solid var(--line, #dcdcdc);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  box-shadow: 0 18px 45px rgba(0,0,0,.16);
+  display: none;
+  gap: 4px;
+}
+
+.preset-menu-portal.open {
+  display: grid;
+}
+
+.preset-menu-item {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+  color: var(--text, #201f1e) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+
+.preset-menu-item:hover {
+  background: var(--surface-hover, #f3f2f1) !important;
+}
+
+.preset-menu-item.danger {
+  color: var(--danger, #b42318) !important;
+}
+
+html.app-dark .page-nav,
+body.dark-mode .page-nav {
+  background: rgba(15,17,23,.96) !important;
+  border-bottom-color: var(--line, #2a313d) !important;
+}
+
+html.app-dark .management-list-page .ms-preset-table-wrap,
+body.dark-mode .management-list-page .ms-preset-table-wrap,
+html.app-dark .management-list-page .table-wrap.ms-preset-table-wrap,
+body.dark-mode .management-list-page .table-wrap.ms-preset-table-wrap,
+html.app-dark #presetTable th.preset-menu-col,
+html.app-dark #presetTable td.preset-menu-col,
+body.dark-mode #presetTable th.preset-menu-col,
+body.dark-mode #presetTable td.preset-menu-col {
+  background: var(--surface, #11151c) !important;
+  border-color: var(--line, #2a313d) !important;
+}
+
+html.app-dark #presetTable th.preset-menu-col,
+body.dark-mode #presetTable th.preset-menu-col {
+  background: var(--surface-alt, #0f1117) !important;
+}
+
+html.app-dark #presetTable tr:hover td.preset-menu-col,
+body.dark-mode #presetTable tr:hover td.preset-menu-col {
+  background: var(--surface-hover, #1a2230) !important;
+}
+
+html.app-dark .preset-kebab-btn,
+body.dark-mode .preset-kebab-btn {
+  color: var(--text-soft, #c8c6c4) !important;
+}
+
+html.app-dark .preset-kebab-btn:hover,
+html.app-dark .preset-kebab-btn.is-open,
+body.dark-mode .preset-kebab-btn:hover,
+body.dark-mode .preset-kebab-btn.is-open {
+  background: var(--surface-hover, #242322) !important;
+  border-color: var(--line-strong, #3a4557) !important;
+  color: var(--text, #f3f2f1) !important;
+}
+
+html.app-dark .preset-menu-portal,
+body.dark-mode .preset-menu-portal {
+  background: var(--surface, #11151c) !important;
+  border-color: var(--line-strong, #3a4557) !important;
+  color: var(--text, #f3f2f1) !important;
+  box-shadow: 0 18px 45px rgba(0,0,0,.42) !important;
+}
+
+html.app-dark .preset-menu-item,
+body.dark-mode .preset-menu-item {
+  color: var(--text, #f3f2f1) !important;
+}
+
+html.app-dark .preset-menu-item:hover,
+body.dark-mode .preset-menu-item:hover {
+  background: var(--surface-hover, #242322) !important;
+}
+
+@media (max-width: 900px) {
+  .app-shell.easy-only .main {
+    padding: 12px !important;
+  }
+
+  .topbar {
+    margin: -12px calc(50% - 50vw) 0 !important;
+    padding: 10px 12px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .topbar-logo {
+    min-width: 0 !important;
+  }
+
+  .searchbar {
+    flex-basis: 100% !important;
+    order: 3;
+  }
+
+  .top-actions {
+    margin-left: auto !important;
+  }
+
+  .page-nav {
+    top: 0 !important;
+    margin: 0 -12px 14px !important;
+    padding: 8px 12px !important;
+  }
+
+  .management-list-page .ms-page-header {
+    display: block !important;
+    padding: 16px 2px !important;
+  }
+
+  .management-list-page .ms-header-actions {
+    margin-top: 12px !important;
+  }
+
+  .management-list-page .ms-header-actions .btn {
+    width: 100% !important;
+  }
+
+  .management-list-page .ms-list-toolbar {
+    grid-template-columns: 1fr !important;
+  }
+
+  #presetTable {
+    min-width: 1080px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  #presetTable th.preset-menu-col,
+  #presetTable td.preset-menu-col {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 7px 4px !important;
+  }
+
+  .preset-kebab-btn {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
+    font-size: 17px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="app-shell easy-only">
+  <main class="main">
+    <header class="topbar">
+      <a class="topbar-logo" href="index.html" aria-label="Go home">
+        <img class="logo-light" src="assets/ssm-logo.png" alt="Sault Ste. Marie logo">
+        <img class="logo-dark" src="assets/ssm-logo-dark.png" alt="Sault Ste. Marie logo">
+      </a>
+
+      <div class="searchbar">
+        <span>Search</span>
+        <input id="globalSearch" placeholder="Search vessel, owner, registration, destination..." />
+      </div>
+
+      <div class="top-actions">
+        <div class="pill" id="clock">--:--:--</div>
+        <a class="pill primary" href="daily.html">New Entry</a>
+      </div>
+    </header>
+
+    <nav class="page-nav">
+      <a href="index.html">Home</a>
+      <a href="search.html">Search</a>
+      <a href="daily.html">New Entry</a>
+      <a href="records.html">All Records</a>
+      <a href="phone-link.html">Phone Link</a>
+      <a href="management.html" class="active">Management</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+
+    <section class="section active management-page management-list-page" id="management">
+      <div class="ms-page-header">
+        <div>
+          <div class="eyebrow">Management</div>
+          <h1>Vessel Presets</h1>
+          <p>Vessel preset list used by New Entry. This now follows the old Canal Registration fields: canal reg, owner, vessel reg, vessel type, length, and location.</p>
+        </div>
+
+        <div class="ms-header-actions">
+          <a class="btn primary" href="management-edit.html">Add Registration</a>
+          
+        </div>
+      </div>
+
+      <div class="ms-list-toolbar">
+        <div class="ms-search-field">
+          <span>Search</span>
+          <input id="presetSearch" placeholder="Vessel, owner, canal reg, vessel reg...">
+        </div>
+
+        <select id="presetFilter" aria-label="Filter preset type">
+          <option value="all">All Types</option>
+          <option value="RB">Recreational Boat</option>
+          <option value="TB">Tour Boat</option>
+          <option value="K">Kayak</option>
+          <option value="Gov">Government Boat</option>
+          <option value="Com">Commercial Boat</option>
+        </select>
+      </div>
+
+      <div class="ms-list-panel">
+        <div class="ms-list-head">
+          <div>
+            <strong>Presets</strong>
+            <span>Microsoft-style list of vessel presets shown in the New Entry form.</span>
+          </div>
+        </div>
+
+        <div class="table-wrap ms-preset-table-wrap">
+          <table id="presetTable" class="ms-preset-table"></table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<datalist id="vesselList"></datalist>
+<div class="toast" id="toast">Saved</div>
+
+<script src="assets/old-db-data.js"></script>
+<script src="assets/app.js"></script>
+
+<script>
+/* =========================================================
+   Clean Management ⋯ menu
+   Adds one small sticky menu button at the start of each row.
+   Edit/Delete are handled directly so the hidden Actions cell
+   cannot break new presets.
+========================================================= */
+(function () {
+  const table = document.getElementById('presetTable');
+  if (!table) return;
+
+  const PRESET_KEY = 'ssmCanalDashboard.entryPresets.byType';
+  const DASHBOARD_KEY = 'ssmCanalDashboard.v1';
+  const PRESET_TYPES = ['RB', 'TB', 'Gov', 'Com', 'K'];
+
+  let buildQueued = false;
+  let activeButton = null;
+  let activeRow = null;
+
+  const portal = document.createElement('div');
+  portal.className = 'preset-menu-portal';
+  portal.setAttribute('role', 'menu');
+  document.body.appendChild(portal);
+
+  function textOf(el) {
+    return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim();
+  }
+
+  function htmlDecode(value) {
+    const box = document.createElement('textarea');
+    box.innerHTML = String(value || '');
+    return box.value;
+  }
+
+  function cleanName(value) {
+    return htmlDecode(value).replace(/\s+/g, ' ').trim();
+  }
+
+  function compareName(value) {
+    return cleanName(value).toLowerCase();
+  }
+
+  function toastMessage(message) {
+    try {
+      if (typeof toast === 'function') {
+        toast(message);
+        return;
+      }
+    } catch (e) {}
+
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = message;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function safeParse(value, fallback) {
+    try {
+      return JSON.parse(value) ?? fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function normalizeType(type) {
+    const raw = String(type || '').replace(/\s+/g, ' ').trim();
+    const lower = raw.toLowerCase();
+
+    if (raw === 'G' || lower === 'gov' || lower === 'government' || lower === 'government boat') return 'Gov';
+    if (raw === 'C' || lower === 'com' || lower === 'commercial' || lower === 'commercial boat') return 'Com';
+    if (raw === 'RB' || lower === 'rb' || lower === 'recreational' || lower === 'recreational boat') return 'RB';
+    if (raw === 'TB' || lower === 'tb' || lower === 'tour' || lower === 'tour boat') return 'TB';
+    if (raw === 'K' || lower === 'k' || lower === 'kayak') return 'K';
+    if (PRESET_TYPES.includes(raw)) return raw;
+    return '';
+  }
+
+  function isActionText(text) {
+    text = (text || '').toLowerCase();
+    return text.includes('edit') || text.includes('delete') || text.includes('remove');
+  }
+
+  function getCells(row, selector) {
+    return Array.from(row.querySelectorAll(selector || 'td, th'));
+  }
+
+  function findActionHeaderIndex() {
+    const headerRow = table.querySelector('thead tr') || table.querySelector('tr');
+    if (!headerRow) return -1;
+
+    const headers = getCells(headerRow, 'th');
+    return headers.findIndex(th => {
+      if (th.classList.contains('preset-menu-col')) return false;
+      return isActionText(textOf(th)) || textOf(th).toLowerCase() === 'actions';
+    });
+  }
+
+  function findActionCell(row) {
+    const cells = getCells(row, 'td');
+    if (!cells.length) return null;
+
+    const actionIndex = findActionHeaderIndex();
+    if (actionIndex >= 0 && cells[actionIndex] && !cells[actionIndex].classList.contains('preset-menu-col')) {
+      const indexedCell = cells[actionIndex];
+      if (indexedCell.querySelector('button, a, .btn')) return indexedCell;
+    }
+
+    const matching = cells.find(cell => {
+      if (cell.classList.contains('preset-menu-col')) return false;
+      const buttons = Array.from(cell.querySelectorAll('button, a, .btn'));
+      if (!buttons.length) return false;
+      return buttons.some(btn => isActionText(textOf(btn))) || isActionText(textOf(cell));
+    });
+
+    if (matching) return matching;
+
+    const last = cells[cells.length - 1];
+    if (last && !last.classList.contains('preset-menu-col') && last.querySelector('button, a, .btn')) {
+      return last;
+    }
+
+    return null;
+  }
+
+  function getActionButtons(actionCell) {
+    if (!actionCell) return [];
+
+    return Array.from(actionCell.querySelectorAll('button, a, .btn')).filter(btn => {
+      const text = textOf(btn).toLowerCase();
+      const cls = String(btn.className || '').toLowerCase();
+      const aria = String(btn.getAttribute('aria-label') || '').toLowerCase();
+      return (
+        text.includes('edit') ||
+        text.includes('delete') ||
+        text.includes('remove') ||
+        cls.includes('edit') ||
+        cls.includes('delete') ||
+        cls.includes('remove') ||
+        cls.includes('danger') ||
+        aria.includes('edit') ||
+        aria.includes('delete') ||
+        aria.includes('remove')
+      );
+    });
+  }
+
+
+  function getDataValue(el, keys) {
+    if (!el || !el.dataset) return '';
+    for (const key of keys) {
+      if (el.dataset[key]) return el.dataset[key];
+    }
+    return '';
+  }
+
+  function getHrefParam(el, keys) {
+    const href = el && el.getAttribute ? el.getAttribute('href') : '';
+    if (!href) return '';
+
+    try {
+      const url = new URL(href, location.href);
+      for (const key of keys) {
+        const value = url.searchParams.get(key);
+        if (value) return value;
+      }
+    } catch (e) {}
+
+    return '';
+  }
+
+  function rowDataCells(row) {
+    return getCells(row, 'td').filter(cell => {
+      return !cell.classList.contains('preset-menu-col') &&
+             !cell.classList.contains('preset-original-actions');
+    });
+  }
+
+  function cleanVesselCellName(cell) {
+    if (!cell) return '';
+
+    const strong = cell.querySelector('strong, b, .preset-vessel-name, .vessel-name');
+    if (strong) return cleanName(textOf(strong));
+
+    const clone = cell.cloneNode(true);
+    clone.querySelectorAll('small, .badge, button, a, select').forEach(el => el.remove());
+    return cleanName(clone.textContent)
+      .replace(/\s+(RB|TB|K|GOV|COM|G|C|RECREATIONAL BOAT|TOUR BOAT|KAYAK|GOVERNMENT BOAT|COMMERCIAL BOAT)$/i, '')
+      .trim();
+  }
+
+  function inferPresetIdentity(row, originalButton) {
+    const cells = rowDataCells(row);
+    const rowDataset = row && row.dataset ? row.dataset : {};
+
+    let type = normalizeType(
+      getDataValue(originalButton, ['type', 'presetType', 'vesselType', 'category']) ||
+      getDataValue(row, ['type', 'presetType', 'vesselType', 'category']) ||
+      getHrefParam(originalButton, ['type', 'presetType', 'vesselType', 'category']) ||
+      rowDataset.type ||
+      rowDataset.presetType ||
+      ''
+    );
+
+    let name = cleanName(
+      getDataValue(originalButton, ['name', 'vessel', 'vesselName', 'presetName']) ||
+      getDataValue(row, ['name', 'vessel', 'vesselName', 'presetName']) ||
+      getHrefParam(originalButton, ['name', 'vessel', 'vesselName', 'presetName']) ||
+      rowDataset.name ||
+      rowDataset.vessel ||
+      ''
+    );
+
+    if (!type && cells[0]) type = normalizeType(textOf(cells[0]));
+
+    if (!name) {
+      const vesselCell = cells.find(cell =>
+        cell.classList.contains('vessel-cell') ||
+        cell.querySelector('strong, b, .preset-vessel-name, .vessel-name')
+      );
+      name = cleanVesselCellName(vesselCell);
+    }
+
+    /* Current table order: Type, Canal Reg #, Vessel, Owner, Vessel Reg #, Reg Type, Length, Location. */
+    if (!name && cells[2]) name = cleanVesselCellName(cells[2]);
+
+    return { type, name };
+  }
+
+  function readGroupsFallback() {
+    const blank = { RB: [], TB: [], Gov: [], Com: [] };
+
+    try {
+      if (typeof vesselPresetGroups !== 'undefined' && vesselPresetGroups) {
+        return vesselPresetGroups;
+      }
+    } catch (e) {}
+
+    const byType = safeParse(localStorage.getItem(PRESET_KEY), null);
+    if (byType && typeof byType === 'object') {
+      PRESET_TYPES.forEach(type => {
+        if (!Array.isArray(byType[type])) byType[type] = [];
+      });
+      return byType;
+    }
+
+    const dash = safeParse(localStorage.getItem(DASHBOARD_KEY), null);
+    if (dash && dash.entryPresets && typeof dash.entryPresets === 'object') {
+      PRESET_TYPES.forEach(type => {
+        if (!Array.isArray(dash.entryPresets[type])) dash.entryPresets[type] = [];
+      });
+      return dash.entryPresets;
+    }
+
+    return blank;
+  }
+
+  function saveGroupsFallback(groups) {
+    PRESET_TYPES.forEach(type => {
+      if (!Array.isArray(groups[type])) groups[type] = [];
+    });
+
+    try {
+      localStorage.setItem(PRESET_KEY, JSON.stringify(groups));
+    } catch (e) {}
+
+    try {
+      if (typeof data !== 'undefined' && data) {
+        data.entryPresets = groups;
+      }
+    } catch (e) {}
+
+    try {
+      const dash = safeParse(localStorage.getItem(DASHBOARD_KEY), {}) || {};
+      dash.entryPresets = groups;
+      localStorage.setItem(DASHBOARD_KEY, JSON.stringify(dash));
+    } catch (e) {}
+
+    try {
+      fetch('/api/presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryPresets: groups, replace: true, action: 'replace', deletedPreset: { type: window.__lastDeletedPresetType || '', name: window.__lastDeletedPresetName || '' } })
+      }).catch(() => {});
+      if (window.__lastDeletedPresetType && window.__lastDeletedPresetName) {
+        fetch('/api/presets/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: window.__lastDeletedPresetType, name: window.__lastDeletedPresetName })
+        }).catch(() => {});
+      }
+    } catch (e) {}
+  }
+
+  function renderPresetsAgain() {
+    try {
+      if (typeof renderEntryPresets === 'function') {
+        renderEntryPresets();
+        return;
+      }
+    } catch (e) {}
+
+    try {
+      if (typeof render === 'function') {
+        render();
+        return;
+      }
+    } catch (e) {}
+  }
+
+  function forceDeletePreset(type, name) {
+    type = normalizeType(type);
+    name = cleanName(name);
+
+    if (typeof window.deleteEntryPreset === 'function') {
+      window.deleteEntryPreset(type, name);
+      return;
+    }
+
+    if (!type || !name) {
+      toastMessage('Could not find that preset');
+      return;
+    }
+
+    const label = (typeof presetTypeLabels !== 'undefined' && presetTypeLabels[type]) ? presetTypeLabels[type] : type;
+    if (!confirm(`Delete ${name} from ${label} presets?`)) return;
+
+    try {
+      const deletedKey = 'ssmCanalDashboard.entryPresets.deleted';
+      const list = JSON.parse(localStorage.getItem(deletedKey) || '[]');
+      const nameKey = compareName(name).toUpperCase();
+      list.push({ type, name, nameKey, deletedAt: Date.now() });
+      localStorage.setItem(deletedKey, JSON.stringify(list.slice(-1000)));
+    } catch (e) {}
+
+    let groups = readGroupsFallback();
+    const before = Array.isArray(groups[type]) ? groups[type].length : 0;
+
+    groups[type] = (groups[type] || []).filter(p => compareName(p && (p.name || p.vessel)) !== compareName(name));
+
+    /*
+      Safety fallback: if the preset was saved under the wrong type, remove the exact
+      same vessel name from any preset group. This fixes older/newly imported records.
+    */
+    if (groups[type].length === before) {
+      PRESET_TYPES.forEach(otherType => {
+        groups[otherType] = (groups[otherType] || []).filter(p => compareName(p && (p.name || p.vessel)) !== compareName(name));
+      });
+    }
+
+    try {
+      if (typeof vesselPresetGroups !== 'undefined') {
+        vesselPresetGroups = groups;
+      }
+    } catch (e) {}
+
+    window.__lastDeletedPresetType = type;
+    window.__lastDeletedPresetName = name;
+    saveGroupsFallback(groups);
+    renderPresetsAgain();
+    queueBuildRows();
+    toastMessage('Preset deleted');
+  }
+
+  function editPreset(type, name, originalButton) {
+    type = normalizeType(type);
+    name = cleanName(name);
+
+    if (type && name) {
+      location.href = `management-edit.html?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`;
+      return;
+    }
+
+    if (originalButton && typeof originalButton.click === 'function') {
+      originalButton.click();
+    }
+  }
+
+  function closeMenu() {
+    portal.classList.remove('open');
+    portal.innerHTML = '';
+
+    if (activeButton) activeButton.classList.remove('is-open');
+    activeButton = null;
+    activeRow = null;
+  }
+
+  function positionMenu(button) {
+    const rect = button.getBoundingClientRect();
+
+    portal.style.visibility = 'hidden';
+    portal.style.left = '0px';
+    portal.style.top = '0px';
+    portal.classList.add('open');
+
+    const menuRect = portal.getBoundingClientRect();
+    const pad = 8;
+
+    let left = rect.left;
+    let top = rect.bottom + 6;
+
+    if (left + menuRect.width > window.innerWidth - pad) {
+      left = window.innerWidth - menuRect.width - pad;
+    }
+
+    if (top + menuRect.height > window.innerHeight - pad) {
+      top = rect.top - menuRect.height - 6;
+    }
+
+    portal.style.left = Math.max(pad, left) + 'px';
+    portal.style.top = Math.max(pad, top) + 'px';
+    portal.style.visibility = 'visible';
+  }
+
+  function openMenu(button, row) {
+    const actionCell = row.__presetActionCell || findActionCell(row);
+    const originalButtons = getActionButtons(actionCell);
+
+    if (!originalButtons.length) return;
+
+    closeMenu();
+
+    activeButton = button;
+    activeRow = row;
+    button.classList.add('is-open');
+
+    originalButtons.forEach(originalButton => {
+      const rawLabel = textOf(originalButton) || 'Action';
+      const lowered = rawLabel.toLowerCase();
+      const classText = String(originalButton.className || '').toLowerCase();
+      const ariaText = String(originalButton.getAttribute('aria-label') || '').toLowerCase();
+
+      const isDelete =
+        lowered.includes('delete') ||
+        lowered.includes('remove') ||
+        classText.includes('delete') ||
+        classText.includes('danger') ||
+        classText.includes('remove') ||
+        ariaText.includes('delete') ||
+        ariaText.includes('remove');
+
+      const isEdit =
+        lowered.includes('edit') ||
+        classText.includes('edit') ||
+        ariaText.includes('edit');
+
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'preset-menu-item';
+      item.textContent = isDelete ? 'Delete' : (isEdit ? 'Edit' : rawLabel);
+      item.setAttribute('role', 'menuitem');
+
+      if (isDelete) item.classList.add('danger');
+
+      item.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const inferred = inferPresetIdentity(row, originalButton);
+        const type = normalizeType((originalButton.dataset ? originalButton.dataset.type : '') || inferred.type);
+        const name = cleanName((originalButton.dataset ? (originalButton.dataset.name || originalButton.dataset.vessel || originalButton.dataset.vesselName) : '') || inferred.name);
+
+        closeMenu();
+
+        if (isDelete) {
+          forceDeletePreset(type, name);
+          return;
+        }
+
+        if (isEdit) {
+          editPreset(type, name, originalButton);
+          return;
+        }
+
+        if (typeof originalButton.click === 'function') {
+          originalButton.click();
+        }
+      });
+
+      portal.appendChild(item);
+    });
+
+    positionMenu(button);
+  }
+
+  function ensureHeaderMenuColumn() {
+    const headerRows = Array.from(table.querySelectorAll('thead tr'));
+    if (!headerRows.length) return;
+
+    headerRows.forEach(row => {
+      if (!row.querySelector('th.preset-menu-col')) {
+        const th = document.createElement('th');
+        th.className = 'preset-menu-col';
+        th.setAttribute('aria-label', 'Actions');
+        row.insertBefore(th, row.firstChild);
+      }
+    });
+  }
+
+  function hideOriginalActionHeaders() {
+    const index = findActionHeaderIndex();
+    if (index < 0) return;
+
+    Array.from(table.querySelectorAll('thead tr')).forEach(row => {
+      const headers = getCells(row, 'th');
+      const target = headers[index];
+      if (target && !target.classList.contains('preset-menu-col')) {
+        target.classList.add('preset-original-actions');
+      }
+    });
+  }
+
+  function buildRows() {
+    ensureHeaderMenuColumn();
+    hideOriginalActionHeaders();
+
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+    rows.forEach(row => {
+      const cells = getCells(row, 'td');
+      if (!cells.length) return;
+
+      if (row.querySelector('td.preset-menu-col')) return;
+
+      const actionCell = findActionCell(row);
+      const actionButtons = getActionButtons(actionCell);
+      if (!actionCell || !actionButtons.length) return;
+
+      row.__presetActionCell = actionCell;
+      row.classList.add('has-preset-menu');
+
+      const actionTd = document.createElement('td');
+      actionTd.className = 'preset-menu-col';
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'preset-kebab-btn';
+      button.setAttribute('aria-label', 'Open preset menu');
+      button.textContent = '⋯';
+
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const sameMenuOpen = portal.classList.contains('open') && activeRow === row;
+        if (sameMenuOpen) {
+          closeMenu();
+          return;
+        }
+
+        openMenu(button, row);
+      });
+
+      actionTd.appendChild(button);
+      row.insertBefore(actionTd, row.firstChild);
+
+      actionCell.classList.add('preset-original-actions');
+    });
+  }
+
+  function queueBuildRows() {
+    if (buildQueued) return;
+
+    buildQueued = true;
+    requestAnimationFrame(function () {
+      buildQueued = false;
+      buildRows();
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+    if (!portal.contains(event.target)) closeMenu();
+  });
+
+  window.addEventListener('scroll', closeMenu, true);
+  window.addEventListener('resize', closeMenu);
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeMenu();
+  });
+
+  buildRows();
+
+  const observer = new MutationObserver(queueBuildRows);
+  observer.observe(table, {
+    childList: true,
+    subtree: true
+  });
+})();
+</script>
+
+</body>
+</html>

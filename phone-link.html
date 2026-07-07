@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phone Link</title>
+<script>try{if(localStorage.getItem('ssmCanalDashboard.darkMode')==='true')document.documentElement.classList.add('app-dark')}catch(e){}</script>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+<div class="app-shell easy-only">
+  <main class="main">
+    <header class="topbar">
+      <a class="topbar-logo" href="index.html" aria-label="Go home"><img class="logo-light" src="assets/ssm-logo.png" alt="Sault Ste. Marie logo"><img class="logo-dark" src="assets/ssm-logo-dark.png" alt="Sault Ste. Marie logo"></a>
+      <div class="searchbar">
+        <span>Search</span>
+        <input id="globalSearch" placeholder="Search vessel, owner, registration, destination..." />
+      </div>
+      <div class="top-actions">
+        <div class="pill" id="clock">--:--:--</div>
+        <a class="pill primary" href="daily.html">New Entry</a>
+      </div>
+    </header>
+    <nav class="page-nav"><a href="index.html">Home</a><a href="search.html">Search</a><a href="daily.html">New Entry</a><a href="records.html">All Records</a><a href="phone-link.html" class="active">Phone Link</a><a href="management.html">Management</a><a href="settings.html">Settings</a></nav>
+    <div class="page-intro"><div><div class="eyebrow">Security Workspace</div><h1>Phone Link</h1><p>Generate a temporary code and QR pairing page for the mobile app.</p></div></div>
+    <section class="section active" id="phoneLink">
+<div class="panel phone-server-panel">
+                <div class="panel-title"><h3>Phone Server</h3><small>Start or stop the phone linking server</small></div>
+                <div class="server-control-card">
+                    <div>
+                        <div class="server-status-row">
+                            <span class="server-dot" id="phoneServerDot"></span>
+                            <strong id="phoneServerStatus">Phone server offline</strong>
+                        </div>
+                        <p id="phoneServerInfo">You can generate a code anytime. Start the phone server only when the phone needs to connect over the network.</p>
+                        <div class="server-url" id="phoneServerUrl" hidden></div>
+                    </div>
+                    <div class="server-actions">
+                        <button class="btn primary" id="startPhoneServer" type="button">Start Server</button>
+                        <button class="btn danger" id="stopPhoneServer" type="button">Stop Server</button>
+                    </div>
+                </div>
+            </div>
+            <br>
+<div class="panel">
+                <div class="panel-title"><h3>Phone Security Link</h3><small>Generate a mobile app pairing code</small></div>
+                <div class="phone-layout phone-layout-single">
+                    <div class="phone-card phone-card-wide">
+                        <div class="phone-title">Link a phone</div>
+                        <p>Generate a temporary code, scan the QR to open the pairing page, then enter the code on the phone. Start the phone server when another device needs to connect over the network.</p>
+                        <div class="pair-code" id="pairCode">------</div>
+                        <div class="qr-box" id="pairQrBox" hidden>
+                            <img id="pairQr" alt="Phone link QR code">
+                            <small>Scan this with the mobile app to connect it to the dashboard.</small>
+                        </div>
+                        <div class="pair-meta" id="pairMeta">No active code</div>
+                        <div class="form-actions">
+                            <button class="btn primary" id="generatePairCode" type="button">Generate Code</button>
+                            <button class="btn" id="cancelPairCode" type="button">Cancel Link</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div class="panel">
+                <div class="panel-title"><h3>Linked Devices</h3><small>Approved phones with access</small></div>
+                <div class="table-wrap"><table id="phoneTable"></table></div><div class="phone-event-log" id="phoneEventLog"></div>
+            </div>
+    </section>
+  </main>
+</div>
+<datalist id="vesselList"></datalist>
+<div class="toast" id="toast">Saved</div>
+<script src="assets/old-db-data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

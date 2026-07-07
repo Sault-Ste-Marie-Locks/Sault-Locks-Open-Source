@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+      <title>Offline · Sault Locks</title>
+      <script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+      <link rel="stylesheet" href="assets/style.css?v=20260707pairpage2" />
+      <link rel="manifest" href="manifest.json">
+      <meta name="theme-color" content="#0f172a">
+      <meta name="mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-title" content="Sault Locks">
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+      <link rel="apple-touch-icon" href="assets/icon-192.png">
+      <style>
+         :root {
+            --off-bg: #f6f9fc;
+            --off-card: #ffffff;
+            --off-text: #0f172a;
+            --off-muted: #64748b;
+            --off-line: rgba(148, 163, 184, 0.2);
+            --off-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.1);
+            --accent: #348dbc;
+         }
+         html.theme-dark, html.app-dark {
+            --off-bg: #0b1120;
+            --off-card: #1e293b;
+            --off-text: #f8fafc;
+            --off-muted: #94a3b8;
+            --off-line: rgba(255, 255, 255, 0.05);
+            --off-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+         }
+         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+         body {
+            margin: 0;
+            min-height: 100svh;
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background-color: var(--off-bg);
+            background-image: radial-gradient(circle at 100% 0%, rgba(52, 141, 188, 0.05), transparent 40%);
+            color: var(--off-text);
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            transition: background 0.3s ease;
+         }
+         .offline-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--off-card);
+            border: 1px solid var(--off-line);
+            box-shadow: var(--off-shadow);
+            border-radius: 28px;
+            padding: 32px;
+            text-align: center;
+         }
+         .offline-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            display: grid;
+            place-items: center;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            font-size: 28px;
+            margin: 0 auto 20px;
+         }
+         h1 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.02em; }
+         p { margin: 0 0 24px; color: var(--off-muted); font-size: 15px; line-height: 1.6; }
+         .offline-actions { display: grid; gap: 12px; }
+         .offline-btn {
+            width: 100%;
+            height: 52px;
+            border-radius: 16px;
+            border: none;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s ease, opacity 0.2s ease;
+         }
+         .offline-btn:active { transform: scale(0.98); }
+         .primary { background: var(--accent); color: white; }
+         .secondary { background: rgba(148, 163, 184, 0.1); color: var(--off-text); }
+         .offline-status {
+            min-height: 24px;
+            margin-top: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--off-muted);
+         }
+         .offline-status[data-state="error"] { color: #ef4444; }
+         .offline-status[data-state="linked"] { color: #10b981; }
+      </style>
+   </head>
+   <body>
+      <section class="offline-card">
+         <div class="offline-icon">!</div>
+         <h1>Phone Link offline</h1>
+         <p>The mobile app cannot reach the dashboard phone server. Please ensure the dashboard is running and try again.</p>
+         
+         <div class="offline-actions">
+            <button class="offline-btn primary" id="retryBtn">Try Again</button>
+            <button class="offline-btn secondary" id="pairBtn">Pair Again</button>
+         </div>
+         
+         <div class="offline-status" id="offlineStatus"></div>
+      </section>
+
+      <script>
+        (function() {
+            const TOKEN_KEY="ssmCanalDashboard.mobileLink.token.v1";
+            const BASE_KEY="ssmCanalDashboard.mobileLink.base.v1";
+            const $=id=>document.getElementById(id);
+            const params=new URLSearchParams(location.search||"");
+            
+            function cleanBase(v) { return String(v||"").trim().replace(/\/+$/, ""); }
+            
+            function base() {
+                const supplied=cleanBase(params.get("base")||params.get("server")||params.get("dashboard")); 
+                if(supplied) { localStorage.setItem(BASE_KEY, supplied); return supplied; }
+                const saved=cleanBase(localStorage.getItem(BASE_KEY)); 
+                if(saved) return saved; 
+                const origin=location.origin&&location.protocol !=="file:" ?cleanBase(location.origin):""; 
+                if(origin) localStorage.setItem(BASE_KEY, origin); 
+                return origin;
+            }
+            
+            function api(path) { const b=base(); if(!b) throw new Error("Missing address"); return b+path; }
+            
+            function status(msg, state) {
+                const el=$("offlineStatus"); 
+                if(el) { el.textContent=msg; el.dataset.state=state||"idle"; }
+            }
+            
+            function url(page){
+                const u=new URL(page, location.href); 
+                const b=base(); 
+                if(b) u.searchParams.set("base", b); 
+                return u.toString();
+            }
+            
+            async function retry() {
+                status("Checking server..."); 
+                try {
+                    const r=await fetch(api("/api/phone-server/status"), { cache:"no-store" }); 
+                    const out=await r.json().catch(()=>({})); 
+                    if(!r.ok||out.ok===false) throw new Error("Server unreachable"); 
+                    if(!out.running) { status("Phone Link is stopped on the dashboard.", "error"); return; }
+                    
+                    const token=localStorage.getItem(TOKEN_KEY); 
+                    if(!token) { location.replace(url("pair.html")); return; }
+                    
+                    const b=await fetch(api("/api/mobile/bootstrap"), {
+                        method:"POST", 
+                        headers: { "Content-Type":"application/json" }, 
+                        body:JSON.stringify({ token }), 
+                        cache:"no-store"
+                    }); 
+                    
+                    const boot=await b.json().catch(()=>({})); 
+                    if(!b.ok||boot.ok===false) { localStorage.removeItem(TOKEN_KEY); location.replace(url("pair.html")); return; }
+                    
+                    status("Connected. Redirecting...", "linked"); 
+                    setTimeout(()=>location.replace(url("index.html")), 350);
+                } catch(e) {
+                    status(navigator.onLine===false?"Phone is offline.":"Dashboard not reachable.", "error");
+                }
+            }
+            
+            $("retryBtn").addEventListener("click", retry); 
+            $("pairBtn").addEventListener("click", ()=> {
+                localStorage.removeItem(TOKEN_KEY); 
+                location.replace(url("pair.html"));
+            });
+            
+            if("serviceWorker" in navigator && location.protocol !=="file:") 
+                window.addEventListener("load", ()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{}));
+        })();
+      </script>
+   </body>
+</html>

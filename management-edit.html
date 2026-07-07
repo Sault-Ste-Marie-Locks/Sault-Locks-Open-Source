@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Edit Vessel Preset</title>
+<script>try{if(localStorage.getItem('ssmCanalDashboard.darkMode')==='true')document.documentElement.classList.add('app-dark')}catch(e){}</script>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+<div class="app-shell easy-only">
+  <main class="main">
+    <header class="topbar">
+      <a class="topbar-logo" href="index.html" aria-label="Go home"><img class="logo-light" src="assets/ssm-logo.png" alt="Sault Ste. Marie logo"><img class="logo-dark" src="assets/ssm-logo-dark.png" alt="Sault Ste. Marie logo"></a>
+      <div class="searchbar">
+        <span>Search</span>
+          
+        <input id="globalSearch" placeholder="Search vessel, owner, registration, destination..." />
+      </div>
+      <div class="top-actions">
+        <div class="pill" id="clock">--:--:--</div>
+        <a class="pill primary" href="daily.html">New Entry</a>
+      </div>
+    </header>
+
+    <nav class="page-nav">
+      <a href="index.html">Home</a><a href="search.html">Search</a><a href="daily.html">New Entry</a><a href="records.html">All Records</a><a href="phone-link.html">Phone Link</a><a href="management.html" class="active">Management</a><a href="settings.html">Settings</a>
+    </nav>
+
+    <section class="section active preset-edit-page">
+      <div class="edit-hero-card">
+        <a class="back-link" href="management.html">← Back to Management</a>
+        <div class="eyebrow">Vessel Preset Editor</div>
+        <h1 id="presetEditTitle">Add Vessel Preset</h1>
+        <p id="presetEditSubtitle">Add a vessel option for New Entry and fill in the details that should auto-fill when that vessel is selected.</p>
+      </div>
+
+      <form id="presetForm" class="preset-edit-form-card">
+        <input type="hidden" id="presetOriginalType">
+        <input type="hidden" id="presetOriginalName">
+        <input id="presetReg" type="hidden">
+
+        <div class="edit-form-section">
+          <div class="edit-section-heading">
+            <span>01</span>
+            <div><h3>Core Details</h3><p>The main preset label and canal registration used in New Entry.</p></div>
+          </div>
+          <div class="form-grid preset-detail-grid">
+            <div class="field"><label>Entry Type</label><select id="presetType"><option value="RB">Recreational Boat</option><option value="TB">Tour Boat</option><option value="Gov">Government Boat</option><option value="Com">Commercial Boat</option><option value="K">Kayak</option></select></div>
+            <div class="field"><label>Canal Reg #</label><input id="presetCanalReg" placeholder="Example: 0010"></div>
+            <div class="field full"><label>Name of Vessel</label><input id="presetVessel" placeholder="Example: Nokomis" required></div>
+            <div class="field full"><label>Name of Owner</label><input id="presetOwner" placeholder="Example: A&C Lock Tours"></div>
+            <div class="field full"><label>Home Port</label><input id="presetHomePort" placeholder="Example: Sault Ste. Marie, ON"></div>
+          </div>
+        </div>
+
+        <div class="edit-form-section">
+          <div class="edit-section-heading">
+            <span>02</span>
+            <div><h3>Registration Details</h3><p>Extra vessel data saved into records when the preset is used.</p></div>
+          </div>
+          <div class="form-grid preset-detail-grid">
+            <div class="field"><label>Length of Vessel</label><input id="presetLength" placeholder="Example: 35 ft"></div>
+            <div class="field"><label>Reg Type</label><input id="presetRegType" placeholder="Example: Commercial"></div>
+            <div class="field"><label>Vessel Reg #</label><input id="presetVesselReg" placeholder="Example: 43E18557"></div>
+            <div class="field"><label>Vessel Type</label><input id="presetVesselType" placeholder="RB / TB / Gov / Com"></div>
+          </div>
+        </div>
+
+        <div class="edit-form-section">
+          <div class="edit-section-heading">
+            <span>03</span>
+            <div><h3>Owner Location</h3><p>Owner/address information stored with the preset.</p></div>
+          </div>
+          <div class="form-grid preset-detail-grid">
+            <div class="field full"><label>Address</label><input id="presetAddress" placeholder="Street address"></div>
+            <div class="field"><label>City</label><input id="presetCity" placeholder="Sault Ste. Marie"></div>
+            <div class="field"><label>Country</label><input id="presetCountry" list="countryOptions" placeholder="CAN / USA"></div>
+            <div class="field"><label>Prov/State</label><input id="presetState" list="stateOptions" placeholder="ON / MI"></div>
+            <div class="field"><label>Postal Code</label><input id="presetPostalCode" placeholder="Postal code"></div>
+          </div>
+        </div>
+
+        <div class="edit-save-bar">
+          <a class="btn" href="management.html">Cancel</a>
+          <button class="btn primary" id="presetSubmitBtn" type="submit">Add Vessel Preset</button>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>
+<datalist id="vesselList"></datalist>
+<datalist id="countryOptions"></datalist>
+<datalist id="stateOptions"></datalist>
+<div class="toast" id="toast">Saved</div>
+<script src="assets/old-db-data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

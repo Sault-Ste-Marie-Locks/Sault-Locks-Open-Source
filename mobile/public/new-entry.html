@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>New Entry</title>
+<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+
+<meta name="theme-color" content="#7C3AED">
+
+<style>
+:root {
+    --bg: #f8f5ff;
+    --card: rgba(255,255,255,.88);
+    --text: #22233d;
+    --muted: #8a8ca2;
+    --purple: var(--blue, #348DBC);
+    --soft-purple: var(--blue-soft, #EAF6FC);
+    --border: rgba(100,76,160,.10);
+    --shadow: 0 9px 24px rgba(74,45,145,.09);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    background:
+        radial-gradient(circle at 16% -8%, rgba(124,58,237,.18), transparent 38%),
+        radial-gradient(circle at 100% 20%, rgba(255,118,88,.10), transparent 34%),
+        linear-gradient(180deg, #fbf9ff 0%, #f6f1ff 100%);
+    color: var(--text);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+svg {
+    width: 21px;
+    height: 21px;
+    stroke: currentColor;
+    stroke-width: 2.25;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.app {
+    width: 100%;
+    min-height: 100dvh;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 14px calc(24px + var(--safe-bottom));
+}
+
+.app-header {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.header-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.82);
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+    color: #262740;
+    box-shadow: 0 6px 16px rgba(84,48,160,.06);
+    backdrop-filter: blur(16px);
+}
+
+.app-logo-title {
+    text-align: center;
+    line-height: 1.05;
+}
+
+.app-logo-title span {
+    display: block;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: -.04em;
+}
+
+.app-logo-title small {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 750;
+}
+
+.hero {
+    border-radius: 24px;
+    padding: 18px;
+    color: #fff;
+    background:
+        radial-gradient(circle at 92% 8%, rgba(255,255,255,.35), transparent 27%),
+        linear-gradient(135deg, #6868f7 0%, #7b38ed 46%, #cf58bb 76%, #ff7658 100%);
+    box-shadow: 0 16px 34px rgba(124,58,237,.24);
+    margin-bottom: 18px;
+}
+
+.hero h1 {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: -.05em;
+}
+
+.hero p {
+    margin: 7px 0 0;
+    font-size: 13px;
+    line-height: 1.35;
+    opacity: .78;
+    font-weight: 700;
+}
+
+.grid {
+    display: grid;
+    gap: 9px;
+}
+
+.btn {
+    min-height: 58px;
+    border-radius: 18px;
+    padding: 10px 11px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(18px);
+    transition: transform .16s ease, background .16s ease;
+}
+
+.btn:active {
+    transform: scale(.975);
+    background: #fff;
+}
+
+.btn-icon {
+    width: 39px;
+    height: 39px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: var(--soft-purple);
+    color: var(--purple);
+    flex: 0 0 auto;
+}
+
+.btn:nth-child(2) .btn-icon {
+    background: #fff1ec;
+    color: #ff6848;
+}
+
+.btn:nth-child(3) .btn-icon {
+    background: #eef3ff;
+    color: #4f6cf4;
+}
+
+.btn:nth-child(4) .btn-icon {
+    background: #ecfbff;
+    color: #1599bb;
+}
+
+.btn:nth-child(5) .btn-icon {
+    background: #f1ecff;
+    color: #7c3aed;
+}
+
+.btn:nth-child(6) .btn-icon {
+    background: #ecfff4;
+    color: #14a85c;
+}
+
+.btn-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.btn-text strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.btn-text small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.chev {
+    color: #c3c4d1;
+}
+
+@media (min-width: 540px) {
+    .app {
+        max-width: 460px;
+        margin: 0 auto;
+    }
+}
+
+/* FINAL HEADER LOGO FIX: this is a text logo, not an accent card/highlight */
+.app-header .app-logo-title,
+.app-header .app-logo-title span,
+.app-header .app-logo-title small{
+    background:transparent !important;
+    background-image:none !important;
+    background-color:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    outline:0 !important;
+}
+.app-header .app-logo-title{
+    padding:0 !important;
+    margin:0 !important;
+    border-radius:0 !important;
+    text-align:center;
+    line-height:1.05;
+    color:var(--text);
+}
+html.theme-dark .app-header .app-logo-title span,
+html.theme-dark .app-header .app-logo-title{ color:#fff !important; }
+html.theme-light .app-header .app-logo-title span,
+html.theme-light .app-header .app-logo-title,
+body.light .app-header .app-logo-title span,
+body.light .app-header .app-logo-title{ color:#22233d !important; }
+.app-header .app-logo-title small{ color:var(--muted) !important; }
+.app-header .app-logo-title::before,
+.app-header .app-logo-title::after{ display:none !important; content:none !important; }
+.app-header .app-logo-title::selection,
+.app-header .app-logo-title *::selection{ background:transparent !important; color:inherit !important; }
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <header class="app-header">
+        <a class="header-btn" href="index.html" aria-label="Back">
+            <svg viewBox="0 0 24 24">
+                <path d="m15 18-6-6 6-6"></path>
+            </svg>
+        </a>
+
+        <div class="app-logo-title">
+            <span>New Entry</span>
+            <small>Select Type</small>
+        </div>
+
+        <a class="header-btn" href="settings.html" aria-label="Settings">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"></path>
+                <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.1 2.1 0 0 1-2.97 2.97l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.65V21a2.1 2.1 0 0 1-4.2 0v-.08a1.8 1.8 0 0 0-1.1-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05a2.1 2.1 0 0 1-2.97-2.97l.05-.05a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.65-1.1H3a2.1 2.1 0 0 1 0-4.2h.08a1.8 1.8 0 0 0 1.65-1.1 1.8 1.8 0 0 0-.36-1.98l-.05-.05a2.1 2.1 0 0 1 2.97-2.97l.05.05a1.8 1.8 0 0 0 1.98.36 1.8 1.8 0 0 0 1.1-1.65V3a2.1 2.1 0 0 1 4.2 0v.08a1.8 1.8 0 0 0 1.1 1.65 1.8 1.8 0 0 0 1.98-.36l.05-.05a2.1 2.1 0 0 1 2.97 2.97l-.05.05a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.1H21a2.1 2.1 0 0 1 0 4.2h-.08A1.8 1.8 0 0 0 19.4 15Z"></path>
+            </svg>
+        </a>
+    </header>
+
+    <section class="hero">
+        <h1>Add Lock Entry</h1>
+        <p>Choose the type of traffic or lock event you want to record.</p>
+    </section>
+
+    <div class="grid">
+        <a class="btn" href="returning-boat.html">
+            <span class="btn-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+                    <path d="M3 4v6h6"></path>
+                    <path d="M8 14h8l-1.2 3H9.2L8 14Z"></path>
+                    <path d="M10 14v-3l2-1.5L14 11v3"></path>
+                </svg>
+            </span>
+            <span class="btn-text">
+                <strong>Returning Boat</strong>
+                <small>New return entry with auto-fill</small>
+            </span>
+            <span class="chev">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+        </a>
+
+
+        <a class="btn" href="recreational-boat.html">
+            <span class="btn-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 13h18l-2 5a3 3 0 0 1-3 2H8a3 3 0 0 1-3-2l-2-5Z"></path>
+                    <path d="M7 13V8l5-3 5 3v5"></path>
+                    <path d="M9 10h6"></path>
+                </svg>
+            </span>
+            <span class="btn-text">
+                <strong>Recreational Boat</strong>
+                <small>Personal vessel lockage</small>
+            </span>
+            <span class="chev">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+        </a>
+
+        <a class="btn" href="tour-boat.html">
+            <span class="btn-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M4 15h16l-2 4H6l-2-4Z"></path>
+                    <path d="M7 15V8h10v7"></path>
+                    <path d="M9 8V5h6v3"></path>
+                    <path d="M8 11h2"></path>
+                    <path d="M14 11h2"></path>
+                </svg>
+            </span>
+            <span class="btn-text">
+                <strong>Tour Boat</strong>
+                <small>Passenger tour vessel</small>
+            </span>
+            <span class="chev">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+        </a>
+
+        <a class="btn" href="government-boat.html">
+            <span class="btn-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 3 20 7v5c0 5-3.4 8.5-8 9-4.6-.5-8-4-8-9V7l8-4Z"></path>
+                    <path d="M9 12h6"></path>
+                    <path d="M12 9v6"></path>
+                </svg>
+            </span>
+            <span class="btn-text">
+                <strong>Government Boat</strong>
+                <small>Police, coast guard, agency</small>
+            </span>
+            <span class="chev">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+        </a>
+
+        <a class="btn" href="commercial-boat.html">
+            <span class="btn-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 15h18l-2.5 4H6L3 15Z"></path>
+                    <path d="M7 15V7h8l3 4v4"></path>
+                    <path d="M9 10h3"></path>
+                    <path d="M9 13h6"></path>
+                </svg>
+            </span>
+            <span class="btn-text">
+                <strong>Commercial Boat</strong>
+                <small>Work or freight vessel</small>
+            </span>
+            <span class="chev">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+        </a>
+        
+        <a class="btn" href="kayak.html">
+            <span class="btn-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 13h18l-2 5a3 3 0 0 1-3 2H8a3 3 0 0 1-3-2l-2-5Z"></path>
+                    <path d="M7 13V8l5-3 5 3v5"></path>
+                    <path d="M9 10h6"></path>
+                </svg>
+            </span>
+            <span class="btn-text">
+                <strong>Kayak</strong>
+                <small>Paddle craft lockage</small>
+            </span>
+            <span class="chev">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+        </a>
+
+        <a class="btn" href="lock-reversal.html">
+            <span class="btn-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M8 3v14"></path>
+                    <path d="m4 13 4 4 4-4"></path>
+                    <path d="M16 21V7"></path>
+                    <path d="m12 11 4-4 4 4"></path>
+                </svg>
+            </span>
+            <span class="btn-text">
+                <strong>Lock Reversal</strong>
+                <small>Record direction reversal</small>
+            </span>
+            <span class="chev">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+        </a>
+
+        <a class="btn" href="lock-test.html">
+            <span class="btn-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 6 9 17l-5-5"></path>
+                    <path d="M4 20h16"></path>
+                </svg>
+            </span>
+            <span class="btn-text">
+                <strong>Lock Test</strong>
+                <small>Record lock test</small>
+            </span>
+            <span class="chev">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+        </a>
+        
+        
+        <h1>‎ </h1>
+
+    </div>
+
+</div>
+
+<script src="assets/app.js?v=20260707pairpage2"></script>
+</body>
+</html>

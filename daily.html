@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>New Entry</title>
+
+  <script>
+    try {
+      if (localStorage.getItem("ssmCanalDashboard.darkMode") === "true") {
+        document.documentElement.classList.add("app-dark");
+      }
+    } catch (e) {}
+  </script>
+
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+
+<body>
+  <div class="app-shell easy-only">
+    <main class="main">
+
+      <header class="topbar">
+        <a class="topbar-logo" href="index.html" aria-label="Go home">
+          <img class="logo-light" src="assets/ssm-logo.png" alt="Sault Ste. Marie logo" />
+          <img class="logo-dark" src="assets/ssm-logo-dark.png" alt="Sault Ste. Marie logo" />
+        </a>
+
+        <div class="searchbar">
+          <span>Search</span>
+          <input
+            id="globalSearch"
+            type="search"
+            placeholder="Search vessel, owner, registration, destination..."
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="top-actions">
+          <div class="pill" id="clock">--:--:--</div>
+          <a class="pill primary" href="daily.html">New Entry</a>
+        </div>
+      </header>
+
+      <nav class="page-nav">
+        <a href="index.html">Home</a>
+        <a href="search.html">Search</a>
+        <a href="daily.html" class="active">New Entry</a>
+        <a href="records.html">All Records</a>
+        <a href="phone-link.html">Phone Link</a>
+        <a href="management.html">Management</a>
+        <a href="settings.html">Settings</a>
+      </nav>
+
+      <div class="page-intro">
+        <div>
+          <div class="eyebrow">Operations Workspace</div>
+          <h1 id="entryPageTitle">New Entry</h1>
+          <p id="entryPageText">
+            Choose what kind of record you want to create before opening the entry form.
+          </p>
+        </div>
+      </div>
+
+      <section class="section active" id="daily">
+
+        <div class="panel entry-type-panel" id="entryTypeChooser">
+          <div class="panel-title">
+            <h3>Choose Entry Type</h3>
+            <small>
+              Select a workflow to start a new record ·
+              <a class="text-link" href="management.html">Manage presets</a>
+            </small>
+          </div>
+
+          <div class="entry-type-grid">
+            <a class="entry-type-card" href="daily.html?type=RB">
+              <span>RB</span>
+              <strong>Recreational Boat</strong>
+              <small>Private or recreational vessel movement</small>
+            </a>
+
+            <a class="entry-type-card" href="daily.html?type=TB">
+              <span>TB</span>
+              <strong>Tour Boat</strong>
+              <small>Passenger or tour vessel movement</small>
+            </a>
+
+            <a class="entry-type-card" href="daily.html?type=K">
+              <span>K</span>
+              <strong>Kayak</strong>
+              <small>Kayak or other tiny vessel</small>
+            </a>
+
+            <a class="entry-type-card" href="daily.html?type=Gov">
+              <span>GOV</span>
+              <strong>Government Boat</strong>
+              <small>Police, Coast Guard, or agency vessel</small>
+            </a>
+
+            <a class="entry-type-card" href="daily.html?type=Com">
+              <span>COM</span>
+              <strong>Commercial Boat</strong>
+              <small>Commercial traffic or work vessel</small>
+            </a>
+
+            <a class="entry-type-card" href="daily.html?type=LR">
+              <span>LR</span>
+              <strong>Lock Reversal</strong>
+              <small>Record a lock reversal event</small>
+            </a>
+
+            <a class="entry-type-card" href="daily.html?type=LT">
+              <span>LT</span>
+              <strong>Lock Test</strong>
+              <small>Record a lock test event</small>
+            </a>
+          </div>
+        </div>
+
+        <div class="panel entry-form-panel" id="entryFormPanel" hidden>
+          <div class="panel-title">
+            <h3 id="selectedEntryTitle">New Entry</h3>
+            <small>
+              <span id="selectedEntrySubtext">Complete the selected entry form</span>
+              ·
+              <a class="text-link" href="management.html">Manage presets</a>
+            </small>
+          </div>
+
+          <form id="mobileEntryForm" class="mobile-entry-form" autocomplete="off">
+            <div id="mobileFormMount"></div>
+
+            <div class="form-actions">
+              <button class="btn primary" type="submit">Save Entry</button>
+              <a class="btn" href="daily.html">Change Entry Type</a>
+              <button class="btn danger" type="button" id="clearMobileForm">Clear Form</button>
+            </div>
+          </form>
+
+          <div class="popup-overlay" id="missingPopup" hidden>
+            <div class="popup-box">
+              <h3>Missing Information</h3>
+              <p>Some fields are not filled out. Are you sure you want to continue?</p>
+
+              <div class="missing-list" id="missingList"></div>
+
+              <div class="popup-actions">
+                <button class="btn" type="button" id="cancelSubmit">Go Back</button>
+                <button class="btn primary" type="button" id="continueSubmit">Continue</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="entryRecordsPanel" hidden>
+          <div class="panel-title">
+            <h3>All Traffic Records</h3>
+            <small>Saved server records with edit/delete actions</small>
+          </div>
+
+          <div class="table-wrap">
+            <table id="trafficTable"></table>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- 
+    Keep these datalists for old app compatibility.
+    The custom dropdown script reads the same preset data,
+    but removes list="" from the visible vessel input.
+  -->
+  <datalist id="vesselList"></datalist>
+  <datalist id="dashboardVesselPresetList"></datalist>
+
+  <div class="toast" id="toast">Saved</div>
+
+  <script src="assets/old-db-data.js"></script>
+  <script src="assets/app.js"></script>
+
+  <script>
+    /*
+      HTML patch for the custom preset dropdown.
+      Works on RB, TB, Gov, and Com pages.
+      This stops the browser's native black datalist popup from showing.
+    */
+    (function fixEntryPresetHTML() {
+      const supportedTypes = ["RB", "TB", "Gov", "Com", "K"];
+
+      function getType() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("type") || "";
+      }
+
+      function isPresetPage() {
+        return supportedTypes.includes(getType());
+      }
+
+      function getTypeLabel(type) {
+        return {
+          RB: "recreational boat",
+          TB: "tour boat",
+          K: "kayak",
+          Gov: "government boat",
+          Com: "commercial boat"
+        }[type] || "vessel";
+      }
+
+      function findVesselInput() {
+        return (
+          document.querySelector("#customVesselName") ||
+          document.querySelector("#rbVesselName") ||
+          document.querySelector("#trafficVessel") ||
+          document.querySelector('input[name="vessel"]') ||
+          document.querySelector('input[name="vesselName"]') ||
+          document.querySelector('input[list="vesselList"]') ||
+          document.querySelector('input[list="dashboardVesselPresetList"]') ||
+          document.querySelector('input[placeholder="Vessel name"]') ||
+          document.querySelector('input[placeholder="Vessel Name"]')
+        );
+      }
+
+      function patch() {
+        if (!isPresetPage()) return;
+
+        const input = findVesselInput();
+
+        if (!input) {
+          setTimeout(patch, 250);
+          return;
+        }
+
+        const type = getType();
+
+        input.id = "customVesselName";
+        input.name = input.name || "vessel";
+        input.type = "text";
+        input.autocomplete = "off";
+        input.placeholder = "Search or select " + getTypeLabel(type) + "...";
+
+        /*
+          Main fix:
+          app.js currently has code that can add list="" back onto the vessel input.
+          This removes it so Chrome does not show the ugly black datalist popup.
+        */
+        input.removeAttribute("list");
+
+        let combo = input.closest(".custom-preset-combo");
+
+        if (!combo) {
+          combo = document.createElement("div");
+          combo.className = "custom-preset-combo";
+
+          input.parentNode.insertBefore(combo, input);
+          combo.appendChild(input);
+        }
+
+        if (!combo.querySelector("#customPresetToggle")) {
+          const toggle = document.createElement("button");
+          toggle.type = "button";
+          toggle.id = "customPresetToggle";
+          toggle.className = "custom-preset-toggle";
+          toggle.setAttribute("aria-label", "Open vessel presets");
+          toggle.textContent = "▾";
+          combo.appendChild(toggle);
+        }
+
+        if (!combo.querySelector("#customPresetMenu")) {
+          const menu = document.createElement("div");
+          menu.id = "customPresetMenu";
+          menu.className = "custom-preset-menu";
+          combo.appendChild(menu);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", patch);
+      window.addEventListener("load", patch);
+
+      setTimeout(patch, 250);
+      setTimeout(patch, 750);
+      setTimeout(patch, 1500);
+      setTimeout(patch, 3000);
+
+      /*
+        Your app refreshes server data and presets often, so this keeps
+        the bad native datalist from coming back.
+      */
+      setInterval(patch, 750);
+    })();
+  </script>
+</body>
+</html>

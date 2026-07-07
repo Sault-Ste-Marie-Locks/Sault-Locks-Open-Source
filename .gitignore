@@ -1,0 +1,13 @@
+﻿node_modules/
+dist/
+out/
+release/
+build/
+*.exe
+*.zip
+*.log
+*.tmp
+AppWindowProfile/
+build-real-app.log
+database/*.db-shm
+database/*.db-wal

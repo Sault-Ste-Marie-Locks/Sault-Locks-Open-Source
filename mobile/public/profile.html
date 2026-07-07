@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>Profile</title>
+<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+<meta name="theme-color" content="#7C3AED">
+<style>
+:root{
+    --bg:#f8f5ff;
+    --card:rgba(255,255,255,.9);
+    --text:#22233d;
+    --muted:#8a8ca2;
+    --purple:var(--blue,#348DBC);
+    --purple-light:var(--blue-hover,#4AA3D4);
+    --soft-purple:var(--blue-soft,#EAF6FC);
+    --border:rgba(100,76,160,.10);
+    --shadow:0 9px 24px rgba(74,45,145,.09);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{
+    margin:0;
+    min-height:100%;
+    background:radial-gradient(circle at 16% -8%,rgba(124,58,237,.18),transparent 38%),radial-gradient(circle at 100% 20%,rgba(255,118,88,.10),transparent 34%),linear-gradient(180deg,#fbf9ff 0%,#f6f1ff 100%);
+    color:var(--text);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+body:not(.light){
+    --bg:#101826;
+    --card:rgba(23,33,50,.92);
+    --text:#F7FAFC;
+    --muted:#9AA8BA;
+    --border:rgba(147,170,196,.14);
+    --shadow:0 10px 26px rgba(0,0,0,.22);
+    background:radial-gradient(circle at 16% -8%,rgba(52,141,188,.22),transparent 38%),radial-gradient(circle at 100% 20%,rgba(47,134,183,.12),transparent 34%),linear-gradient(180deg,#101826 0%,#132032 100%);
+}
+a{color:inherit;text-decoration:none;}
+svg{width:21px;height:21px;stroke:currentColor;stroke-width:2.25;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.app{
+    width:100%;
+    min-height:100dvh;
+    padding:calc(12px + env(safe-area-inset-top,0px)) 14px calc(96px + var(--safe-bottom));
+}
+.app-header{
+    height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+}
+.header-btn{
+    width:38px;
+    height:38px;
+    border-radius:14px;
+    background:rgba(255,255,255,.82);
+    border:1px solid var(--border);
+    display:grid;
+    place-items:center;
+    color:#262740;
+    box-shadow:0 6px 16px rgba(84,48,160,.06);
+    backdrop-filter:blur(16px);
+}
+body:not(.light) .header-btn{background:rgba(23,33,50,.92);color:#F7FAFC;}
+.app-logo-title{text-align:center;line-height:1.05;}
+.app-logo-title span{display:block;font-size:17px;font-weight:900;letter-spacing:-.04em;}
+.app-logo-title small{display:block;margin-top:4px;color:var(--muted);font-size:11px;font-weight:750;}
+.hero{
+    border-radius:24px;
+    padding:18px;
+    color:#fff;
+    background:radial-gradient(circle at 92% 8%,rgba(255,255,255,.35),transparent 27%),linear-gradient(135deg,var(--blue,#348DBC) 0%,var(--blue-hover,#3F9FCE) 100%);
+    box-shadow:0 16px 34px rgba(var(--accent-rgb,52,141,188),.24);
+    margin-bottom:16px;
+}
+.hero h1{margin:0;font-size:25px;letter-spacing:-.05em;}
+.hero p{margin:7px 0 0;font-size:13px;line-height:1.35;opacity:.82;font-weight:700;}
+.profile-topline{
+    min-height:36px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:800;
+}
+.profile-pill{
+    background:rgba(var(--accent-rgb,52,141,188),.12);
+    color:var(--blue,#348DBC);
+    border:1px solid rgba(var(--accent-rgb,52,141,188),.24);
+    border-radius:999px;
+    padding:8px 10px;
+    white-space:nowrap;
+}
+</style>
+</head>
+<body>
+<div class="app">
+    <header class="app-header">
+        <a class="header-btn" href="index.html" aria-label="Back">
+            <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+        </a>
+
+        <div class="app-logo-title">
+            <span>Profile</span>
+            <small>User + Device</small>
+        </div>
+
+        <a class="header-btn" href="settings.html" aria-label="Settings">
+            <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"></path><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.1 2.1 0 0 1-2.97 2.97l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.65V21a2.1 2.1 0 0 1-4.2 0v-.08a1.8 1.8 0 0 0-1.1-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05a2.1 2.1 0 0 1-2.97-2.97l.05-.05a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.65-1.1H3a2.1 2.1 0 0 1 0-4.2h.08a1.8 1.8 0 0 0 1.65-1.1 1.8 1.8 0 0 0-.36-1.98l-.05-.05a2.1 2.1 0 0 1 2.97-2.97l.05.05a1.8 1.8 0 0 0 1.98.36 1.8 1.8 0 0 0 1.1-1.65V3a2.1 2.1 0 0 1 4.2 0v.08a1.8 1.8 0 0 0 1.1 1.65 1.8 1.8 0 0 0 1.98-.36l.05-.05a2.1 2.1 0 0 1 2.97 2.97l-.05.05a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.1H21a2.1 2.1 0 0 1 0 4.2h-.08A1.8 1.8 0 0 0 19.4 15Z"></path></svg>
+        </a>
+    </header>
+
+    <section class="hero">
+        <h1>Operator Profile</h1>
+        <p>Choose the name that gets stamped on new lock logs from this device.</p>
+    </section>
+
+    
+
+    <form class="profile-card" id="profileForm">
+        <label class="profile-label" for="profileName">Your name for logs</label>
+        <input class="profile-input" id="profileName" autocomplete="name" placeholder="Example: Jacob" maxlength="40">
+
+        <label class="profile-label" for="deviceLabel" style="margin-top:14px;">Device label optional</label>
+        <input class="profile-input" id="deviceLabel" placeholder="Example: Front Desk Phone" maxlength="50">
+
+        <p class="profile-hint">Every new entry will save this name as “Added By” so you can see who created each log.</p>
+        <button class="profile-save-btn" type="submit">Save Profile</button>
+    </form>
+
+    <section class="device-card">
+        <label class="profile-label">Device Info</label>
+        <div class="device-list" id="deviceInfoList"></div>
+    </section>
+</div>
+
+<div class="profile-toast" id="profileToast">Profile saved</div>
+
+<script src="assets/app.js?v=20260707pairpage2"></script>
+</body>
+</html>
