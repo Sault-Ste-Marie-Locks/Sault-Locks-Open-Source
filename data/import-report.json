@@ -1,0 +1,134 @@
+{
+  "baseDashboardRecords": 7763,
+  "rawAccessRowsSeenIncludingCopiedFiles": 60947,
+  "parsedAccessRows": 60947,
+  "accessRowsAddedAfterDedupe": 25790,
+  "finalTrafficRecords": 33553,
+  "finalRegistryRows": 374,
+  "newByYear": {
+    "2014": 2004,
+    "2015": 2691,
+    "2016": 2438,
+    "2018": 2678,
+    "2019": 2590,
+    "2020": 2161,
+    "2021": 1354,
+    "2022": 1531,
+    "2023": 3046,
+    "2024": 1442,
+    "2025": 3150,
+    "2026": 705
+  },
+  "byFile": {
+    "soo locks'/SaultLocks2025.mdb": {
+      "rows": 8364,
+      "added": 8306
+    },
+    "soo locks'/Prior YR database/SaultLocks2014 -copy.mdb": {
+      "rows": 24,
+      "added": 24
+    },
+    "soo locks'/Prior YR database/SaultLocks2014.mdb": {
+      "rows": 2018,
+      "added": 1994
+    },
+    "soo locks'/Prior YR database/SaultLocks2015.mdb": {
+      "rows": 2696,
+      "added": 2677
+    },
+    "soo locks'/Prior YR database/SaultLocks2016 - Copy.mdb": {
+      "rows": 2454,
+      "added": 2438
+    },
+    "soo locks'/Prior YR database/SaultLocks2016.mdb": {
+      "rows": 2454,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/SaultLocks2017.mdb": {
+      "rows": 2454,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/SaultLocks2018.mdb": {
+      "rows": 2717,
+      "added": 2715
+    },
+    "soo locks'/Prior YR database/SaultLocks2019.mdb": {
+      "rows": 2569,
+      "added": 2557
+    },
+    "soo locks'/Prior YR database/SaultLocks2020.mdb": {
+      "rows": 2191,
+      "added": 2159
+    },
+    "soo locks'/Prior YR database/SaultLocks2021.mdb": {
+      "rows": 1383,
+      "added": 1352
+    },
+    "soo locks'/Prior YR database/SaultLocks2022.mdb": {
+      "rows": 1554,
+      "added": 1531
+    },
+    "soo locks'/Prior YR database/SaultLocks2023.mdb": {
+      "rows": 3058,
+      "added": 37
+    },
+    "soo locks'/Prior YR database/SaultLocks2024.mdb": {
+      "rows": 4497,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/SaultLocks2025.accdb": {
+      "rows": 0,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/SaultLocks2025.mdb": {
+      "rows": 0,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2014 -copy.mdb": {
+      "rows": 24,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2014.mdb": {
+      "rows": 2018,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2015.mdb": {
+      "rows": 2696,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2016 - Copy.mdb": {
+      "rows": 2454,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2016.mdb": {
+      "rows": 2454,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2017.mdb": {
+      "rows": 2454,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2018.mdb": {
+      "rows": 2717,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2019.mdb": {
+      "rows": 2569,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2020.mdb": {
+      "rows": 2191,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2021.mdb": {
+      "rows": 1383,
+      "added": 0
+    },
+    "soo locks'/Prior YR database/Prior YR database/SaultLocks2022.mdb": {
+      "rows": 1554,
+      "added": 0
+    }
+  },
+  "failures": [],
+  "dedupeNote": "Deduped by full row signature, not just AutoID, so different years with same AutoID are kept."
+}

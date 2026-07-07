@@ -1,0 +1,48 @@
+name: Build Lock Release Windows Update
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set automatic build version
+        shell: pwsh
+        run: |
+          $version = "1.0." + (1000 + [int]$env:GITHUB_RUN_NUMBER)
+          "BUILD_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          node -e "const fs=require('fs'); const p=require('./package.json'); p.version=process.env.BUILD_VERSION; fs.writeFileSync('package.json', JSON.stringify(p,null,2)); const c=require('./update-config.json'); c.githubRepo='OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates'; c.privateRepo=false; c.checkOnStartup=true; c.assetName='Lock_Release_Windows.zip'; fs.writeFileSync('update-config.json', JSON.stringify(c,null,2));"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Windows app
+        run: npm run build-win
+
+      - name: Create update ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist\Lock Release-win32-x64\*" -DestinationPath "Lock_Release_Windows.zip" -Force
+
+      - name: Publish release to public updates repo
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
+        run: |
+          if (-not $env:GH_TOKEN) { throw "Missing secret UPDATE_REPO_TOKEN. Add a GitHub token with Contents: Read/Write access to OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates." }
+          $tag = "v$env:BUILD_VERSION"
+          gh release create $tag "Lock_Release_Windows.zip" --repo "OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates" --title "Lock Release $tag" --notes "Automatic Lock Release desktop update." --latest

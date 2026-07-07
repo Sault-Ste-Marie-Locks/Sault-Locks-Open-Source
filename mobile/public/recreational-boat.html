@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>Recreational Boat</title>
+<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6C5CE7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sault Locks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+
+<style>
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,
+body{
+    min-height:100%;
+    overflow-x:hidden !important;
+}
+
+body{
+    margin:0;
+}
+
+.page{
+    width:100% !important;
+    max-width:460px !important;
+    min-height:100dvh !important;
+    margin:0 auto !important;
+    padding:calc(12px + env(safe-area-inset-top, 0px)) 14px calc(108px + env(safe-area-inset-bottom, 0px)) !important;
+    background:transparent !important;
+    overflow-x:hidden !important;
+}
+
+.entry-app-header{
+    height:40px !important;
+    min-height:40px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:12px !important;
+    margin:0 0 14px !important;
+    padding:0 !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    position:relative !important;
+    z-index:20 !important;
+}
+
+.entry-header-btn,
+.entry-header-spacer{
+    width:38px !important;
+    height:38px !important;
+    min-width:38px !important;
+    min-height:38px !important;
+    border-radius:14px !important;
+}
+
+.entry-header-btn{
+    display:grid !important;
+    place-items:center !important;
+    padding:0 !important;
+    background:var(--card-2, rgba(255,255,255,.12)) !important;
+    border:1px solid var(--border-strong, rgba(148,163,184,.20)) !important;
+    color:var(--text) !important;
+    box-shadow:var(--inner, inset 0 1px 0 rgba(255,255,255,.06)), 0 6px 16px rgba(0,0,0,.08) !important;
+    text-decoration:none !important;
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+}
+
+.entry-header-spacer{
+    display:block !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+}
+
+.entry-header-btn svg{
+    width:21px !important;
+    height:21px !important;
+    stroke:currentColor !important;
+    stroke-width:2.25 !important;
+    fill:none !important;
+    stroke-linecap:round !important;
+    stroke-linejoin:round !important;
+}
+
+.entry-header-title{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    text-align:center !important;
+    line-height:1.05 !important;
+    color:var(--text) !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    padding:0 !important;
+}
+
+.entry-header-title span{
+    display:block !important;
+    margin:0 !important;
+    color:var(--text) !important;
+    font-size:17px !important;
+    line-height:1.05 !important;
+    font-weight:950 !important;
+    letter-spacing:-.04em !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+}
+
+.entry-header-title small{
+    display:block !important;
+    margin-top:4px !important;
+    color:var(--muted) !important;
+    font-size:11px !important;
+    font-weight:800 !important;
+}
+
+.form{
+    padding-top:0 !important;
+}
+
+html.theme-dark body,
+html.app-dark body{
+    background:linear-gradient(180deg,#0f172a 0%,#111827 100%) !important;
+    color:#f8fafc !important;
+}
+
+html.theme-dark .entry-header-btn,
+html.app-dark .entry-header-btn{
+    background:rgba(23,32,51,.94) !important;
+    border-color:rgba(148,163,184,.22) !important;
+    color:#f8fafc !important;
+    box-shadow:0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+html.theme-dark .entry-header-title,
+html.theme-dark .entry-header-title span,
+html.app-dark .entry-header-title,
+html.app-dark .entry-header-title span{
+    color:#f8fafc !important;
+}
+
+html.theme-dark .entry-header-title small,
+html.app-dark .entry-header-title small{
+    color:#a9b8cb !important;
+}
+
+html.theme-light .entry-header-btn,
+body.light .entry-header-btn{
+    background:linear-gradient(180deg,#ffffff,var(--blue-soft,#E8F5FC)) !important;
+    border-color:rgba(var(--accent-rgb,52,141,188),.34) !important;
+    color:var(--blue,#348DBC) !important;
+    box-shadow:0 8px 18px rgba(var(--accent-rgb,52,141,188),.10) !important;
+}
+
+@media(max-width:370px){
+    .page{
+        padding-left:12px !important;
+        padding-right:12px !important;
+    }
+
+    .entry-app-header{
+        gap:10px !important;
+    }
+
+    .entry-header-btn,
+    .entry-header-spacer{
+        width:37px !important;
+        height:37px !important;
+        min-width:37px !important;
+        min-height:37px !important;
+    }
+
+    .entry-header-title span{
+        font-size:16px !important;
+    }
+}
+
+.time-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-bottom:14px;
+}
+
+.time-row input{
+    margin-bottom:0;
+    flex:1;
+}
+
+.time-btn{
+    height:51px;
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    border-radius:12px;
+    padding:0 14px;
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+    box-shadow:var(--inner);
+}
+
+.time-btn:active{
+    transform:scale(.97);
+    background:var(--card-3);
+}
+
+input::placeholder,
+textarea::placeholder{
+    color:var(--muted);
+    opacity:1;
+}
+
+select{
+    color:var(--text);
+}
+
+select.placeholder{
+    color:var(--muted);
+}
+
+.popup-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9999;
+}
+
+body.light .popup-overlay{
+    background:rgba(16,32,48,.35);
+}
+
+.popup-overlay.active{
+    display:flex;
+}
+
+.popup-box{
+    width:100%;
+    max-width:360px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    animation:popupIn .18s ease;
+}
+
+body.light .popup-box{
+    box-shadow:0 20px 60px rgba(108,92,231,.18);
+}
+
+@keyframes popupIn{
+    from{
+        opacity:0;
+        transform:scale(.94) translateY(8px);
+    }
+    to{
+        opacity:1;
+        transform:scale(1) translateY(0);
+    }
+}
+
+.popup-box h3{
+    color:var(--text);
+    font-size:20px;
+    margin-bottom:8px;
+    font-weight:900;
+}
+
+.popup-box p{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.5;
+    margin-bottom:14px;
+    font-weight:700;
+}
+
+.missing-list{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px;
+    margin-bottom:18px;
+    color:var(--text);
+    font-size:14px;
+    font-weight:800;
+}
+
+.missing-list div{
+    padding:4px 0;
+}
+
+.popup-actions{
+    display:flex;
+    gap:10px;
+}
+
+.popup-actions button{
+    flex:1;
+    border:none;
+    border-radius:14px;
+    padding:14px 12px;
+    font-size:14px;
+    font-weight:900;
+}
+
+.cancel-btn{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong) !important;
+}
+
+.continue-btn{
+    background:var(--blue);
+    color:#fff;
+    border:1px solid var(--blue-border) !important;
+}
+
+.cancel-btn:active,
+.continue-btn:active{
+    transform:scale(.98);
+}
+
+
+/* =========================================================
+   Recreational Boat Preset Picker
+   Custom mobile dropdown that replaces the ugly native list.
+========================================================= */
+.rb-preset-combo{
+    position:relative;
+    width:100%;
+    margin-bottom:8px;
+}
+
+.rb-preset-combo input{
+    width:100%;
+    padding-right:52px !important;
+    margin-bottom:0 !important;
+}
+
+.rb-preset-toggle{
+    position:absolute;
+    right:8px;
+    top:50%;
+    width:36px;
+    height:36px;
+    transform:translateY(-50%);
+    display:grid;
+    place-items:center;
+    border:1px solid var(--border-strong, rgba(148,163,184,.22));
+    border-radius:12px;
+    background:var(--card-2, rgba(255,255,255,.14));
+    color:var(--text);
+    font-size:15px;
+    font-weight:950;
+    line-height:1;
+    cursor:pointer;
+    box-shadow:var(--inner, inset 0 1px 0 rgba(255,255,255,.05));
+}
+
+.rb-preset-toggle:active{
+    transform:translateY(-50%) scale(.96);
+}
+
+.rb-preset-hint{
+    margin:-2px 0 14px;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.35;
+    font-weight:800;
+}
+
+.rb-preset-menu{
+    position:absolute;
+    left:0;
+    right:0;
+    top:calc(100% + 8px);
+    z-index:10000;
+    display:none;
+    max-height:min(330px, 48dvh);
+    overflow-y:auto;
+    padding:8px;
+    background:var(--card, #fff);
+    border:1px solid var(--border-strong, rgba(148,163,184,.22));
+    border-radius:18px;
+    box-shadow:0 18px 50px rgba(15,23,42,.24);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+}
+
+.rb-preset-menu.open{
+    display:block;
+}
+
+.rb-preset-option{
+    width:100%;
+    border:0;
+    border-radius:13px;
+    padding:12px;
+    background:transparent;
+    color:var(--text);
+    text-align:left;
+    cursor:pointer;
+    display:grid;
+    gap:4px;
+}
+
+.rb-preset-option:hover,
+.rb-preset-option.active{
+    background:rgba(var(--accent-rgb,52,141,188),.12);
+}
+
+.rb-preset-option strong{
+    color:var(--text);
+    font-size:14px;
+    line-height:1.2;
+    font-weight:950;
+    letter-spacing:-.02em;
+}
+
+.rb-preset-option span{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.25;
+    font-weight:800;
+}
+
+.rb-preset-empty{
+    padding:14px;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.4;
+    font-weight:850;
+}
+
+html.theme-dark .rb-preset-menu,
+html.app-dark .rb-preset-menu{
+    background:rgba(17,24,39,.98);
+    border-color:rgba(148,163,184,.22);
+    box-shadow:0 20px 60px rgba(0,0,0,.40);
+}
+
+html.theme-dark .rb-preset-toggle,
+html.app-dark .rb-preset-toggle{
+    background:rgba(31,41,55,.96);
+    border-color:rgba(148,163,184,.22);
+    color:#f8fafc;
+}
+
+html.theme-light .rb-preset-menu,
+body.light .rb-preset-menu{
+    background:#fff;
+    border-color:rgba(var(--accent-rgb,52,141,188),.22);
+    box-shadow:0 18px 46px rgba(var(--accent-rgb,52,141,188),.16);
+}
+
+html.theme-light .rb-preset-toggle,
+body.light .rb-preset-toggle{
+    background:linear-gradient(180deg,#fff,var(--blue-soft,#E8F5FC));
+    border-color:rgba(var(--accent-rgb,52,141,188),.28);
+    color:var(--blue,#348DBC);
+}
+
+body.light .continue-btn{
+    background:#6C5CE7;
+    color:#fff;
+    border-color:#8B7CF6 !important;
+}
+</style>
+</head>
+
+<body>
+
+<div class="page">
+
+    <header class="entry-app-header" aria-label="Recreational Boat page header">
+        <a class="entry-header-btn" href="index.html" aria-label="Back">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 18 9 12l6-6"></path>
+            </svg>
+        </a>
+
+        <div class="entry-header-title">
+            <span>Recreational Boat</span>
+            <small>New Entry</small>
+        </div>
+
+        <span class="entry-header-spacer" aria-hidden="true"></span>
+    </header>
+
+    <form class="form" id="entryForm">
+
+        <label>Vessel Preset / Vessel Name</label>
+        <div class="rb-preset-combo" id="rbPresetCombo">
+            <input 
+                id="vessel" 
+                type="text" 
+                autocomplete="off"
+                placeholder="Search presets or type vessel name">
+
+            <button 
+                class="rb-preset-toggle" 
+                id="rbPresetToggle" 
+                type="button" 
+                aria-label="Open vessel presets">
+                ▾
+            </button>
+
+            <div class="rb-preset-menu" id="rbPresetMenu" role="listbox" aria-label="Recreational boat presets"></div>
+        </div>
+        <div class="rb-preset-hint" id="rbPresetHint">Tap the arrow or start typing to select a saved recreational preset.</div>
+
+        <label>Registration</label>
+        <input 
+            id="reg" 
+            type="text" 
+            placeholder="Enter Registration">
+
+        <label>Canal</label>
+        <input id="canal" value="Sault Canada Locks" readonly>
+
+        <label>Direction</label>
+        <select id="dir" class="placeholder">
+            <option value="">Select Direction</option>
+            <option value="Up">Up</option>
+            <option value="Down">Down</option>
+        </select>
+
+        <label>Passenger Count</label>
+        <input 
+            id="pass" 
+            type="text" 
+            placeholder="Passenger Count">
+
+        <label>Destination</label>
+        <input 
+            id="dest" 
+            type="text" 
+            placeholder="Enter Destination">
+
+        <label>Home Port</label>
+        <input 
+            id="homePort" 
+            type="text" 
+            placeholder="Home Port">
+
+        <label>Time</label>
+        <div class="time-row">
+            <input 
+                id="entryTime" 
+                type="text"
+                placeholder="Example: 03:45 PM or 15:45">
+        </div>
+
+        <label>Notes</label>
+        <textarea 
+            id="notes" 
+            placeholder="Notes"></textarea>
+
+        <button class="btn full" type="submit">
+            Save Entry
+        </button>
+
+    </form>
+
+</div>
+
+<div class="popup-overlay" id="missingPopup">
+    <div class="popup-box">
+        <h3>Missing Information</h3>
+        <p>Some fields are not filled out. Are you sure you want to continue?</p>
+
+        <div class="missing-list" id="missingList"></div>
+
+        <div class="popup-actions">
+            <button class="cancel-btn" type="button" id="cancelSubmit">
+                Go Back
+            </button>
+
+            <button class="continue-btn" type="button" id="continueSubmit">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="assets/app.js?v=20260707pairpage2"></script>
+
+<script>
+function getTimeSetting(){
+    return localStorage.getItem("timeFormat") || "12";
+}
+
+function formatDisplayTime(date){
+    return date.toLocaleTimeString([], {
+        hour:"2-digit",
+        minute:"2-digit",
+        hour12:getTimeSetting() === "12"
+    });
+}
+
+function setCurrentTime(force){
+    const input = document.getElementById("entryTime");
+    if(!input) return;
+    if(force !== true && String(input.value || "").trim()) return;
+    const now = new Date();
+    input.value = formatDisplayTime(now);
+    input.dispatchEvent(new Event("input", { bubbles:true }));
+    input.dispatchEvent(new Event("change", { bubbles:true }));
+}
+
+function cleanManualTime(value){
+    return String(value || "").trim();
+}
+
+setCurrentTime();
+const dirSelect = document.getElementById("dir");
+
+dirSelect.addEventListener("change", function(){
+    if(this.value === ""){
+        this.classList.add("placeholder");
+    }else{
+        this.classList.remove("placeholder");
+    }
+});
+
+const form = document.getElementById("entryForm");
+const popup = document.getElementById("missingPopup");
+const missingList = document.getElementById("missingList");
+const cancelSubmit = document.getElementById("cancelSubmit");
+const continueSubmit = document.getElementById("continueSubmit");
+
+let allowBypassSubmit = false;
+
+function getMissingFields(){
+    const requiredFields = [
+        {
+            id:"reg",
+            name:"Registration"
+        },
+        {
+            id:"dir",
+            name:"Direction"
+        },
+        {
+            id:"pass",
+            name:"Passenger Count"
+        },
+        {
+            id:"dest",
+            name:"Destination"
+        },
+        {
+            id:"homePort",
+            name:"Home Port"
+        },
+        {
+            id:"entryTime",
+            name:"Time"
+        }
+    ];
+
+    return requiredFields.filter(field => {
+        const el = document.getElementById(field.id);
+        return !String(el.value || "").trim();
+    });
+}
+
+function showMissingPopup(missing){
+    missingList.innerHTML = "";
+
+    missing.forEach(field => {
+        const item = document.createElement("div");
+        item.textContent = "• " + field.name;
+        missingList.appendChild(item);
+    });
+
+    popup.classList.add("active");
+}
+
+function hideMissingPopup(){
+    popup.classList.remove("active");
+}
+
+form.addEventListener("submit", function(e){
+    if(allowBypassSubmit){
+        return;
+    }
+
+    if(window.shouldConfirmBeforeSave && !window.shouldConfirmBeforeSave()){
+        return;
+    }
+
+    const missing = getMissingFields();
+
+    if(missing.length > 0){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        showMissingPopup(missing);
+        return false;
+    }
+}, true);
+
+cancelSubmit.addEventListener("click", function(){
+    hideMissingPopup();
+});
+
+continueSubmit.addEventListener("click", function(){
+    allowBypassSubmit = true;
+    hideMissingPopup();
+    form.requestSubmit();
+});
+
+popup.addEventListener("click", function(e){
+    if(e.target === popup){
+        hideMissingPopup();
+    }
+});
+
+
+// Safe value reader for this page. Some older app.js versions expected #vessel to be a <select>,
+// but this page uses a searchable text input so manual vessel names still save correctly.
+window.getRealSelectValue = function(selectId, manualId){
+    const field = document.getElementById(selectId);
+    const manual = document.getElementById(manualId);
+
+    if(!field) return "";
+
+    if(field.tagName !== "SELECT"){
+        return String(field.value || "").trim();
+    }
+
+    const selectedOption = field.options[field.selectedIndex];
+
+    if(selectedOption && selectedOption.dataset.manual === "true" && manual){
+        return String(manual.value || "").trim() || "Other";
+    }
+
+    return String(field.value || "").trim();
+};
+
+
+function initRecreationalBoatPresetDropdown(){
+    const input = document.getElementById("vessel");
+    const reg = document.getElementById("reg");
+    const homePort = document.getElementById("homePort");
+    const dest = document.getElementById("dest");
+    const combo = document.getElementById("rbPresetCombo");
+    const toggle = document.getElementById("rbPresetToggle");
+    const menu = document.getElementById("rbPresetMenu");
+    const hint = document.getElementById("rbPresetHint");
+
+    if(!input || !combo || !toggle || !menu) return;
+    if(input.dataset.pageRbPresetReady === "true") return;
+
+    input.dataset.pageRbPresetReady = "true";
+    input.dataset.rbPresetReady = "true";
+    input.removeAttribute("list");
+    input.setAttribute("autocomplete", "off");
+
+    let activeIndex = -1;
+    let cachedPresets = [];
+
+    function safeParse(value, fallback){
+        try{
+            const parsed = JSON.parse(value);
+            return parsed === undefined || parsed === null ? fallback : parsed;
+        }catch(e){
+            return fallback;
+        }
+    }
+
+    function clean(value){
+        return String(value === undefined || value === null ? "" : value).trim();
+    }
+
+    function escapeHtml(value){
+        return clean(value).replace(/[&<>"]/g, function(ch){
+            return {
+                "&":"&amp;",
+                "<":"&lt;",
+                ">":"&gt;",
+                "\"":"&quot;"
+            }[ch];
+        });
+    }
+
+    function getPresetHomePort(preset){
+        return clean(
+            preset.homePort ||
+            preset.homeport ||
+            preset.home_port ||
+            preset.port ||
+            [preset.city, preset.state, preset.country].filter(Boolean).join(", ")
+        );
+    }
+
+    function normalizePreset(item, source){
+        if(typeof item === "string"){
+            return {
+                name:clean(item),
+                reg:"",
+                homePort:"",
+                owner:"",
+                source:source || "Preset"
+            };
+        }
+
+        if(!item || typeof item !== "object") return null;
+
+        const name = clean(item.name || item.vessel || item.vesselName || item.boatName || item.owner);
+        if(!name) return null;
+
+        return {
+            name:name,
+            reg:clean(item.registration || item.reg || item.vesselReg || item.vesselRegistration || item.canalReg || item.canal),
+            homePort:getPresetHomePort(item),
+            destination:clean(item.destination || item.dest),
+            owner:clean(item.owner),
+            source:source || "Preset"
+        };
+    }
+
+    function addList(target, list, source){
+        if(!Array.isArray(list)) return;
+        list.forEach(item => {
+            const preset = normalizePreset(item, source);
+            if(preset) target.push(preset);
+        });
+    }
+
+    function addObjectMap(target, obj, source){
+        if(!obj || typeof obj !== "object" || Array.isArray(obj)) return;
+        Object.entries(obj).forEach(([name, value]) => {
+            if(value && typeof value === "object"){
+                target.push(normalizePreset({ name, ...value }, source));
+            }else{
+                target.push(normalizePreset({ name, reg:value }, source));
+            }
+        });
+    }
+
+    function readLocalPresetGroups(){
+        const groups = [];
+
+        try{
+            if(typeof getVesselPresets === "function"){
+                groups.push(getVesselPresets("RB"));
+            }
+        }catch(e){}
+
+        try{
+            if(typeof vesselPresetGroups !== "undefined" && vesselPresetGroups && Array.isArray(vesselPresetGroups.RB)){
+                groups.push(vesselPresetGroups.RB);
+            }
+        }catch(e){}
+
+        const byType = safeParse(localStorage.getItem("ssmCanalDashboard.entryPresets.byType"), null);
+        if(byType && Array.isArray(byType.RB)) groups.push(byType.RB);
+
+        const oldPresets = safeParse(localStorage.getItem("ssmCanalDashboard.entryPresets"), null);
+        if(oldPresets){
+            if(Array.isArray(oldPresets.RB)) groups.push(oldPresets.RB);
+            else if(!Array.isArray(oldPresets)) groups.push(Object.entries(oldPresets).map(([name, reg]) => ({ name, reg })));
+        }
+
+        const dashboard = safeParse(localStorage.getItem("ssmCanalDashboard.v1"), null);
+        if(dashboard){
+            if(dashboard.entryPresets && Array.isArray(dashboard.entryPresets.RB)) groups.push(dashboard.entryPresets.RB);
+            const registryRB = Array.isArray(dashboard.registry) ? dashboard.registry.filter(item => clean(item.type).toLowerCase() === "rb" || clean(item.vesselType).toLowerCase() === "rb") : [];
+            groups.push(registryRB);
+        }
+
+        return groups;
+    }
+
+    function readLogPresets(){
+        const logs = [];
+        const keys = ["saultLocksLogs", "ssmCanalDashboard.logs", "ssmCanalDashboard.mobileLogs"];
+
+        keys.forEach(key => {
+            const value = safeParse(localStorage.getItem(key), []);
+            if(Array.isArray(value)) logs.push(...value);
+        });
+
+        const dashboard = safeParse(localStorage.getItem("ssmCanalDashboard.v1"), null);
+        if(dashboard && Array.isArray(dashboard.traffic)) logs.push(...dashboard.traffic);
+
+        return logs.filter(entry => {
+            const type = clean(entry.entryType || entry.formType || entry.type).toLowerCase();
+            return type.includes("recreational") || type === "rb" || type.includes("returning");
+        });
+    }
+
+    function uniquePresets(list){
+        const map = new Map();
+
+        list.forEach(preset => {
+            if(!preset || !preset.name) return;
+            const key = (preset.name + "|" + preset.reg).toLowerCase();
+            const current = map.get(key) || {};
+            map.set(key, {
+                ...current,
+                ...preset,
+                reg:current.reg || preset.reg,
+                homePort:current.homePort || preset.homePort,
+                destination:current.destination || preset.destination,
+                owner:current.owner || preset.owner
+            });
+        });
+
+        return Array.from(map.values()).sort((a,b) => a.name.localeCompare(b.name));
+    }
+
+    function readPresets(){
+        const output = [];
+        readLocalPresetGroups().forEach(group => addList(output, group, "Dashboard preset"));
+        addList(output, readLogPresets(), "Recent boat");
+
+        return uniquePresets(output);
+    }
+
+    function refreshPresets(){
+        cachedPresets = readPresets();
+
+        if(hint){
+            hint.textContent = cachedPresets.length
+                ? `${cachedPresets.length} recreational preset${cachedPresets.length === 1 ? "" : "s"} available. Search by vessel, registration, owner, or home port.`
+                : "No recreational presets found yet. You can still type the vessel name manually.";
+        }
+    }
+
+    async function pullFreshPresets(){
+        try{
+            const response = await fetch("/api/presets", { cache:"no-store" });
+            if(!response.ok) return;
+            const payload = await response.json();
+            if(payload && payload.entryPresets){
+                localStorage.setItem("ssmCanalDashboard.entryPresets.byType", JSON.stringify(payload.entryPresets));
+                refreshPresets();
+                if(menu.classList.contains("open")) renderMenu();
+            }
+        }catch(e){}
+    }
+
+    function filteredPresets(){
+        const query = clean(input.value).toLowerCase();
+
+        if(!query) return cachedPresets.slice(0, 120);
+
+        return cachedPresets.filter(preset => {
+            const text = [
+                preset.name,
+                preset.reg,
+                preset.owner,
+                preset.homePort,
+                preset.destination
+            ].join(" ").toLowerCase();
+
+            return text.includes(query);
+        }).slice(0, 120);
+    }
+
+    function setFieldValue(field, value, force){
+        if(!field) return;
+        const next = clean(value);
+        if(!next) return;
+        if(force !== true && clean(field.value)) return;
+
+        field.value = next;
+        field.dispatchEvent(new Event("input", { bubbles:true }));
+        field.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    function selectPreset(preset){
+        if(!preset) return;
+
+        input.value = preset.name;
+        input.dispatchEvent(new Event("input", { bubbles:true }));
+
+        setFieldValue(reg, preset.reg, true);
+        setFieldValue(homePort, preset.homePort, true);
+        setFieldValue(dest, preset.destination, false);
+
+        input.dispatchEvent(new Event("change", { bubbles:true }));
+        closeMenu();
+
+        setTimeout(() => {
+            input.focus();
+            try{
+                input.setSelectionRange(input.value.length, input.value.length);
+            }catch(e){}
+        }, 0);
+    }
+
+    function renderMenu(){
+        refreshPresets();
+
+        const items = filteredPresets();
+        menu.innerHTML = "";
+        activeIndex = -1;
+
+        if(!items.length){
+            menu.innerHTML = `<div class="rb-preset-empty">No matching presets. Keep typing to enter a new boat manually.</div>`;
+            return;
+        }
+
+        items.forEach((preset, index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "rb-preset-option";
+            button.dataset.index = String(index);
+            button.setAttribute("role", "option");
+
+            const meta = [
+                preset.reg || "No registration",
+                preset.homePort,
+                preset.owner
+            ].filter(Boolean).join(" • ");
+
+            button.innerHTML = `<strong>${escapeHtml(preset.name)}</strong><span>${escapeHtml(meta)}</span>`;
+
+            button.addEventListener("mousedown", function(e){
+                e.preventDefault();
+                selectPreset(preset);
+            });
+
+            menu.appendChild(button);
+        });
+    }
+
+    function openMenu(){
+        renderMenu();
+        menu.classList.add("open");
+        input.setAttribute("aria-expanded", "true");
+    }
+
+    function closeMenu(){
+        menu.classList.remove("open");
+        input.setAttribute("aria-expanded", "false");
+        activeIndex = -1;
+    }
+
+    function updateActive(){
+        const buttons = Array.from(menu.querySelectorAll(".rb-preset-option"));
+        buttons.forEach(button => button.classList.remove("active"));
+
+        if(buttons[activeIndex]){
+            buttons[activeIndex].classList.add("active");
+            buttons[activeIndex].scrollIntoView({ block:"nearest" });
+        }
+    }
+
+    input.setAttribute("aria-expanded", "false");
+    input.setAttribute("aria-controls", "rbPresetMenu");
+
+    input.addEventListener("focus", openMenu);
+    input.addEventListener("input", openMenu);
+
+    toggle.addEventListener("click", function(){
+        if(menu.classList.contains("open")){
+            closeMenu();
+        }else{
+            input.focus();
+            openMenu();
+        }
+    });
+
+    input.addEventListener("keydown", function(e){
+        if(!menu.classList.contains("open")) return;
+
+        const buttons = Array.from(menu.querySelectorAll(".rb-preset-option"));
+
+        if(e.key === "ArrowDown"){
+            e.preventDefault();
+            activeIndex = Math.min(activeIndex + 1, buttons.length - 1);
+            updateActive();
+        }
+
+        if(e.key === "ArrowUp"){
+            e.preventDefault();
+            activeIndex = Math.max(activeIndex - 1, 0);
+            updateActive();
+        }
+
+        if(e.key === "Enter" && activeIndex >= 0){
+            e.preventDefault();
+            const items = filteredPresets();
+            if(items[activeIndex]) selectPreset(items[activeIndex]);
+        }
+
+        if(e.key === "Escape"){
+            closeMenu();
+        }
+    });
+
+    document.addEventListener("mousedown", function(e){
+        if(!combo.contains(e.target)) closeMenu();
+    });
+
+    refreshPresets();
+    pullFreshPresets();
+}
+
+setupNormalForm("Recreational Boat");
+initRecreationalBoatPresetDropdown();
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+    });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,2423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>Sault Canada Locks Tracker - Today Entries</title>
+<script src="assets/theme-boot.js?v=20260707deletefix2"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260707deletefix2"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6C5CE7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sault Locks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+
+<style>
+.entries-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-left:auto;
+}
+
+.small-btn{
+    min-height:38px;
+    border:none;
+    border-radius:12px;
+    padding:9px 11px;
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+    white-space:nowrap;
+}
+
+.export{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+}
+
+.delete{
+    background:var(--danger) !important;
+    color:#fff !important;
+}
+
+.entries-wrap{
+    padding-top:14px;
+}
+
+.search-box{
+    width:100%;
+    margin-bottom:12px;
+    padding:14px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    background:var(--input);
+    color:var(--text);
+    outline:none;
+}
+
+.search-box::placeholder{
+    color:var(--muted);
+    opacity:1;
+}
+
+.search-box:focus{
+    border-color:var(--blue);
+    background:var(--input-focus);
+    box-shadow:0 0 0 3px rgba(108,92,231,.18);
+}
+
+.stats-row{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    margin-bottom:12px;
+}
+
+.stat-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:13px 8px;
+    text-align:center;
+    box-shadow:var(--shadow-soft), var(--inner);
+}
+
+.stat-card span{
+    display:block;
+    color:var(--text);
+    font-size:21px;
+    line-height:1;
+    font-weight:900;
+}
+
+.stat-card small{
+    display:block;
+    margin-top:6px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:900;
+    text-transform:uppercase;
+}
+
+.controls-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:12px;
+    margin-bottom:14px;
+    box-shadow:var(--shadow-soft), var(--inner);
+}
+
+.control-label{
+    color:var(--muted);
+    font-size:11px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    margin-bottom:8px;
+}
+
+.view-tabs{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:8px;
+    margin-bottom:12px;
+}
+
+.view-tab{
+    min-height:38px;
+    border-radius:12px;
+    border:1px solid var(--border-strong);
+    background:var(--card-2);
+    color:var(--muted);
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+}
+
+.view-tab.active{
+    background:var(--blue);
+    color:#fff;
+    border-color:var(--blue-border);
+}
+
+.filter-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+}
+
+.filter-grid select{
+    width:100%;
+    margin:0;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:var(--input);
+    color:var(--text);
+    outline:none;
+    font-size:13px;
+    font-weight:800;
+}
+
+.result-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin:0 0 10px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:900;
+}
+
+.clear-filters{
+    border:none;
+    background:transparent;
+    color:var(--blue);
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+}
+
+.entry-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:16px;
+    margin-bottom:12px;
+    box-shadow:var(--shadow-soft), var(--inner);
+}
+
+
+.entry-card.compact{
+    padding:13px;
+}
+
+.entry-header{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:flex-start;
+    margin-bottom:11px;
+}
+
+.entry-title{
+    color:var(--text);
+    font-size:17px;
+    font-weight:900;
+    line-height:1.15;
+}
+
+.entry-card.compact .entry-title{
+    font-size:15px;
+}
+
+.entry-type{
+    color:var(--muted);
+    font-size:13px;
+    font-weight:800;
+    margin-top:4px;
+}
+
+.entry-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:8px;
+}
+
+.meta-pill{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    color:var(--muted);
+    padding:5px 8px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:900;
+}
+
+
+.entry-grid{
+    display:grid;
+    gap:7px;
+    margin-top:8px;
+}
+
+.entry-line{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.35;
+    word-break:break-word;
+}
+
+.entry-line strong{
+    color:var(--text);
+}
+
+.entry-buttons{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:14px;
+}
+
+.entry-buttons.three{
+    grid-template-columns:1fr 1fr 1fr;
+}
+
+.entry-buttons button{
+    border:none;
+    border-radius:13px;
+    padding:12px 8px;
+    font-size:13px;
+    font-weight:900;
+    cursor:pointer;
+}
+
+.entry-buttons button:active,
+.small-btn:active,
+.view-tab:active{
+    transform:scale(.98);
+}
+
+
+.undo-btn{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong) !important;
+}
+
+.edit-btn{
+    background:var(--blue);
+    color:white;
+    border:1px solid var(--blue-border) !important;
+}
+
+.delete-one-btn{
+    background:var(--danger);
+    color:white;
+}
+
+.save-edit-btn{
+    background:var(--blue);
+    color:#fff;
+    border:1px solid var(--blue-border) !important;
+}
+
+.cancel-edit-btn{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong) !important;
+}
+
+.edit-form{
+    display:grid;
+    gap:10px;
+    margin-top:10px;
+}
+
+.edit-form label{
+    color:var(--muted);
+    font-size:13px;
+    font-weight:900;
+    margin-bottom:-4px;
+}
+
+.edit-form input,
+.edit-form textarea,
+.edit-form select{
+    width:100%;
+    margin-bottom:0;
+    padding:13px;
+    border-radius:13px;
+    border:1px solid var(--border);
+    background:var(--input);
+    color:var(--text);
+    outline:none;
+}
+
+.edit-form input::placeholder,
+.edit-form textarea::placeholder{
+    color:var(--muted);
+    opacity:1;
+}
+
+.edit-form input:focus,
+.edit-form textarea:focus,
+.edit-form select:focus{
+    border-color:var(--blue);
+    background:var(--input-focus);
+    box-shadow:0 0 0 3px rgba(108,92,231,.18);
+}
+
+.edit-form textarea{
+    min-height:78px;
+    resize:vertical;
+}
+
+.empty-box{
+    padding:30px 18px;
+    text-align:center;
+    color:var(--muted);
+    background:var(--card);
+    border:1px dashed var(--border-strong);
+    border-radius:18px;
+    font-size:14px;
+    font-weight:800;
+}
+
+.group-title{
+    margin:18px 0 9px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+}
+
+.group-title:first-child{
+    margin-top:0;
+}
+
+
+
+/* Theme dropdown arrows */
+select{
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    background-color:var(--input) !important;
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%) !important;
+    background-position:
+        calc(100% - 20px) 50%,
+        calc(100% - 14px) 50% !important;
+    background-size:
+        6px 6px,
+        6px 6px !important;
+    background-repeat:no-repeat !important;
+    padding-right:42px !important;
+    cursor:pointer;
+}
+
+select:focus{
+    background-color:var(--input-focus) !important;
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--blue) 50%),
+        linear-gradient(135deg, var(--blue) 50%, transparent 50%) !important;
+}
+
+select::-ms-expand{
+    display:none;
+}
+
+select option{
+    background:var(--card);
+    color:var(--text);
+}
+
+
+html.theme-dark body.logs-page,
+html.theme-dark body.logs-page .page{
+    background:linear-gradient(180deg,#0f172a 0%,#111827 100%) !important;
+    color:#f8fafc !important;
+}
+
+html.theme-dark body.logs-page .topbar{
+    background:rgba(15,23,42,.96) !important;
+    border:1px solid rgba(148,163,184,.14) !important;
+    box-shadow:0 10px 24px rgba(0,0,0,.28) !important;
+}
+
+html.theme-dark body.logs-page .controls-card,
+html.theme-dark body.logs-page .stat-card,
+html.theme-dark body.logs-page .entry-card,
+html.theme-dark body.logs-page .empty-box{
+    background:linear-gradient(180deg,rgba(23,32,51,.96),rgba(17,24,39,.96)) !important;
+    border:1px solid rgba(148,163,184,.18) !important;
+    box-shadow:0 12px 28px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.04) !important;
+    color:#f8fafc !important;
+}
+
+html.theme-dark body.logs-page .entry-title,
+html.theme-dark body.logs-page .entry-line strong,
+html.theme-dark body.logs-page .stat-card span{ color:#f8fafc !important; }
+
+html.theme-dark body.logs-page .entry-type,
+html.theme-dark body.logs-page .entry-line,
+html.theme-dark body.logs-page .result-bar,
+html.theme-dark body.logs-page .control-label,
+html.theme-dark body.logs-page .stat-card small,
+html.theme-dark body.logs-page .group-title,
+html.theme-dark body.logs-page .edit-form label{ color:#a9b8cb !important; }
+
+html.theme-dark body.logs-page .meta-pill,
+html.theme-dark body.logs-page .view-tab,
+html.theme-dark body.logs-page .undo-btn,
+html.theme-dark body.logs-page .cancel-edit-btn,
+html.theme-dark body.logs-page .export{
+    background:rgba(31,42,61,.92) !important;
+    color:#dbeafe !important;
+    border:1px solid rgba(148,163,184,.22) !important;
+}
+
+html.theme-dark body.logs-page .search-box,
+html.theme-dark body.logs-page .filter-grid select,
+html.theme-dark body.logs-page .edit-form input,
+html.theme-dark body.logs-page .edit-form textarea,
+html.theme-dark body.logs-page .edit-form select{
+    background:#0f172a !important;
+    color:#f8fafc !important;
+    border:1px solid rgba(148,163,184,.22) !important;
+}
+
+html.theme-dark body.logs-page .search-box::placeholder,
+html.theme-dark body.logs-page .edit-form input::placeholder,
+html.theme-dark body.logs-page .edit-form textarea::placeholder{ color:#94a3b8 !important; }
+
+html.theme-dark body.logs-page .search-box:focus,
+html.theme-dark body.logs-page .filter-grid select:focus,
+html.theme-dark body.logs-page .edit-form input:focus,
+html.theme-dark body.logs-page .edit-form textarea:focus,
+html.theme-dark body.logs-page .edit-form select:focus{
+    border-color:var(--blue-border,#5CADDA) !important;
+    box-shadow:0 0 0 4px rgba(var(--accent-rgb,52,141,188),.18) !important;
+}
+
+html.theme-dark body.logs-page .view-tab.active,
+html.theme-dark body.logs-page .edit-btn,
+html.theme-dark body.logs-page .save-edit-btn{
+    background:linear-gradient(135deg,var(--blue,#348DBC),var(--blue-hover,#3F9FCE)) !important;
+    color:#fff !important;
+    border-color:var(--blue-border,#5CADDA) !important;
+}
+
+html.theme-dark body.logs-page .delete-one-btn,
+html.theme-dark body.logs-page .delete{ background:#DC2626 !important; color:#fff !important; }
+
+@media(max-width:370px){
+    .topbar h2{
+        font-size:18px;
+    }
+
+    .small-btn{
+        padding:9px 9px;
+        font-size:11px;
+    }
+
+    .stats-row{
+        gap:8px;
+    }
+
+    .filter-grid{
+        grid-template-columns:1fr;
+    }
+
+    .entry-card{
+        padding:14px;
+        border-radius:16px;
+    }
+
+    .entry-buttons.three{
+        grid-template-columns:1fr;
+    }
+}
+
+/* MANAGE PAGE DARK MODE HARD FIX - 2026-07-06
+   Keeps this page clean in dark mode even after the shared app.js theme layer loads. */
+html,
+body{
+    overflow-x:hidden !important;
+}
+
+body.logs-page{
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+}
+
+html.theme-dark body.logs-page{
+    --logs-bg:#0b1220;
+    --logs-surface:#121c2f;
+    --logs-surface-2:#17243a;
+    --logs-surface-3:#1d2d48;
+    --logs-line:rgba(148,163,184,.18);
+    --logs-line-strong:rgba(148,163,184,.28);
+    --logs-text:#f8fafc;
+    --logs-soft:#cbd8ee;
+    --logs-muted:#91a4c1;
+    --logs-shadow:0 14px 30px rgba(0,0,0,.28);
+    background:var(--logs-bg) !important;
+    color:var(--logs-text) !important;
+}
+
+html.theme-dark body.logs-page,
+html.theme-dark body.logs-page .page,
+html.theme-dark body.logs-page .form,
+html.theme-dark body.logs-page .entries-wrap{
+    background:var(--logs-bg) !important;
+    color:var(--logs-text) !important;
+}
+
+html.theme-dark body.logs-page .page{
+    width:100% !important;
+    max-width:480px !important;
+    min-height:100dvh !important;
+    margin:0 auto !important;
+    padding-bottom:calc(118px + env(safe-area-inset-bottom, 0px)) !important;
+    border:0 !important;
+    outline:0 !important;
+    box-shadow:none !important;
+    overflow-x:hidden !important;
+}
+
+html.theme-dark body.logs-page .form.entries-wrap{
+    padding:16px 14px 0 !important;
+    border:0 !important;
+    box-shadow:none !important;
+}
+
+html.theme-dark body.logs-page .topbar{
+    position:sticky !important;
+    top:0 !important;
+    z-index:50 !important;
+    min-height:76px !important;
+    height:auto !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:14px !important;
+    padding:calc(14px + env(safe-area-inset-top, 0px)) 28px 14px !important;
+    background:rgba(11,18,32,.94) !important;
+    color:var(--logs-text) !important;
+    border:0 !important;
+    border-bottom:1px solid rgba(148,163,184,.13) !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    backdrop-filter:blur(18px) !important;
+    -webkit-backdrop-filter:blur(18px) !important;
+}
+
+html.theme-dark body.logs-page .topbar h2{
+    margin:0 !important;
+    color:#ffffff !important;
+    font-size:26px !important;
+    line-height:1 !important;
+    letter-spacing:-.04em !important;
+}
+
+html.theme-dark body.logs-page .back{
+    width:52px !important;
+    height:52px !important;
+    min-width:52px !important;
+    border-radius:20px !important;
+    display:grid !important;
+    place-items:center !important;
+    background:var(--logs-surface-2) !important;
+    color:#f8fafc !important;
+    border:1px solid var(--logs-line-strong) !important;
+    box-shadow:none !important;
+    font-size:35px !important;
+    line-height:1 !important;
+}
+
+html.theme-dark body.logs-page .entries-actions{
+    margin-left:auto !important;
+    flex:0 0 auto !important;
+}
+
+html.theme-dark body.logs-page .small-btn,
+html.theme-dark body.logs-page .export{
+    min-height:48px !important;
+    padding:0 18px !important;
+    border-radius:18px !important;
+    background:var(--logs-surface-2) !important;
+    color:#eaf2ff !important;
+    border:1px solid var(--logs-line-strong) !important;
+    box-shadow:none !important;
+    font-size:14px !important;
+    letter-spacing:-.02em !important;
+}
+
+html.theme-dark body.logs-page .stats-row{
+    margin:18px 0 14px !important;
+}
+
+html.theme-dark body.logs-page .stat-card,
+html.theme-dark body.logs-page .controls-card,
+html.theme-dark body.logs-page .entry-card,
+html.theme-dark body.logs-page .empty-box{
+    background:linear-gradient(180deg, var(--logs-surface-2), var(--logs-surface)) !important;
+    color:var(--logs-text) !important;
+    border:1px solid var(--logs-line) !important;
+    box-shadow:var(--logs-shadow), inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+
+html.theme-dark body.logs-page .stat-card{
+    border-radius:22px !important;
+    padding:22px 12px !important;
+}
+
+html.theme-dark body.logs-page .stat-card span{
+    color:#ffffff !important;
+    font-size:30px !important;
+    letter-spacing:-.04em !important;
+}
+
+html.theme-dark body.logs-page .stat-card small,
+html.theme-dark body.logs-page .control-label,
+html.theme-dark body.logs-page .group-title{
+    color:var(--logs-muted) !important;
+    letter-spacing:.06em !important;
+}
+
+html.theme-dark body.logs-page .controls-card{
+    border-radius:24px !important;
+    padding:16px !important;
+    margin-bottom:18px !important;
+}
+
+html.theme-dark body.logs-page .filter-grid{
+    gap:12px !important;
+}
+
+html.theme-dark body.logs-page .filter-grid select,
+html.theme-dark body.logs-page .search-box,
+html.theme-dark body.logs-page .edit-form input,
+html.theme-dark body.logs-page .edit-form textarea,
+html.theme-dark body.logs-page .edit-form select{
+    min-height:52px !important;
+    background:#0f172a !important;
+    background-color:#0f172a !important;
+    color:#f8fafc !important;
+    border:1px solid var(--logs-line-strong) !important;
+    border-radius:18px !important;
+    box-shadow:none !important;
+    font-size:16px !important;
+}
+
+html.theme-dark body.logs-page .filter-grid select{
+    padding:0 42px 0 16px !important;
+    font-weight:850 !important;
+}
+
+html.theme-dark body.logs-page .search-box{
+    margin:0 0 14px !important;
+    padding:0 18px !important;
+    font-size:16px !important;
+    font-weight:750 !important;
+}
+
+html.theme-dark body.logs-page .search-box::placeholder,
+html.theme-dark body.logs-page .edit-form input::placeholder,
+html.theme-dark body.logs-page .edit-form textarea::placeholder{
+    color:#8fa3bf !important;
+    opacity:1 !important;
+}
+
+html.theme-dark body.logs-page .filter-grid select:focus,
+html.theme-dark body.logs-page .search-box:focus,
+html.theme-dark body.logs-page .edit-form input:focus,
+html.theme-dark body.logs-page .edit-form textarea:focus,
+html.theme-dark body.logs-page .edit-form select:focus{
+    border-color:var(--blue-border, #5CADDA) !important;
+    background:#111c2e !important;
+    box-shadow:0 0 0 4px rgba(var(--accent-rgb,52,141,188), .16) !important;
+}
+
+html.theme-dark body.logs-page .result-bar{
+    color:#bdd0ec !important;
+    padding:0 0 10px !important;
+    margin:0 !important;
+    font-size:13px !important;
+}
+
+html.theme-dark body.logs-page .clear-filters{
+    color:var(--blue-border, #5CADDA) !important;
+    font-weight:950 !important;
+}
+
+html.theme-dark body.logs-page #logList{
+    padding-bottom:calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+html.theme-dark body.logs-page .entry-card{
+    position:relative !important;
+    border-radius:24px !important;
+    padding:18px !important;
+    margin-bottom:14px !important;
+    overflow:hidden !important;
+}
+
+html.theme-dark body.logs-page .entry-card.compact{
+    padding:16px !important;
+}
+
+html.theme-dark body.logs-page .entry-card .entry-header,
+html.theme-dark body.logs-page .entry-card .entry-header > div,
+html.theme-dark body.logs-page .entry-card .entry-grid,
+html.theme-dark body.logs-page .entry-card .entry-buttons,
+html.theme-dark body.logs-page .entry-card .edit-form{
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+}
+
+html.theme-dark body.logs-page .entry-title{
+    color:#ffffff !important;
+    font-size:22px !important;
+    line-height:1.05 !important;
+    letter-spacing:-.04em !important;
+}
+
+html.theme-dark body.logs-page .entry-card.compact .entry-title{
+    font-size:18px !important;
+}
+
+html.theme-dark body.logs-page .entry-type{
+    color:#b6c6de !important;
+    font-size:14px !important;
+    font-weight:850 !important;
+}
+
+html.theme-dark body.logs-page .entry-meta{
+    gap:8px !important;
+    margin-top:12px !important;
+}
+
+html.theme-dark body.logs-page .meta-pill{
+    background:var(--logs-surface-3) !important;
+    color:#eaf3ff !important;
+    border:1px solid rgba(148,163,184,.24) !important;
+    border-radius:999px !important;
+    padding:7px 10px !important;
+    font-size:12px !important;
+    font-weight:900 !important;
+}
+
+html.theme-dark body.logs-page .entry-grid{
+    gap:9px !important;
+    margin-top:14px !important;
+}
+
+html.theme-dark body.logs-page .entry-line{
+    color:var(--logs-soft) !important;
+    font-size:16px !important;
+    line-height:1.45 !important;
+    font-weight:650 !important;
+}
+
+html.theme-dark body.logs-page .entry-line strong{
+    color:#ffffff !important;
+    font-weight:950 !important;
+}
+
+html.theme-dark body.logs-page .entry-buttons{
+    gap:10px !important;
+    margin-top:18px !important;
+}
+
+html.theme-dark body.logs-page .entry-buttons button{
+    min-height:46px !important;
+    border-radius:16px !important;
+    font-size:14px !important;
+}
+
+html.theme-dark body.logs-page .edit-btn,
+html.theme-dark body.logs-page .save-edit-btn{
+    background:linear-gradient(135deg, var(--blue,#348DBC), var(--blue-hover,#3F9FCE)) !important;
+    color:#fff !important;
+    border:1px solid rgba(255,255,255,.12) !important;
+}
+
+html.theme-dark body.logs-page .delete-one-btn,
+html.theme-dark body.logs-page .delete{
+    background:#dc2626 !important;
+    color:#fff !important;
+}
+
+html.theme-dark body.logs-page .undo-btn,
+html.theme-dark body.logs-page .cancel-edit-btn{
+    background:var(--logs-surface-3) !important;
+    color:#eaf3ff !important;
+    border:1px solid var(--logs-line-strong) !important;
+}
+
+html.theme-dark body.logs-page select option{
+    background:#111827 !important;
+    color:#f8fafc !important;
+}
+
+html.theme-dark body.logs-page .bottom-nav.ssm-bottom-nav{
+    background:rgba(11,18,32,.96) !important;
+    border-top:1px solid rgba(148,163,184,.16) !important;
+    box-shadow:0 -12px 24px rgba(0,0,0,.32) !important;
+}
+
+@media(max-width:520px){
+    html.theme-dark body.logs-page .page{
+        max-width:none !important;
+        margin:0 !important;
+    }
+}
+
+@media(max-width:380px){
+    html.theme-dark body.logs-page .topbar{
+        padding-left:16px !important;
+        padding-right:16px !important;
+        gap:10px !important;
+    }
+    html.theme-dark body.logs-page .topbar h2{
+        font-size:24px !important;
+    }
+    html.theme-dark body.logs-page .back{
+        width:48px !important;
+        height:48px !important;
+        min-width:48px !important;
+    }
+    html.theme-dark body.logs-page .small-btn,
+    html.theme-dark body.logs-page .export{
+        min-height:44px !important;
+        padding:0 14px !important;
+        font-size:13px !important;
+    }
+    html.theme-dark body.logs-page .form.entries-wrap{
+        padding-left:12px !important;
+        padding-right:12px !important;
+    }
+    html.theme-dark body.logs-page .filter-grid{
+        grid-template-columns:1fr !important;
+    }
+}
+
+
+/* MANAGE HEADER MATCHES OTHER MOBILE PAGES - 2026-07-06 */
+body.logs-page .page{
+    width:100% !important;
+    max-width:460px !important;
+    min-height:100dvh !important;
+    margin:0 auto !important;
+    padding:calc(12px + env(safe-area-inset-top, 0px)) 14px calc(118px + env(safe-area-inset-bottom, 0px)) !important;
+    background:transparent !important;
+    overflow-x:hidden !important;
+}
+
+body.logs-page .manage-header{
+    height:40px !important;
+    min-height:40px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+    margin:0 0 14px !important;
+    padding:0 !important;
+    position:relative !important;
+    top:auto !important;
+    z-index:20 !important;
+    background:transparent !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+}
+
+body.logs-page .header-btn{
+    width:38px !important;
+    height:38px !important;
+    min-width:38px !important;
+    min-height:38px !important;
+    border-radius:14px !important;
+    border:1px solid var(--border, rgba(100,76,160,.10)) !important;
+    background:rgba(255,255,255,.82) !important;
+    color:#262740 !important;
+    box-shadow:0 6px 16px rgba(84,48,160,.06) !important;
+    display:grid !important;
+    place-items:center !important;
+    padding:0 !important;
+    text-decoration:none !important;
+    cursor:pointer !important;
+    appearance:none !important;
+    -webkit-appearance:none !important;
+    backdrop-filter:blur(16px) !important;
+    -webkit-backdrop-filter:blur(16px) !important;
+}
+
+body.logs-page .header-btn svg{
+    width:21px !important;
+    height:21px !important;
+    stroke:currentColor !important;
+    stroke-width:2.25 !important;
+    fill:none !important;
+    stroke-linecap:round !important;
+    stroke-linejoin:round !important;
+}
+
+body.logs-page .manage-title{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    text-align:center !important;
+    line-height:1.05 !important;
+    color:var(--text) !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+}
+
+body.logs-page .manage-title span{
+    display:block !important;
+    margin:0 !important;
+    color:var(--text) !important;
+    font-size:17px !important;
+    line-height:1.05 !important;
+    font-weight:900 !important;
+    letter-spacing:-.04em !important;
+}
+
+body.logs-page .manage-title small{
+    display:block !important;
+    margin-top:4px !important;
+    color:var(--muted) !important;
+    font-size:11px !important;
+    font-weight:750 !important;
+}
+
+body.logs-page .form.entries-wrap{
+    padding-top:0 !important;
+}
+
+html.theme-dark body.logs-page .manage-header{
+    height:40px !important;
+    min-height:40px !important;
+    margin:0 0 14px !important;
+    padding:0 !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    position:relative !important;
+    top:auto !important;
+}
+
+html.theme-dark body.logs-page .header-btn{
+    background:rgba(23,33,50,.92) !important;
+    color:#f7fafc !important;
+    border:1px solid rgba(147,170,196,.14) !important;
+    box-shadow:0 6px 16px rgba(0,0,0,.16) !important;
+}
+
+html.theme-dark body.logs-page .manage-title,
+html.theme-dark body.logs-page .manage-title span{
+    color:#ffffff !important;
+}
+
+html.theme-dark body.logs-page .manage-title small{
+    color:#9aa8ba !important;
+}
+
+@media(max-width:380px){
+    body.logs-page .page{
+        padding-left:12px !important;
+        padding-right:12px !important;
+    }
+    body.logs-page .manage-title span{
+        font-size:16px !important;
+    }
+    body.logs-page .header-btn{
+        width:37px !important;
+        height:37px !important;
+        min-width:37px !important;
+        min-height:37px !important;
+    }
+}
+
+
+/* TODAY-ONLY LOGS CLEANUP - 2026-07-06 */
+body.logs-page .clean-controls{
+    padding:14px !important;
+}
+
+body.logs-page .control-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+}
+
+body.logs-page .control-head p{
+    margin:5px 0 0;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.35;
+    font-weight:750;
+}
+
+body.logs-page .chip-reset{
+    flex:0 0 auto;
+    min-height:34px;
+    padding:0 12px;
+    border-radius:999px;
+    background:var(--card-2);
+    border:1px solid var(--border-strong);
+    color:var(--text);
+    font-size:12px;
+    font-weight:900;
+}
+
+body.logs-page .clean-control-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+
+body.logs-page .select-block{
+    display:grid;
+    gap:6px;
+    margin:0;
+}
+
+body.logs-page .select-block.full{
+    grid-column:1 / -1;
+}
+
+body.logs-page .select-block span{
+    color:var(--muted);
+    font-size:11px;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+
+body.logs-page .select-block select{
+    width:100%;
+    min-height:46px;
+    margin:0;
+    border-radius:15px;
+    font-size:14px;
+    font-weight:850;
+}
+
+body.logs-page .result-bar{
+    justify-content:flex-start !important;
+    padding:0 2px 10px;
+}
+
+body.logs-page .stats-row{
+    margin-bottom:10px !important;
+}
+
+@media(max-width:360px){
+    body.logs-page .clean-control-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+html.theme-dark body.logs-page .chip-reset{
+    background:var(--logs-surface-3) !important;
+    color:#eaf3ff !important;
+    border:1px solid var(--logs-line-strong) !important;
+}
+
+html.theme-dark body.logs-page .control-head p,
+html.theme-dark body.logs-page .select-block span{
+    color:var(--logs-muted) !important;
+}
+
+/* DELETE CONFIRM MODAL - 2026-07-07 */
+.delete-confirm-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    display:none;
+    place-items:center;
+    padding:22px;
+    background:rgba(8,13,24,.55);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+}
+
+.delete-confirm-backdrop.show{
+    display:grid;
+}
+
+body.delete-confirm-lock{
+    overflow:hidden !important;
+}
+
+.delete-confirm-modal{
+    width:min(100%, 390px);
+    background:var(--card);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    border-radius:26px;
+    padding:20px;
+    box-shadow:0 24px 70px rgba(15,23,42,.25), var(--inner);
+    animation:deleteConfirmPop .16s ease-out;
+}
+
+@keyframes deleteConfirmPop{
+    from{
+        opacity:0;
+        transform:translateY(12px) scale(.97);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0) scale(1);
+    }
+}
+
+.delete-confirm-icon{
+    width:52px;
+    height:52px;
+    border-radius:19px;
+    display:grid;
+    place-items:center;
+    margin-bottom:14px;
+    background:rgba(220,38,38,.12);
+    color:var(--danger);
+}
+
+.delete-confirm-icon svg{
+    width:27px;
+    height:27px;
+    stroke:currentColor;
+    fill:none;
+    stroke-width:2.35;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+.delete-confirm-title{
+    margin:0;
+    color:var(--text);
+    font-size:22px;
+    line-height:1.08;
+    font-weight:950;
+    letter-spacing:-.04em;
+}
+
+.delete-confirm-text{
+    margin:10px 0 0;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.45;
+    font-weight:750;
+}
+
+.delete-confirm-entry{
+    margin-top:14px;
+    padding:13px 14px;
+    border-radius:18px;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:14px;
+    font-weight:900;
+    word-break:break-word;
+}
+
+.delete-confirm-entry small{
+    display:block;
+    margin-top:4px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:800;
+}
+
+.delete-confirm-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:18px;
+}
+
+.delete-confirm-actions button{
+    min-height:48px;
+    border:none;
+    border-radius:17px;
+    font-size:14px;
+    font-weight:950;
+    cursor:pointer;
+}
+
+.delete-confirm-cancel{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong) !important;
+}
+
+.delete-confirm-delete{
+    background:var(--danger);
+    color:#fff;
+}
+
+.delete-confirm-actions button:active{
+    transform:scale(.98);
+}
+
+html.theme-dark body.logs-page .delete-confirm-backdrop{
+    background:rgba(3,7,18,.70);
+}
+
+html.theme-dark body.logs-page .delete-confirm-modal{
+    background:linear-gradient(180deg, var(--logs-surface-2, #17243a), var(--logs-surface, #121c2f)) !important;
+    color:#f8fafc !important;
+    border:1px solid rgba(148,163,184,.20) !important;
+    box-shadow:0 26px 80px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+html.theme-dark body.logs-page .delete-confirm-title{
+    color:#fff !important;
+}
+
+html.theme-dark body.logs-page .delete-confirm-text,
+html.theme-dark body.logs-page .delete-confirm-entry small{
+    color:var(--logs-muted, #91a4c1) !important;
+}
+
+html.theme-dark body.logs-page .delete-confirm-entry,
+html.theme-dark body.logs-page .delete-confirm-cancel{
+    background:var(--logs-surface-3, #1d2d48) !important;
+    color:#eaf3ff !important;
+    border:1px solid var(--logs-line-strong, rgba(148,163,184,.28)) !important;
+}
+
+html.theme-dark body.logs-page .delete-confirm-icon{
+    background:rgba(220,38,38,.16) !important;
+    color:#f87171 !important;
+}
+
+@media(max-width:360px){
+    .delete-confirm-modal{
+        padding:18px;
+        border-radius:24px;
+    }
+
+    .delete-confirm-actions{
+        grid-template-columns:1fr;
+    }
+}
+
+</style>
+</head>
+
+<body class="logs-page">
+<div class="page">
+
+    <header class="manage-header" aria-label="Manage page header">
+        <a class="header-btn" href="index.html" aria-label="Back">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m15 18-6-6 6-6"></path>
+            </svg>
+        </a>
+
+        <div class="manage-title">
+            <span>Today</span>
+            <small>Entries</small>
+        </div>
+
+        <button class="header-btn" type="button" onclick="exportLogs()" aria-label="Download today entries" title="Download Today">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 21h14"></path>
+            </svg>
+        </button>
+    </header>
+
+    <div class="form entries-wrap">
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <span id="totalCount">0</span>
+                <small>Today</small>
+            </div>
+        </div>
+
+        <div class="controls-card clean-controls">
+            <div class="control-head">
+                <div>
+                    <div class="control-label">Today’s View</div>
+                  
+                </div>
+
+                <button class="clear-filters chip-reset" type="button" onclick="clearFilters()">
+                    Reset
+                </button>
+            </div>
+
+            <div class="clean-control-grid">
+                <label class="select-block">
+                    <span>Sort</span>
+                    <select id="sortSelect">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="type">Type A-Z</option>
+                        <option value="vessel">Vessel A-Z</option>
+                    </select>
+                </label>
+
+                <label class="select-block">
+                    <span>Display</span>
+                    <select id="displaySelect">
+                        <option value="detailed">Detailed</option>
+                        <option value="compact">Compact</option>
+                    </select>
+                </label>
+
+                <label class="select-block full">
+                    <span>Type</span>
+                    <select id="typeFilter">
+                        <option value="all">All Entry Types</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+            
+        <div class="result-bar">
+            <span id="resultCount">Showing 0 today entries</span>
+        </div>
+
+        <input 
+            id="searchInput" 
+            class="search-box" 
+            type="text" 
+            placeholder="Search vessel, type, direction, notes...">
+
+        <div id="logList"></div>
+
+    </div>
+
+</div>
+
+<div 
+    id="deleteConfirmBackdrop" 
+    class="delete-confirm-backdrop" 
+    role="dialog" 
+    aria-modal="true" 
+    aria-labelledby="deleteConfirmTitle"
+    onclick="handleDeleteBackdropClick(event)">
+    <div class="delete-confirm-modal">
+        <div class="delete-confirm-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <path d="M3 6h18"></path>
+                <path d="M8 6V4h8v2"></path>
+                <path d="M6 6l1 15h10l1-15"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+            </svg>
+        </div>
+
+        <h3 id="deleteConfirmTitle" class="delete-confirm-title">Delete this entry?</h3>
+        <p class="delete-confirm-text">
+            This removes it from today’s entries and syncs the delete to the dashboard when linked.
+        </p>
+
+        <div class="delete-confirm-entry">
+            <span id="deleteConfirmName">Entry</span>
+            <small id="deleteConfirmMeta">Ready to delete</small>
+        </div>
+
+        <div class="delete-confirm-actions">
+            <button 
+                class="delete-confirm-cancel" 
+                type="button" 
+                onclick="closeDeleteConfirm()">
+                Cancel
+            </button>
+
+            <button 
+                id="deleteConfirmButton"
+                class="delete-confirm-delete" 
+                type="button" 
+                onclick="confirmDeleteLog()">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+    
+    <h1>‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ </h1>
+
+
+<script src="assets/app.js?v=20260707deletefix2"></script>
+
+<script>
+const POSSIBLE_KEYS = [
+    "saultLocksLogs",
+    "saultLocksTrackerLogs",
+    "logs",
+    "entries",
+    "lockLogs",
+    "saultLogs",
+    "savedEntries"
+];
+
+const logList = document.getElementById("logList");
+const searchInput = document.getElementById("searchInput");
+const totalCount = document.getElementById("totalCount");
+const resultCount = document.getElementById("resultCount");
+const sortSelect = document.getElementById("sortSelect");
+const displaySelect = document.getElementById("displaySelect");
+const typeFilter = document.getElementById("typeFilter");
+let editingIndex = null;
+let pendingDeleteIndex = null;
+
+sortSelect.value = localStorage.getItem("entriesSort") || "newest";
+
+const savedDisplayMode = localStorage.getItem("entriesDisplay") || "detailed";
+displaySelect.value = savedDisplayMode === "compact" ? "compact" : "detailed";
+
+function safeParseLocal(value, fallback){
+    try{
+        return JSON.parse(value) ?? fallback;
+    }catch(error){
+        return fallback;
+    }
+}
+
+function isDraftPayloadLocal(value){
+    return value &&
+        typeof value === "object" &&
+        value.data &&
+        value.savedAt &&
+        String(value.type || "").trim() !== "";
+}
+
+function isRealEntryLocal(value){
+    if(!value || typeof value !== "object" || Array.isArray(value)){
+        return false;
+    }
+
+    if(isDraftPayloadLocal(value)){
+        return false;
+    }
+
+    const typeText = String(value.entryType || value.formType || value.type || "").toLowerCase();
+
+    if(typeText.includes("draft")){
+        return false;
+    }
+
+    return Boolean(
+        value.createdAt ||
+        value.id ||
+        value.vessel ||
+        value.vesselName ||
+        value.reverseTime ||
+        value.entryTime ||
+        value.time ||
+        value.reason ||
+        value.reverseReason
+    );
+}
+
+function cleanLogArrayLocal(logs){
+    if(!Array.isArray(logs)){
+        return [];
+    }
+
+    return logs.filter(isRealEntryLocal).map(normalizeEntryOwner);
+}
+
+function migrateOldLogsIntoMainKey(){
+    const current = cleanLogArrayLocal(
+        safeParseLocal(localStorage.getItem("saultLocksLogs"), [])
+    );
+
+    if(current.length > 0){
+        localStorage.setItem("saultLocksLogs", JSON.stringify(current));
+        return;
+    }
+
+    for(const key of POSSIBLE_KEYS){
+        if(key === "saultLocksLogs") continue;
+
+        const oldLogs = cleanLogArrayLocal(
+            safeParseLocal(localStorage.getItem(key), [])
+        );
+
+        if(oldLogs.length > 0){
+            localStorage.setItem("saultLocksLogs", JSON.stringify(oldLogs));
+            return;
+        }
+    }
+
+    localStorage.setItem("saultLocksLogs", JSON.stringify([]));
+}
+
+function getLogsLocal(){
+    migrateOldLogsIntoMainKey();
+
+    const logs = safeParseLocal(localStorage.getItem("saultLocksLogs"), []);
+    const clean = cleanLogArrayLocal(logs);
+
+    if(Array.isArray(logs) && clean.length !== logs.length){
+        localStorage.setItem("saultLocksLogs", JSON.stringify(clean));
+    }
+
+    return clean;
+}
+
+function saveLogsLocal(logs){
+    localStorage.setItem("saultLocksLogs", JSON.stringify(cleanLogArrayLocal(logs)));
+}
+
+function escapeHTMLLocal(value){
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function formatValue(value){
+    if(value === undefined || value === null || String(value).trim() === ""){
+        return "N/A";
+    }
+
+    return escapeHTMLLocal(value);
+}
+
+function getTimeFormatLocal(){
+    return localStorage.getItem("timeFormat") || "12";
+}
+
+function formatSavedTime(value){
+    if(!value) return "N/A";
+
+    const text = String(value).trim();
+
+    if(text.toLowerCase().includes("am") || text.toLowerCase().includes("pm")){
+        return escapeHTMLLocal(text);
+    }
+
+    const match = text.match(/^(\d{1,2}):(\d{2})/);
+
+    if(!match){
+        return escapeHTMLLocal(text);
+    }
+
+    const date = new Date();
+    date.setHours(Number(match[1]));
+    date.setMinutes(Number(match[2]));
+    date.setSeconds(0);
+
+    return escapeHTMLLocal(date.toLocaleTimeString([], {
+        hour:"2-digit",
+        minute:"2-digit",
+        hour12:getTimeFormatLocal() === "12"
+    }));
+}
+
+function getEntryTitle(entry){
+    return entry.vessel || 
+        entry.vesselName || 
+        entry.name || 
+        entry.title || 
+        entry.type || 
+        entry.entryType || 
+        "Lock Entry";
+}
+
+function getEntryType(entry){
+    return entry.entryType || 
+        entry.formType || 
+        entry.category || 
+        entry.type || 
+        "Entry";
+}
+
+function getEntryTime(entry){
+    return entry.time || 
+        entry.entryTime || 
+        entry.reverseTime || 
+        "";
+}
+
+function getEntryDate(entry){
+    if(entry.date){
+        return entry.date;
+    }
+
+    if(entry.createdAt){
+        return new Date(entry.createdAt).toLocaleDateString();
+    }
+
+    return "";
+}
+
+function getComparableDate(entry){
+    if(entry.createdAt){
+        const date = new Date(entry.createdAt);
+        if(!Number.isNaN(date.getTime())) return date;
+    }
+
+    if(entry.date){
+        const date = new Date(entry.date);
+        if(!Number.isNaN(date.getTime())) return date;
+    }
+
+    return new Date();
+}
+
+function getDirection(entry){
+    return entry.direction || 
+        entry.dir || 
+        entry.reverseDir || 
+        "";
+}
+
+function getRegistration(entry){
+    return entry.registration || 
+        entry.reg || 
+        "";
+}
+
+function getPassengers(entry){
+    return entry.passengers || 
+        entry.passengerCount || 
+        entry.pass || 
+        "";
+}
+
+function getDestination(entry){
+    return entry.destination || 
+        entry.dest || 
+        "";
+}
+
+function getReason(entry){
+    return entry.reason || 
+        entry.reverseReason || 
+        "";
+}
+
+function cleanNameLocal(value){
+    const text = String(value || "").trim();
+    if(!text) return "";
+    if(/^unknown( user)?$/i.test(text)) return "";
+    if(/^n\/?a$/i.test(text)) return "";
+    return text;
+}
+
+function getActiveProfileNameLocal(){
+    if(window.getActiveUserName){
+        return window.getActiveUserName();
+    }
+
+    const profile = safeParseLocal(localStorage.getItem("ssmCanalDashboard.profile.v1"), {});
+    return cleanNameLocal(profile.userName || profile.name || profile.operator) || "Operator";
+}
+
+function getActiveDeviceLocal(){
+    if(window.getActiveDeviceLabel){
+        return window.getActiveDeviceLabel();
+    }
+
+    const profile = safeParseLocal(localStorage.getItem("ssmCanalDashboard.profile.v1"), {});
+    return cleanNameLocal(profile.deviceLabel || profile.deviceName) || navigator.platform || "This device";
+}
+
+function getEntryUser(entry){
+    if(window.getLogUserName){
+        return window.getLogUserName(entry);
+    }
+
+    return cleanNameLocal(entry.createdBy) ||
+        cleanNameLocal(entry.createdByName) ||
+        cleanNameLocal(entry.addedBy) ||
+        cleanNameLocal(entry.userName) ||
+        cleanNameLocal(entry.profileName) ||
+        cleanNameLocal(entry.operatorName) ||
+        cleanNameLocal(entry.operator) ||
+        getActiveProfileNameLocal();
+}
+
+function getEntryDevice(entry){
+    if(window.getLogDeviceLabel){
+        return window.getLogDeviceLabel(entry);
+    }
+
+    return cleanNameLocal(entry.deviceLabel) ||
+        cleanNameLocal(entry.deviceName) ||
+        cleanNameLocal(entry.createdDevice) ||
+        cleanNameLocal(entry.addedFromDevice) ||
+        getActiveDeviceLocal();
+}
+
+function normalizeEntryOwner(entry){
+    if(!entry || typeof entry !== "object") return entry;
+    if(window.normalizeLogProfileFields){
+        return window.normalizeLogProfileFields(entry);
+    }
+    const user = getEntryUser(entry);
+    const device = getEntryDevice(entry);
+    entry.createdBy = user;
+    entry.createdByName = user;
+    entry.addedBy = user;
+    entry.userName = user;
+    entry.profileName = user;
+    entry.operatorName = user;
+    entry.deviceLabel = device;
+    entry.deviceName = device;
+    entry.createdDevice = device;
+    entry.addedFromDevice = device;
+    return entry;
+}
+
+
+function getSearchBlob(entry){
+    return [
+        getEntryTitle(entry),
+        getEntryType(entry),
+        getEntryDate(entry),
+        getEntryTime(entry),
+        getDirection(entry),
+        getRegistration(entry),
+        getPassengers(entry),
+        getDestination(entry),
+        entry.homePort,
+        getReason(entry),
+        getEntryUser(entry),
+        getEntryDevice(entry),
+        entry.notes,
+        entry.canal
+    ].join(" ").toLowerCase();
+}
+
+function toLocalDateKey(value){
+    if(!value) return "";
+
+    if(value instanceof Date && !Number.isNaN(value.getTime())){
+        const y = value.getFullYear();
+        const m = String(value.getMonth() + 1).padStart(2, "0");
+        const d = String(value.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+    }
+
+    const text = String(value).trim();
+
+    if(/^\d{4}-\d{2}-\d{2}/.test(text)){
+        return text.slice(0, 10);
+    }
+
+    const parsed = new Date(text);
+
+    if(Number.isNaN(parsed.getTime())){
+        return "";
+    }
+
+    return toLocalDateKey(parsed);
+}
+
+function getEntryDateKey(entry){
+    return toLocalDateKey(
+        entry.date ||
+        entry.entryDate ||
+        entry.createdAt ||
+        entry.savedAt ||
+        entry.timestamp ||
+        entry.timeStamp ||
+        ""
+    );
+}
+
+function isTodayLog(entry){
+    const key = getEntryDateKey(entry);
+
+    // Older saved formats sometimes did not store a date.
+    // Those are treated as today's current mobile entries instead of disappearing.
+    if(!key) return true;
+
+    return key === toLocalDateKey(new Date());
+}
+
+function getTodayLogsLocal(){
+    return getLogsLocal().filter(isTodayLog);
+}
+
+function updateTypeFilterOptions(logs){
+    const currentValue = typeFilter.value || "all";
+    const types = [...new Set(logs.map(getEntryType).filter(Boolean))].sort();
+
+    typeFilter.innerHTML = `<option value="all">All Entry Types</option>`;
+
+    types.forEach(type => {
+        const option = document.createElement("option");
+        option.value = type;
+        option.textContent = type;
+        typeFilter.appendChild(option);
+    });
+
+    if([...typeFilter.options].some(option => option.value === currentValue)){
+        typeFilter.value = currentValue;
+    }else{
+        typeFilter.value = "all";
+    }
+}
+
+
+function getFilteredSortedLogs(){
+    const logs = getLogsLocal();
+    const search = searchInput.value.toLowerCase().trim();
+    const selectedType = typeFilter.value;
+    const sort = sortSelect.value;
+
+    let items = logs
+        .map((entry, index) => ({ entry, index }))
+        .filter(item => {
+            if(!isTodayLog(item.entry)) return false;
+            if(selectedType !== "all" && getEntryType(item.entry) !== selectedType) return false;
+            if(search && !getSearchBlob(item.entry).includes(search)) return false;
+
+            return true;
+        });
+
+    items.sort((a, b) => {
+        if(sort === "oldest"){
+            return getComparableDate(a.entry) - getComparableDate(b.entry);
+        }
+
+        if(sort === "type"){
+            return getEntryType(a.entry).localeCompare(getEntryType(b.entry));
+        }
+
+        if(sort === "vessel"){
+            return getEntryTitle(a.entry).localeCompare(getEntryTitle(b.entry));
+        }
+
+        return getComparableDate(b.entry) - getComparableDate(a.entry);
+    });
+
+    return items;
+}
+
+function renderLogs(){
+    const todayLogs = getTodayLogsLocal();
+
+    updateTypeFilterOptions(todayLogs);
+    const items = getFilteredSortedLogs();
+    totalCount.textContent = todayLogs.length;
+
+    if(items.length === todayLogs.length){
+        resultCount.textContent = `${todayLogs.length} today entries`;
+    }else{
+        resultCount.textContent = `Showing ${items.length} of ${todayLogs.length} today entries`;
+    }
+
+    logList.innerHTML = "";
+
+    if(items.length === 0){
+        logList.innerHTML = `
+            <div class="empty-box">
+                No entries for today match this view.
+            </div>
+        `;
+        return;
+    }
+
+    items.forEach(item => {
+        if(editingIndex === item.index){
+            renderEditCard(item.entry, item.index);
+        }else{
+            renderViewCard(item.entry, item.index);
+        }
+    });
+}
+
+function renderGroupedLogs(items){
+    const groups = {};
+
+    items.forEach(item => {
+        const date = getEntryDate(item.entry) || "No Date";
+
+        if(!groups[date]){
+            groups[date] = [];
+        }
+
+        groups[date].push(item);
+    });
+
+    Object.entries(groups).forEach(([date, groupItems]) => {
+        const title = document.createElement("div");
+        title.className = "group-title";
+        title.textContent = date;
+        logList.appendChild(title);
+
+        groupItems.forEach(item => {
+            if(editingIndex === item.index){
+                renderEditCard(item.entry, item.index);
+            }else{
+                renderViewCard(item.entry, item.index, true);
+            }
+        });
+    });
+}
+
+function renderViewCard(entry, index, compactOverride = false){
+    const compact = displaySelect.value === "compact" || compactOverride;
+
+    const card = document.createElement("div");
+    card.className = "entry-card" + (compact ? " compact" : "");
+
+    const detailGrid = compact ? "" : `
+        <div class="entry-grid">
+            <div class="entry-line"><strong>Date:</strong> ${formatValue(getEntryDate(entry))}</div>
+            <div class="entry-line"><strong>Time:</strong> ${formatSavedTime(getEntryTime(entry))}</div>
+            <div class="entry-line"><strong>Canal:</strong> ${formatValue(entry.canal || "Sault Canada Locks")}</div>
+            <div class="entry-line"><strong>Direction:</strong> ${formatValue(getDirection(entry))}</div>
+            <div class="entry-line"><strong>Registration:</strong> ${formatValue(getRegistration(entry))}</div>
+            <div class="entry-line"><strong>Passengers:</strong> ${formatValue(getPassengers(entry))}</div>
+            <div class="entry-line"><strong>Destination:</strong> ${formatValue(getDestination(entry))}</div>
+            <div class="entry-line"><strong>Home Port:</strong> ${formatValue(entry.homePort)}</div>
+            <div class="entry-line"><strong>Added By:</strong> ${formatValue(getEntryUser(entry))}</div>
+            <div class="entry-line"><strong>Device:</strong> ${formatValue(getEntryDevice(entry))}</div>
+            <div class="entry-line"><strong>Reason:</strong> ${formatValue(getReason(entry))}</div>
+            <div class="entry-line"><strong>Notes:</strong> ${formatValue(entry.notes)}</div>
+        </div>
+    `;
+
+    card.innerHTML = `
+        <div class="entry-header">
+            <div>
+                <div class="entry-title">${formatValue(getEntryTitle(entry))}</div>
+                <div class="entry-type">${formatValue(getEntryType(entry))}</div>
+
+                <div class="entry-meta">
+                    <span class="meta-pill">${formatValue(getEntryDate(entry))}</span>
+                    <span class="meta-pill">${formatSavedTime(getEntryTime(entry))}</span>
+                    <span class="meta-pill">${formatValue(getDirection(entry))}</span>
+                    <span class="meta-pill">${formatValue(getEntryUser(entry))}</span>
+                </div>
+            </div>
+        </div>
+
+        ${detailGrid}
+
+        <div class="entry-buttons">
+            <button 
+                class="edit-btn" 
+                type="button" 
+                onclick="startEdit(${index})">
+                Edit
+            </button>
+
+            <button 
+                class="delete-one-btn" 
+                type="button" 
+                onclick="openDeleteConfirm(${index})">
+                Delete
+            </button>
+        </div>
+    `;
+
+    logList.appendChild(card);
+}
+
+function renderEditCard(entry, index){
+    const card = document.createElement("div");
+    card.className = "entry-card";
+
+    card.innerHTML = `
+        <div class="entry-header">
+            <div>
+                <div class="entry-title">Edit Entry</div>
+                <div class="entry-type">${formatValue(getEntryType(entry))}</div>
+            </div>
+</div>
+
+        <div class="edit-form">
+            <label>Entry Type</label>
+            <input id="edit_entryType_${index}" value="${escapeHTMLLocal(getEntryType(entry))}">
+
+            <label>Vessel / Title</label>
+            <input id="edit_vessel_${index}" value="${escapeHTMLLocal(getEntryTitle(entry))}">
+
+            <label>Date</label>
+            <input id="edit_date_${index}" value="${escapeHTMLLocal(getEntryDate(entry))}">
+
+            <label>Time</label>
+            <input 
+                id="edit_time_${index}" 
+                type="text" 
+                placeholder="Example: 03:45 PM or 15:45"
+                value="${escapeHTMLLocal(getEntryTime(entry))}">
+
+            <label>Canal</label>
+            <input id="edit_canal_${index}" value="${escapeHTMLLocal(entry.canal || "Sault Canada Locks")}">
+
+            <label>Direction</label>
+            <input id="edit_direction_${index}" value="${escapeHTMLLocal(getDirection(entry))}">
+
+            <label>Registration</label>
+            <input id="edit_registration_${index}" value="${escapeHTMLLocal(getRegistration(entry))}">
+
+            <label>Passenger Count</label>
+            <input id="edit_passengers_${index}" value="${escapeHTMLLocal(getPassengers(entry))}">
+
+            <label>Destination</label>
+            <input id="edit_destination_${index}" value="${escapeHTMLLocal(getDestination(entry))}">
+
+            <label>Home Port</label>
+            <input id="edit_homePort_${index}" value="${escapeHTMLLocal(entry.homePort || "")}">
+
+            <label>Added By</label>
+            <input id="edit_user_${index}" value="${escapeHTMLLocal(getEntryUser(entry))}">
+
+            <label>Device</label>
+            <input id="edit_device_${index}" value="${escapeHTMLLocal(getEntryDevice(entry))}">
+
+            <label>Reason</label>
+            <textarea id="edit_reason_${index}">${escapeHTMLLocal(getReason(entry))}</textarea>
+
+            <label>Notes</label>
+            <textarea id="edit_notes_${index}">${escapeHTMLLocal(entry.notes || "")}</textarea>
+        </div>
+
+        <div class="entry-buttons">
+            <button 
+                class="save-edit-btn" 
+                type="button" 
+                onclick="saveEdit(${index})">
+                Save
+            </button>
+
+            <button 
+                class="cancel-edit-btn" 
+                type="button" 
+                onclick="cancelEdit()">
+                Cancel
+            </button>
+        </div>
+    `;
+
+    logList.appendChild(card);
+}
+
+function startEdit(index){
+    editingIndex = index;
+    renderLogs();
+}
+
+function cancelEdit(){
+    editingIndex = null;
+    renderLogs();
+}
+
+function saveLogsLocalOnly(logs){
+    localStorage.setItem("saultLocksLogs", JSON.stringify(cleanLogArrayLocal(logs)));
+}
+
+function syncEditedLogToDashboard(entry){
+    if(!entry || !window.mobileLinkSync || !window.mobileLinkSync.isLinked || !window.mobileLinkSync.isLinked()){
+        return;
+    }
+
+    if(typeof window.mobileLinkSync.pushEntry === "function"){
+        window.mobileLinkSync.pushEntry(entry, {silent:true, timeoutMs:7000})
+            .then(() => renderLogs())
+            .catch(() => {});
+    }
+}
+
+function syncDeletedLogToDashboard(entry){
+    if(!entry || !window.mobileLinkSync || !window.mobileLinkSync.isLinked || !window.mobileLinkSync.isLinked()){
+        return Promise.resolve(null);
+    }
+
+    if(typeof window.mobileLinkSync.cancelQueuedSync === "function"){
+        window.mobileLinkSync.cancelQueuedSync();
+    }
+
+    if(typeof window.mobileLinkSync.markDeletedLocal === "function"){
+        window.mobileLinkSync.markDeletedLocal(entry);
+    }
+
+    if(typeof window.mobileLinkSync.deleteEntry === "function"){
+        return window.mobileLinkSync.deleteEntry(entry, {silent:false, timeoutMs:9000})
+            .then(out => { renderLogs(); return out; })
+            .catch(error => {
+                console.warn("Mobile delete did not reach dashboard", error);
+                return null;
+            });
+    }
+
+    return Promise.resolve(null);
+}
+
+window.addEventListener("ssm-mobile-logs-synced", function(){
+    editingIndex = null;
+    renderLogs();
+});
+
+async function saveEdit(index){
+    const logs = getLogsLocal();
+
+    if(!logs[index]){
+        return;
+    }
+
+    const oldEntry = logs[index];
+
+    const entryType = document.getElementById(`edit_entryType_${index}`).value.trim();
+    const vessel = document.getElementById(`edit_vessel_${index}`).value.trim();
+    const date = document.getElementById(`edit_date_${index}`).value.trim();
+    const time = document.getElementById(`edit_time_${index}`).value.trim();
+    const canal = document.getElementById(`edit_canal_${index}`).value.trim();
+    const direction = document.getElementById(`edit_direction_${index}`).value.trim();
+    const registration = document.getElementById(`edit_registration_${index}`).value.trim();
+    const passengers = document.getElementById(`edit_passengers_${index}`).value.trim();
+    const destination = document.getElementById(`edit_destination_${index}`).value.trim();
+    const homePort = document.getElementById(`edit_homePort_${index}`).value.trim();
+    const addedBy = document.getElementById(`edit_user_${index}`).value.trim();
+    const deviceLabel = document.getElementById(`edit_device_${index}`).value.trim();
+    const reason = document.getElementById(`edit_reason_${index}`).value.trim();
+    const notes = document.getElementById(`edit_notes_${index}`).value.trim();
+
+    logs[index] = {
+        ...oldEntry,
+
+        entryType:entryType,
+        formType:entryType,
+        type:entryType,
+
+        vessel:vessel,
+        vesselName:vessel,
+        title:vessel,
+
+        date:date,
+        entryDate:date,
+
+        time:time,
+        entryTime:time,
+        reverseTime:time,
+
+        canal:canal,
+
+        direction:direction,
+        dir:direction,
+        reverseDir:direction,
+
+        registration:registration,
+        reg:registration,
+
+        passengers:passengers,
+        passengerCount:passengers,
+        pass:passengers,
+
+        destination:destination,
+        dest:destination,
+
+        homePort:homePort,
+
+        createdBy:addedBy || getActiveProfileNameLocal(),
+        createdByName:addedBy || getActiveProfileNameLocal(),
+        addedBy:addedBy || getActiveProfileNameLocal(),
+        userName:addedBy || getActiveProfileNameLocal(),
+        profileName:addedBy || getActiveProfileNameLocal(),
+        operatorName:addedBy || getActiveProfileNameLocal(),
+        deviceLabel:deviceLabel || getActiveDeviceLocal(),
+        deviceName:deviceLabel || getActiveDeviceLocal(),
+        createdDevice:deviceLabel || getActiveDeviceLocal(),
+        addedFromDevice:deviceLabel || getActiveDeviceLocal(),
+
+        reason:reason,
+        reverseReason:reason,
+
+        notes:notes,
+
+        editedAt:new Date().toISOString()
+    };
+
+    saveLogsLocal(logs);
+    syncEditedLogToDashboard(logs[index]);
+
+    editingIndex = null;
+    renderLogs();
+}
+
+function openDeleteConfirm(index){
+    const logs = getLogsLocal();
+
+    if(!logs[index]){
+        return;
+    }
+
+    pendingDeleteIndex = index;
+
+    const entry = logs[index];
+    const backdrop = document.getElementById("deleteConfirmBackdrop");
+    const name = document.getElementById("deleteConfirmName");
+    const meta = document.getElementById("deleteConfirmMeta");
+    const button = document.getElementById("deleteConfirmButton");
+
+    if(name){
+        name.textContent = getEntryTitle(entry) || "Entry";
+    }
+
+    if(meta){
+        const parts = [
+            getEntryType(entry),
+            getEntryDate(entry),
+            formatSavedTime(getEntryTime(entry)).replace(/&amp;/g, "&")
+        ].filter(value => value && value !== "N/A");
+
+        meta.textContent = parts.length ? parts.join(" • ") : "Ready to delete";
+    }
+
+    if(button){
+        button.disabled = false;
+        button.textContent = "Delete";
+    }
+
+    if(backdrop){
+        backdrop.classList.add("show");
+        document.body.classList.add("delete-confirm-lock");
+    }
+}
+
+function closeDeleteConfirm(){
+    const backdrop = document.getElementById("deleteConfirmBackdrop");
+    const button = document.getElementById("deleteConfirmButton");
+
+    pendingDeleteIndex = null;
+
+    if(backdrop){
+        backdrop.classList.remove("show");
+    }
+
+    if(button){
+        button.disabled = false;
+        button.textContent = "Delete";
+    }
+
+    document.body.classList.remove("delete-confirm-lock");
+}
+
+function handleDeleteBackdropClick(event){
+    if(event.target && event.target.id === "deleteConfirmBackdrop"){
+        closeDeleteConfirm();
+    }
+}
+
+async function confirmDeleteLog(){
+    if(pendingDeleteIndex === null){
+        return;
+    }
+
+    const button = document.getElementById("deleteConfirmButton");
+    const index = pendingDeleteIndex;
+
+    pendingDeleteIndex = null;
+
+    if(button){
+        button.disabled = true;
+        button.textContent = "Deleting...";
+    }
+
+    await deleteLog(index);
+    closeDeleteConfirm();
+}
+
+async function deleteLog(index){
+    const logs = getLogsLocal();
+
+    if(!logs[index]){
+        return;
+    }
+
+    const removedEntry = logs[index];
+    logs.splice(index, 1);
+    saveLogsLocalOnly(logs);
+
+    if(editingIndex === index){
+        editingIndex = null;
+    }else if(editingIndex !== null && editingIndex > index){
+        editingIndex -= 1;
+    }
+
+    renderLogs();
+    await syncDeletedLogToDashboard(removedEntry);
+}
+
+function exportLogs(){
+    const logs = getTodayLogsLocal();
+
+    if(logs.length === 0){
+        return;
+    }
+
+    const data = JSON.stringify(logs, null, 2);
+    const blob = new Blob([data], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `sault-locks-today-${toLocalDateKey(new Date())}.json`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function clearFilters(){
+    searchInput.value = "";
+    sortSelect.value = "newest";
+    displaySelect.value = "detailed";
+    typeFilter.value = "all";
+
+    localStorage.setItem("entriesSort", sortSelect.value);
+    localStorage.setItem("entriesDisplay", displaySelect.value);
+    localStorage.removeItem("entriesDateFilter");
+
+    editingIndex = null;
+    renderLogs();
+}
+
+searchInput.addEventListener("input", function(){
+    editingIndex = null;
+    renderLogs();
+});
+
+sortSelect.addEventListener("change", function(){
+    localStorage.setItem("entriesSort", sortSelect.value);
+    editingIndex = null;
+    renderLogs();
+});
+
+displaySelect.addEventListener("change", function(){
+    localStorage.setItem("entriesDisplay", displaySelect.value);
+    editingIndex = null;
+    renderLogs();
+});
+
+typeFilter.addEventListener("change", function(){
+    editingIndex = null;
+    renderLogs();
+});
+
+
+
+
+document.addEventListener("keydown", function(event){
+    if(event.key === "Escape"){
+        closeDeleteConfirm();
+    }
+});
+
+renderLogs();
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+    });
+}
+</script>
+
+</body>
+</html>

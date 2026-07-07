@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>Kayak Entry</title>
+<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sault Locks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+
+<style>
+.time-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-bottom:14px;
+}
+
+.time-row input{
+    margin-bottom:0;
+    flex:1;
+}
+
+.time-btn{
+    height:51px;
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    border-radius:12px;
+    padding:0 14px;
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+    box-shadow:var(--inner);
+}
+
+.time-btn:active{
+    transform:scale(.97);
+    background:var(--card-3);
+}
+
+input::placeholder,
+textarea::placeholder{
+    color:var(--muted);
+    opacity:1;
+}
+
+select{
+    color:var(--text);
+    scrollbar-width:thin;
+    scrollbar-color:var(--border-strong) var(--input);
+}
+
+select.placeholder{
+    color:var(--muted);
+}
+
+select::-webkit-scrollbar{
+    width:8px;
+}
+
+select::-webkit-scrollbar-track{
+    background:var(--input);
+    border-radius:999px;
+}
+
+select::-webkit-scrollbar-thumb{
+    background:var(--border-strong);
+    border-radius:999px;
+}
+
+select::-webkit-scrollbar-thumb:hover{
+    background:var(--blue);
+}
+
+.manual-input{
+    display:none;
+    margin-top:-6px;
+    margin-bottom:14px;
+    width:100%;
+    background:var(--input);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px;
+    font-size:15px;
+    outline:none;
+}
+
+.manual-input::placeholder{
+    color:var(--muted);
+    opacity:1;
+}
+
+.manual-input:focus{
+    background:var(--input-focus);
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(47,134,183,.18);
+}
+
+.kayak-info{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:14px;
+    margin-bottom:14px;
+    box-shadow:var(--inner);
+}
+
+.kayak-info strong{
+    display:block;
+    color:var(--text);
+    font-size:15px;
+    font-weight:950;
+    margin-bottom:4px;
+}
+
+.kayak-info span{
+    display:block;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.4;
+    font-weight:750;
+}
+
+.popup-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9999;
+}
+
+body.light .popup-overlay{
+    background:rgba(16,32,48,.35);
+}
+
+.popup-overlay.active{
+    display:flex;
+}
+
+.popup-box{
+    width:100%;
+    max-width:360px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    animation:popupIn .18s ease;
+}
+
+body.light .popup-box{
+    box-shadow:0 20px 60px rgba(47,134,183,.18);
+}
+
+@keyframes popupIn{
+    from{
+        opacity:0;
+        transform:scale(.94) translateY(8px);
+    }
+    to{
+        opacity:1;
+        transform:scale(1) translateY(0);
+    }
+}
+
+.popup-box h3{
+    color:var(--text);
+    font-size:20px;
+    margin-bottom:8px;
+    font-weight:900;
+}
+
+.popup-box p{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.5;
+    margin-bottom:14px;
+    font-weight:700;
+}
+
+.missing-list{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px;
+    margin-bottom:18px;
+    color:var(--text);
+    font-size:14px;
+    font-weight:800;
+}
+
+.missing-list div{
+    padding:4px 0;
+}
+
+.popup-actions{
+    display:flex;
+    gap:10px;
+}
+
+.popup-actions button{
+    flex:1;
+    border:none;
+    border-radius:14px;
+    padding:14px 12px;
+    font-size:14px;
+    font-weight:900;
+}
+
+.cancel-btn{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong) !important;
+}
+
+.continue-btn{
+    background:var(--blue);
+    color:#fff;
+    border:1px solid var(--blue-border) !important;
+}
+
+.cancel-btn:active,
+.continue-btn:active{
+    transform:scale(.98);
+}
+
+body.light .continue-btn{
+    background:#348dbc;
+    color:#fff;
+    border-color:#5cadd8 !important;
+}
+
+
+/* CLEAN KAYAK MOBILE HEADER - rebuilt so it is not cut off */
+html,
+body{
+    margin:0 !important;
+    width:100% !important;
+    min-height:100% !important;
+    overflow-x:hidden !important;
+}
+
+body.kayak-page{
+    min-height:100dvh !important;
+    background:var(--bg, #0f172a) !important;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+}
+
+body.kayak-page .page{
+    width:100% !important;
+    max-width:460px !important;
+    min-height:100dvh !important;
+    margin:0 auto !important;
+    padding:calc(14px + env(safe-area-inset-top, 0px)) 14px calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    overflow:visible !important;
+}
+
+body.kayak-page .kayak-header{
+    width:100% !important;
+    min-height:44px !important;
+    display:grid !important;
+    grid-template-columns:42px minmax(0, 1fr) 42px !important;
+    align-items:center !important;
+    gap:10px !important;
+    margin:0 0 16px !important;
+    padding:0 !important;
+    position:relative !important;
+    top:auto !important;
+    z-index:30 !important;
+    background:transparent !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+}
+
+body.kayak-page .kayak-back,
+body.kayak-page .kayak-header-spacer{
+    width:42px !important;
+    height:42px !important;
+    min-width:42px !important;
+    border-radius:15px !important;
+}
+
+body.kayak-page .kayak-back{
+    display:grid !important;
+    place-items:center !important;
+    padding:0 !important;
+    color:var(--text) !important;
+    background:var(--card-2) !important;
+    border:1px solid var(--border-strong) !important;
+    box-shadow:var(--inner), 0 8px 18px rgba(0,0,0,.08) !important;
+    text-decoration:none !important;
+    -webkit-backdrop-filter:blur(16px) !important;
+    backdrop-filter:blur(16px) !important;
+}
+
+body.kayak-page .kayak-back svg{
+    width:22px !important;
+    height:22px !important;
+    stroke:currentColor !important;
+    stroke-width:2.5 !important;
+    fill:none !important;
+    stroke-linecap:round !important;
+    stroke-linejoin:round !important;
+}
+
+body.kayak-page .kayak-header-spacer{
+    visibility:hidden !important;
+}
+
+body.kayak-page .kayak-title{
+    min-width:0 !important;
+    text-align:center !important;
+    line-height:1.05 !important;
+}
+
+body.kayak-page .kayak-title strong{
+    display:block !important;
+    color:var(--text) !important;
+    font-size:18px !important;
+    font-weight:950 !important;
+    letter-spacing:-.045em !important;
+}
+
+body.kayak-page .kayak-title span{
+    display:block !important;
+    margin-top:4px !important;
+    color:var(--muted) !important;
+    font-size:11px !important;
+    font-weight:800 !important;
+    letter-spacing:.01em !important;
+}
+
+body.kayak-page .form{
+    margin:0 !important;
+}
+
+html.theme-dark body.kayak-page,
+html.app-dark body.kayak-page{
+    background:linear-gradient(180deg,#0f172a 0%,#111827 100%) !important;
+    color:#f8fafc !important;
+}
+
+html.theme-dark body.kayak-page .kayak-back,
+html.app-dark body.kayak-page .kayak-back{
+    background:rgba(23,32,51,.94) !important;
+    border-color:rgba(148,163,184,.22) !important;
+    color:#f8fafc !important;
+    box-shadow:0 8px 18px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+html.theme-dark body.kayak-page .kayak-title strong,
+html.app-dark body.kayak-page .kayak-title strong{
+    color:#f8fafc !important;
+}
+
+html.theme-dark body.kayak-page .kayak-title span,
+html.app-dark body.kayak-page .kayak-title span{
+    color:#a9b8cb !important;
+}
+
+body.light.kayak-page,
+html.theme-light body.kayak-page{
+    background:var(--bg, #f6f9fc) !important;
+}
+
+body.light.kayak-page .kayak-back,
+html.theme-light body.kayak-page .kayak-back{
+    background:linear-gradient(180deg,#ffffff,var(--blue-soft,#E8F5FC)) !important;
+    border-color:rgba(var(--accent-rgb,52,141,188),.28) !important;
+    color:var(--blue,#348DBC) !important;
+    box-shadow:0 8px 18px rgba(var(--accent-rgb,52,141,188),.10) !important;
+}
+
+@media(max-width:370px){
+    body.kayak-page .page{
+        padding-left:12px !important;
+        padding-right:12px !important;
+    }
+
+    body.kayak-page .kayak-header{
+        grid-template-columns:40px minmax(0, 1fr) 40px !important;
+        gap:8px !important;
+    }
+
+    body.kayak-page .kayak-back,
+    body.kayak-page .kayak-header-spacer{
+        width:40px !important;
+        height:40px !important;
+        min-width:40px !important;
+    }
+
+    body.kayak-page .kayak-title strong{
+        font-size:17px !important;
+    }
+}
+
+</style>
+</head>
+
+<body class="kayak-page">
+<div class="page">
+
+    <header class="kayak-header" aria-label="Kayak entry header">
+        <a class="kayak-back" href="index.html" aria-label="Back to home">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 18 9 12l6-6"></path>
+            </svg>
+        </a>
+
+        <div class="kayak-title">
+            <strong>Kayak</strong>
+            <span>New Entry</span>
+        </div>
+
+        <div class="kayak-header-spacer" aria-hidden="true"></div>
+    </header>
+
+    <form class="form" id="entryForm">
+
+       
+
+        <label>Name / Company</label>
+        <select id="vessel" class="placeholder">
+            <option value="">Select Kayak Preset</option>
+            <option data-manual="true" value="Other">Other</option>
+        </select>
+
+        <input 
+            id="vesselManual" 
+            class="manual-input" 
+            type="text" 
+            placeholder="Type name or company">
+
+        <label>Passengers</label>
+        <input 
+            id="pass" 
+            type="text" 
+            inputmode="numeric"
+            placeholder="Passenger Count">
+
+        <label>Number of Kayaks</label>
+        <input 
+            id="kayakCount" 
+            type="text" 
+            inputmode="numeric"
+            placeholder="Number of Kayaks">
+
+        <label>Registration</label>
+        <input 
+            id="reg" 
+            type="text" 
+            value="K"
+            placeholder="Registration">
+
+        <label>Home Port</label>
+        <input 
+            id="homePort" 
+            type="text" 
+            placeholder="Home Port">
+
+        <label>Destination</label>
+        <input 
+            id="dest" 
+            type="text" 
+            placeholder="Enter Destination">
+
+        <label>Canal</label>
+        <input id="canal" value="Sault Canada Locks" readonly>
+
+        <label>Direction</label>
+        <select id="dir" class="placeholder">
+            <option value="">Select Direction</option>
+            <option value="Up">Up</option>
+            <option value="Down">Down</option>
+        </select>
+
+        <label>Time</label>
+        <div class="time-row">
+            <input 
+                id="entryTime" 
+                type="text"
+                placeholder="Example: 03:45 PM or 15:45">
+        </div>
+
+        <label>Notes</label>
+        <textarea 
+            id="notes" 
+            placeholder="Notes"></textarea>
+
+        <button class="btn full" type="submit">
+            Save Entry
+        </button>
+
+    </form>
+
+</div>
+
+<div class="popup-overlay" id="missingPopup">
+    <div class="popup-box">
+        <h3>Missing Information</h3>
+        <p>Some fields are not filled out. Are you sure you want to continue?</p>
+
+        <div class="missing-list" id="missingList"></div>
+
+        <div class="popup-actions">
+            <button class="cancel-btn" type="button" id="cancelSubmit">
+                Go Back
+            </button>
+
+            <button class="continue-btn" type="button" id="continueSubmit">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="assets/app.js?v=20260707pairpage2"></script>
+
+<script>
+/*
+    KAYAK PRESETS
+    Add or rename kayak/company presets here.
+    Registration defaults to K for kayak entries.
+
+    Example:
+    "Company Name": {
+        registration:"K",
+        homePort:"Sault Ste. Marie",
+        destination:"Sault Canada Locks"
+    }
+*/
+
+const KAYAK_PRESETS = {
+    "Birds Eye Tours": {
+        registration:"K",
+        canalReg:"K",
+        homePort:"",
+        destination:"",
+        vesselType:"K"
+    }
+};
+
+let lastAppliedKayakPreset = null;
+
+function getSharedKayakPresets(){
+    try{
+        if(window.mobilePresetListForType){
+            return window.mobilePresetListForType("Kayak") || [];
+        }
+    }catch(e){}
+    return [];
+}
+
+function kayakPresetRegistration(preset){
+    return String((preset && (preset.canalReg || preset.reg || preset.registration || preset.vesselReg)) || "K").trim() || "K";
+}
+
+function kayakPresetHomePort(preset){
+    return String((preset && (preset.homePort || preset.homeport || preset.port || [preset.city, preset.state, preset.country].filter(Boolean).join(", "))) || "").trim();
+}
+
+function kayakPresetDestination(preset){
+    return String((preset && (preset.destination || preset.dest)) || "").trim();
+}
+
+function loadKayakPresetOptions(){
+    const select = document.getElementById("vessel");
+    if(!select) return;
+
+    const manualOption = Array.from(select.options).find(option => option.dataset.manual === "true");
+    const names = new Set(Object.keys(KAYAK_PRESETS));
+    getSharedKayakPresets().forEach(preset => {
+        const name = String(preset.name || preset.vessel || "").trim();
+        if(name) names.add(name);
+    });
+
+    names.forEach(name => {
+        if(Array.from(select.options).some(option => option.value === name)) return;
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        select.insertBefore(option, manualOption || null);
+    });
+}
+
+function findKayakPreset(name){
+    const cleanName = String(name || "").trim().toLowerCase();
+    if(!cleanName) return null;
+    const shared = getSharedKayakPresets().find(preset => String(preset.name || preset.vessel || "").trim().toLowerCase() === cleanName);
+    return shared || KAYAK_PRESETS[name] || null;
+}
+
+function applyKayakPreset(name){
+    const preset = findKayakPreset(name);
+    const reg = document.getElementById("reg");
+    const homePort = document.getElementById("homePort");
+    const dest = document.getElementById("dest");
+
+    if(!reg) return;
+
+    const presetKey = preset ? name : "";
+
+    if(lastAppliedKayakPreset !== presetKey){
+        reg.value = preset ? kayakPresetRegistration(preset) : "K";
+
+        const home = kayakPresetHomePort(preset);
+        const destination = kayakPresetDestination(preset);
+        if(home && homePort) homePort.value = home;
+        if(destination && dest) dest.value = destination;
+
+        lastAppliedKayakPreset = presetKey;
+    }
+
+    if(!String(reg.value || "").trim() || String(reg.value || "").trim().toUpperCase() === "N/A"){
+        reg.value = "K";
+    }
+}
+
+function getTimeSetting(){
+    return localStorage.getItem("timeFormat") || "12";
+}
+
+function formatDisplayTime(date){
+    return date.toLocaleTimeString([], {
+        hour:"2-digit",
+        minute:"2-digit",
+        hour12:getTimeSetting() === "12"
+    });
+}
+
+function setCurrentTime(force){
+    const input = document.getElementById("entryTime");
+    if(!input) return;
+    if(force !== true && String(input.value || "").trim()) return;
+    const now = new Date();
+    input.value = formatDisplayTime(now);
+    input.dispatchEvent(new Event("input", { bubbles:true }));
+    input.dispatchEvent(new Event("change", { bubbles:true }));
+}
+
+function cleanManualTime(value){
+    return String(value || "").trim();
+}
+
+function getSelectedVesselName(){
+    const select = document.getElementById("vessel");
+    const manual = document.getElementById("vesselManual");
+    const selectedOption = select.options[select.selectedIndex];
+
+    if(selectedOption && selectedOption.dataset.manual === "true"){
+        return manual.value.trim();
+    }
+
+    return select.value.trim();
+}
+
+function updateVesselPreset(){
+    const select = document.getElementById("vessel");
+    const manual = document.getElementById("vesselManual");
+    const selectedOption = select.options[select.selectedIndex];
+
+    if(select.value === ""){
+        select.classList.add("placeholder");
+    }else{
+        select.classList.remove("placeholder");
+    }
+
+    if(selectedOption && selectedOption.dataset.manual === "true"){
+        manual.style.display = "block";
+        if(document.activeElement !== manual){
+            setTimeout(() => manual.focus(), 0);
+        }
+    }else{
+        manual.style.display = "none";
+        manual.value = "";
+    }
+
+    applyKayakPreset(getSelectedVesselName());
+    updateKayakNotes();
+}
+
+function updateKayakNotes(){
+    const kayakCount = document.getElementById("kayakCount").value.trim();
+    const selectedName = getSelectedVesselName();
+    const notes = document.getElementById("notes");
+
+    if(!notes.dataset.userEdited){
+        const parts = [];
+
+        if(kayakCount){
+            parts.push("Number of Kayaks: " + kayakCount);
+        }
+
+        if(selectedName){
+            parts.push("Kayak Name/Company: " + selectedName);
+        }
+
+        notes.value = parts.join(" | ");
+    }
+}
+
+setCurrentTime();
+if(window.mobileApplyDashboardPresets) window.mobileApplyDashboardPresets("Kayak");
+loadKayakPresetOptions();
+updateVesselPreset();
+document.getElementById("vessel").addEventListener("change", updateVesselPreset);
+document.getElementById("vesselManual").addEventListener("input", updateVesselPreset);
+document.getElementById("kayakCount").addEventListener("input", updateKayakNotes);
+window.addEventListener("mobileDashboardPresetsUpdated", function(){
+    if(window.mobileApplyDashboardPresets) window.mobileApplyDashboardPresets("Kayak");
+    loadKayakPresetOptions();
+    updateVesselPreset();
+});
+
+document.getElementById("notes").addEventListener("input", function(){
+    this.dataset.userEdited = "true";
+});
+
+const dirSelect = document.getElementById("dir");
+
+dirSelect.addEventListener("change", function(){
+    if(this.value === ""){
+        this.classList.add("placeholder");
+    }else{
+        this.classList.remove("placeholder");
+    }
+});
+
+const form = document.getElementById("entryForm");
+const popup = document.getElementById("missingPopup");
+const missingList = document.getElementById("missingList");
+const cancelSubmit = document.getElementById("cancelSubmit");
+const continueSubmit = document.getElementById("continueSubmit");
+
+let allowBypassSubmit = false;
+
+function getMissingFields(){
+    updateVesselPreset();
+
+    const requiredFields = [
+        {
+            name:"Name / Company",
+            value:getSelectedVesselName()
+        },
+        {
+            id:"pass",
+            name:"Passengers"
+        },
+        {
+            id:"kayakCount",
+            name:"Number of Kayaks"
+        },
+        {
+            id:"reg",
+            name:"Registration"
+        },
+        {
+            id:"homePort",
+            name:"Home Port"
+        },
+        {
+            id:"dest",
+            name:"Destination"
+        },
+        {
+            id:"dir",
+            name:"Direction"
+        },
+        {
+            id:"entryTime",
+            name:"Time"
+        }
+    ];
+
+    return requiredFields.filter(field => {
+        if(field.value !== undefined){
+            return !String(field.value || "").trim();
+        }
+
+        const el = document.getElementById(field.id);
+        return !String(el.value || "").trim();
+    });
+}
+
+function showMissingPopup(missing){
+    missingList.innerHTML = "";
+
+    missing.forEach(field => {
+        const item = document.createElement("div");
+        item.textContent = "• " + field.name;
+        missingList.appendChild(item);
+    });
+
+    popup.classList.add("active");
+}
+
+function hideMissingPopup(){
+    popup.classList.remove("active");
+}
+
+form.addEventListener("submit", function(e){
+    updateVesselPreset();
+    updateKayakNotes();
+
+    if(allowBypassSubmit){
+        return;
+    }
+
+    if(window.shouldConfirmBeforeSave && !window.shouldConfirmBeforeSave()){
+        return;
+    }
+
+    const missing = getMissingFields();
+
+    if(missing.length > 0){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        showMissingPopup(missing);
+        return false;
+    }
+}, true);
+
+cancelSubmit.addEventListener("click", function(){
+    hideMissingPopup();
+});
+
+continueSubmit.addEventListener("click", function(){
+    allowBypassSubmit = true;
+    hideMissingPopup();
+    updateVesselPreset();
+    updateKayakNotes();
+    form.requestSubmit();
+});
+
+popup.addEventListener("click", function(e){
+    if(e.target === popup){
+        hideMissingPopup();
+    }
+});
+
+setupNormalForm("Kayak");
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+    });
+}
+</script>
+
+</body>
+</html>

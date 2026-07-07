@@ -1,6 +1,6 @@
 {
   "name": "lock-release-desktop",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Lock Release real desktop app with public GitHub updates",
   "main": "main.js",
   "private": true,
@@ -8,7 +8,7 @@
   "productName": "Lock Release",
   "scripts": {
     "start": "electron .",
-    "build-win": "electron-packager . \"Lock Release\" --platform=win32 --arch=x64 --icon=assets/lock-release.ico --overwrite --out=dist --prune=true --asar=false --ignore=dist --ignore=\\.git"
+    "build-win": "electron-packager . \"Lock Release\" --platform=win32 --arch=x64 --icon=assets/lock-release.ico --overwrite --out=dist --prune --ignore=\"^/dist($|/)\" --ignore=\"^/.git($|/)\""
   },
   "devDependencies": {
     "electron": "latest",

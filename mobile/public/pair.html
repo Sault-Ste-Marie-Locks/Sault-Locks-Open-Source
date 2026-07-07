@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>Pair Phone · Sault Locks</title>
+<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#348DBC">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sault Locks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<style>
+:root{--pair-bg:#f6f9fc;--pair-card:#fff;--pair-text:#0f172a;--pair-muted:#64748b;--pair-line:rgba(148,163,184,.28);--pair-shadow:0 24px 70px rgba(15,23,42,.14)}
+html.theme-dark,html.app-dark{--pair-bg:#0f172a;--pair-card:#172033;--pair-text:#f8fafc;--pair-muted:#94a3b8;--pair-line:rgba(148,163,184,.18);--pair-shadow:0 24px 70px rgba(0,0,0,.34)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;min-height:100svh;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at 18% -8%,rgba(var(--accent-rgb,52,141,188),.24),transparent 34%),linear-gradient(180deg,var(--pair-bg),var(--pair-bg));color:var(--pair-text);display:grid;place-items:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom,0px))}.pair-shell{width:min(440px,100%)}.pair-logo{display:flex;align-items:center;gap:12px;margin-bottom:18px}.pair-logo-mark{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue,#348DBC),var(--blue-hover,#3F9FCE));color:white;font-size:24px;font-weight:950;box-shadow:0 12px 24px rgba(var(--accent-rgb,52,141,188),.22)}.pair-logo strong{display:block;font-size:18px;letter-spacing:-.03em}.pair-logo span{display:block;color:var(--pair-muted);font-size:12px;font-weight:800;margin-top:2px}.pair-card{background:var(--pair-card);border:1px solid var(--pair-line);box-shadow:var(--pair-shadow);border-radius:30px;padding:22px}.pair-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border-radius:999px;background:rgba(var(--accent-rgb,52,141,188),.12);color:var(--blue,#348DBC);font-size:12px;font-weight:950;margin-bottom:14px}.pair-card h1{margin:0 0 8px;font-size:30px;line-height:1.05;letter-spacing:-.06em}.pair-card p{margin:0;color:var(--pair-muted);font-size:14px;line-height:1.5;font-weight:750}.pair-form{display:grid;gap:12px;margin-top:20px}.pair-form label{font-size:12px;font-weight:950;color:var(--pair-muted);text-transform:uppercase;letter-spacing:.08em}.pair-code-input{width:100%;height:64px;border-radius:20px;border:1px solid var(--pair-line);background:rgba(148,163,184,.08);color:var(--pair-text);font-size:28px;font-weight:950;text-align:center;letter-spacing:.18em;outline:none}.pair-code-input:focus{border-color:rgba(var(--accent-rgb,52,141,188),.65);box-shadow:0 0 0 4px rgba(var(--accent-rgb,52,141,188),.16)}.pair-actions{display:grid;gap:10px;margin-top:6px}.pair-btn{width:100%;height:54px;border:0;border-radius:18px;font-size:15px;font-weight:950}.pair-btn.primary{background:linear-gradient(135deg,var(--blue,#348DBC),var(--blue-hover,#3F9FCE));color:#fff;box-shadow:0 14px 26px rgba(var(--accent-rgb,52,141,188),.22)}.pair-btn.secondary{background:rgba(148,163,184,.11);color:var(--pair-text);border:1px solid var(--pair-line)}.pair-btn:disabled{opacity:.55}.pair-status{min-height:20px;margin-top:14px;font-size:13px;font-weight:850;color:var(--pair-muted);line-height:1.4}.pair-status[data-state="error"]{color:#ef4444}.pair-status[data-state="linked"]{color:#10b981}.pair-steps{display:grid;gap:10px;margin-top:18px;padding-top:18px;border-top:1px solid var(--pair-line)}.pair-step{display:flex;gap:10px;align-items:flex-start;color:var(--pair-muted);font-size:13px;font-weight:800;line-height:1.35}.pair-num{width:24px;height:24px;min-width:24px;border-radius:999px;display:grid;place-items:center;background:rgba(var(--accent-rgb,52,141,188),.13);color:var(--blue,#348DBC);font-size:12px;font-weight:950}.pair-offline{display:none;margin-top:14px;padding:14px;border-radius:18px;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.22);color:#ef4444;font-size:13px;font-weight:850;line-height:1.4}.is-offline .pair-offline{display:block}.is-offline .pair-form{opacity:.55;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="pair-shell" id="pairShell">
+  <div class="pair-logo"><div class="pair-logo-mark">↔</div><div><strong>Sault Locks</strong><span>Mobile pairing</span></div></div>
+  <section class="pair-card">
+    <div class="pair-pill" id="serverBadge">Checking server…</div>
+    <h1>Pair this phone</h1>
+    <p>Scan the QR code from the dashboard, then enter the 6-digit code shown on the Phone Link screen.</p>
+    <div class="pair-offline" id="pairOffline">Phone Link is offline. Start the phone server on the dashboard, then try again.</div>
+    <form class="pair-form" id="pairForm" autocomplete="off">
+      <label for="pairCodeInput">Dashboard code</label>
+      <input class="pair-code-input" id="pairCodeInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="------" aria-label="6 digit pairing code"/>
+      <div class="pair-actions">
+        <button class="pair-btn primary" id="pairButton" type="submit">Pair Phone</button>
+        <button class="pair-btn secondary" id="retryButton" type="button">Check Server Again</button>
+      </div>
+    </form>
+    <div class="pair-status" id="pairStatus">Waiting for code.</div>
+    <div class="pair-steps">
+      <div class="pair-step"><span class="pair-num">1</span><span>Open <strong>Phone Link</strong> on the dashboard and start the phone server.</span></div>
+      <div class="pair-step"><span class="pair-num">2</span><span>Generate a pairing code and scan the QR with your phone.</span></div>
+      <div class="pair-step"><span class="pair-num">3</span><span>Enter the code here. After pairing, the app opens and can be bookmarked or added to your home screen.</span></div>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  const TOKEN_KEY="ssmCanalDashboard.mobileLink.token.v1";
+  const BASE_KEY="ssmCanalDashboard.mobileLink.base.v1";
+  const NAME_KEY="ssmCanalDashboard.mobileLink.name.v1";
+  const $=id=>document.getElementById(id);
+  const params=new URLSearchParams(location.search||"");
+  function cleanBase(v){return String(v||"").trim().replace(/\/+$/,"");}
+  function base(){const supplied=cleanBase(params.get("base")||params.get("server")||params.get("dashboard")); if(supplied){localStorage.setItem(BASE_KEY,supplied); return supplied;} const saved=cleanBase(localStorage.getItem(BASE_KEY)); if(saved) return saved; const origin=location.origin&&location.protocol!=="file:"?cleanBase(location.origin):""; if(origin)localStorage.setItem(BASE_KEY,origin); return origin;}
+  function api(path){const b=base(); if(!b) throw new Error("Missing dashboard address"); return b+path;}
+  function setStatus(msg,state){const el=$("pairStatus"); if(el){el.textContent=msg; el.dataset.state=state||"idle";}}
+  function returnPage(){return params.get("return") || "index.html";}
+  function appUrl(){const url=new URL(returnPage(), location.href); const b=base(); if(b) url.searchParams.set("base", b); return url.toString();}
+  async function status(){const r=await fetch(api("/api/phone-server/status"),{cache:"no-store"}); const out=await r.json().catch(()=>({})); if(!r.ok||out.ok===false) throw new Error(out.error||"Server status failed"); return out;}
+  function setOffline(isOffline){document.body.classList.toggle("is-offline",!!isOffline); $("serverBadge").textContent=isOffline?"Phone Link offline":"Phone Link online";}
+  async function check(){setStatus("Checking Phone Link…"); try{const out=await status(); setOffline(!out.running); if(out.running)setStatus("Enter the 6-digit dashboard code."); else setStatus("Start Phone Link on the dashboard first.","error"); return out.running;}catch(e){setOffline(true); setStatus("Dashboard server is not reachable.","error"); return false;}}
+  async function pair(code){code=String(code||"").replace(/\D/g,"").slice(0,6); if(code.length!==6){setStatus("Enter the full 6-digit code.","error"); return;} const btn=$("pairButton"); btn.disabled=true; setStatus("Pairing phone…"); try{const r=await fetch(api("/api/mobile/link"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,name:navigator.platform||"Mobile device",platform:navigator.userAgent||""}),cache:"no-store"}); const out=await r.json().catch(()=>({})); if(!r.ok||out.ok===false) throw Object.assign(new Error(out.error||"Pairing failed"),{status:r.status}); localStorage.setItem(TOKEN_KEY,out.token); if(out.phone&&out.phone.name)localStorage.setItem(NAME_KEY,out.phone.name); setStatus("Paired. Opening mobile app…","linked"); setTimeout(()=>{location.replace(appUrl());},450);}catch(e){if(e.status===423){setOffline(true); setStatus("Phone Link is offline. Start it on the dashboard.","error");}else setStatus(e.message||"Could not pair phone.","error"); btn.disabled=false;}}
+  const input=$("pairCodeInput"); const incoming=params.get("code")||params.get("pair")||""; if(incoming) input.value=String(incoming).replace(/\D/g,"").slice(0,6);
+  $("pairForm").addEventListener("submit",e=>{e.preventDefault(); pair(input.value);});
+  $("retryButton").addEventListener("click",check);
+  input.addEventListener("input",()=>{input.value=input.value.replace(/\D/g,"").slice(0,6);});
+  if(localStorage.getItem(TOKEN_KEY) && !incoming){ check().then(ok=>{ if(ok) location.replace(appUrl()); }); } else { check(); setTimeout(()=>input.focus(),250); }
+  if("serviceWorker" in navigator && location.protocol!=="file:") window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{}));
+})();
+</script>
+</body>
+</html>

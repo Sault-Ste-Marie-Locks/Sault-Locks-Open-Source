@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>Commercial Boats</title>
+<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sault Locks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+
+<style>
+
+:root{
+    --safe-top:env(safe-area-inset-top, 0px);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+}
+
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,
+body{
+    margin:0;
+    width:100%;
+    min-height:100%;
+    overflow-x:hidden;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+}
+
+body.light{
+    background:var(--bg);
+    color:var(--text);
+}
+
+.page.commercial-page{
+    width:100%;
+    max-width:460px;
+    min-height:100dvh;
+    margin:0 auto;
+    padding:calc(12px + var(--safe-top)) 14px calc(110px + var(--safe-bottom));
+    background:transparent;
+    overflow-x:hidden;
+}
+
+.clean-entry-header{
+    height:40px;
+    min-height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin:0 0 14px;
+    padding:0;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+}
+
+.clean-header-btn{
+    width:38px;
+    height:38px;
+    min-width:38px;
+    min-height:38px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    padding:0;
+    text-decoration:none;
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    box-shadow:var(--inner), 0 6px 16px rgba(0,0,0,.08);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+}
+
+.clean-header-btn:active{
+    transform:scale(.96);
+}
+
+.clean-header-btn svg{
+    width:21px;
+    height:21px;
+    stroke:currentColor;
+    stroke-width:2.35;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+.clean-header-spacer{
+    width:38px;
+    height:38px;
+    min-width:38px;
+}
+
+.clean-header-title{
+    flex:1;
+    min-width:0;
+    text-align:center;
+    line-height:1.05;
+}
+
+.clean-header-title span{
+    display:block;
+    color:var(--text);
+    font-size:17px;
+    font-weight:950;
+    letter-spacing:-.04em;
+}
+
+.clean-header-title small{
+    display:block;
+    margin-top:4px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+}
+
+html.theme-dark body,
+html.app-dark body{
+    background:linear-gradient(180deg,#0f172a 0%,#111827 100%) !important;
+    color:#f8fafc !important;
+}
+
+html.theme-dark .clean-header-btn,
+html.app-dark .clean-header-btn{
+    background:rgba(23,32,51,.94) !important;
+    border-color:rgba(148,163,184,.22) !important;
+    color:#f8fafc !important;
+    box-shadow:0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+html.theme-dark .clean-header-title span,
+html.app-dark .clean-header-title span{
+    color:#f8fafc !important;
+}
+
+html.theme-dark .clean-header-title small,
+html.app-dark .clean-header-title small{
+    color:#a9b8cb !important;
+}
+
+body.light .clean-header-btn,
+html.theme-light .clean-header-btn{
+    background:linear-gradient(180deg,#ffffff,var(--blue-soft,#E8F5FC)) !important;
+    border-color:rgba(var(--accent-rgb,52,141,188),.34) !important;
+    color:var(--blue,#348DBC) !important;
+    box-shadow:0 8px 18px rgba(var(--accent-rgb,52,141,188),.10) !important;
+}
+
+body.light .clean-header-title span,
+html.theme-light .clean-header-title span{
+    color:#22233d !important;
+}
+
+@media(max-width:370px){
+    .page.commercial-page{
+        padding-left:12px;
+        padding-right:12px;
+    }
+
+    .clean-header-title span{
+        font-size:16px;
+    }
+}
+
+.time-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-bottom:14px;
+}
+
+.time-row input{
+    margin-bottom:0;
+    flex:1;
+}
+
+.time-btn{
+    height:51px;
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    border-radius:12px;
+    padding:0 14px;
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+    box-shadow:var(--inner);
+}
+
+.time-btn:active{
+    transform:scale(.97);
+    background:var(--card-3);
+}
+
+/* Manual Other boxes */
+.manual-input{
+    display:none;
+    margin-top:-6px;
+    margin-bottom:14px;
+    width:100%;
+    background:var(--input);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px;
+    font-size:15px;
+    outline:none;
+}
+
+.manual-input::placeholder{
+    color:var(--muted);
+    opacity:1;
+}
+
+.manual-input:focus{
+    background:var(--input-focus);
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(108,92,231,.18);
+}
+
+/* Placeholders */
+input::placeholder,
+textarea::placeholder{
+    color:var(--muted);
+    opacity:1;
+}
+
+/* Selects */
+select{
+    color:var(--text);
+    scrollbar-width:thin;
+    scrollbar-color:var(--border-strong) var(--input);
+}
+
+select.placeholder{
+    color:var(--muted);
+}
+
+/* Dropdown scrollbar */
+select::-webkit-scrollbar{
+    width:8px;
+}
+
+select::-webkit-scrollbar-track{
+    background:var(--input);
+    border-radius:999px;
+}
+
+select::-webkit-scrollbar-thumb{
+    background:var(--border-strong);
+    border-radius:999px;
+}
+
+select::-webkit-scrollbar-thumb:hover{
+    background:var(--blue);
+}
+
+/* Custom popup */
+.popup-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9999;
+}
+
+body.light .popup-overlay{
+    background:rgba(16,32,48,.35);
+}
+
+.popup-overlay.active{
+    display:flex;
+}
+
+.popup-box{
+    width:100%;
+    max-width:360px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    animation:popupIn .18s ease;
+}
+
+body.light .popup-box{
+    box-shadow:0 20px 60px rgba(108,92,231,.18);
+}
+
+@keyframes popupIn{
+    from{
+        opacity:0;
+        transform:scale(.94) translateY(8px);
+    }
+    to{
+        opacity:1;
+        transform:scale(1) translateY(0);
+    }
+}
+
+.popup-box h3{
+    color:var(--text);
+    font-size:20px;
+    margin-bottom:8px;
+    font-weight:900;
+}
+
+.popup-box p{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.5;
+    margin-bottom:14px;
+    font-weight:700;
+}
+
+.missing-list{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px;
+    margin-bottom:18px;
+    color:var(--text);
+    font-size:14px;
+    font-weight:800;
+}
+
+.missing-list div{
+    padding:4px 0;
+}
+
+.popup-actions{
+    display:flex;
+    gap:10px;
+}
+
+.popup-actions button{
+    flex:1;
+    border:none;
+    border-radius:14px;
+    padding:14px 12px;
+    font-size:14px;
+    font-weight:900;
+}
+
+.cancel-btn{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong) !important;
+}
+
+.continue-btn{
+    background:var(--blue);
+    color:#fff;
+    border:1px solid var(--blue-border) !important;
+}
+
+.cancel-btn:active,
+.continue-btn:active{
+    transform:scale(.98);
+}
+</style>
+</head>
+
+<body>
+<div class="page commercial-page">
+
+    <header class="clean-entry-header" aria-label="Commercial boat header">
+        <a class="clean-header-btn" href="index.html" aria-label="Back">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 18 9 12l6-6"></path>
+            </svg>
+        </a>
+
+        <div class="clean-header-title">
+            <span>Commercial Boat</span>
+            <small>New Entry</small>
+        </div>
+
+        <div class="clean-header-spacer" aria-hidden="true"></div>
+    </header>
+
+    <form class="form" id="entryForm">
+
+        <label>Vessel Name</label>
+        <select id="vessel" class="placeholder">
+            <option value="">Select Vessel</option>
+            <option>Nokomis</option>
+            <option>Le Voyageur</option>
+            <option>Holiday</option>
+            <option>Hiawatha</option>
+            <option>Bide-A-Wee</option>
+            <option>Miss Marie</option>
+            <option>Parks Canada</option>
+            <option>Purvis</option>
+            <option>Allure</option>
+            <option>Anushka Police Service</option>
+            <option>OPP</option>
+            <option>RCMP</option>
+            <option>City Police</option>
+            <option>Canadian Coast Guard</option>
+            <option>American Coast Guard</option>
+            <option>US Border Patrol</option>
+            <option>MNR - Northern Vigil</option>
+            <option>Beauty and the Beast</option>
+            <option>Chillin Out</option>
+            <option data-manual="true" value="Other">Other</option>
+        </select>
+
+        <input 
+            id="vesselManual" 
+            class="manual-input" 
+            type="text" 
+            placeholder="Type vessel name">
+
+        <label>Registration</label>
+        <input id="reg" placeholder="Enter Registration">
+
+        <label>Canal</label>
+        <input id="canal" value="Sault Canada Locks" readonly>
+
+        <label>Direction</label>
+        <select id="dir" class="placeholder">
+            <option value="">Select Direction</option>
+            <option>Up</option>
+            <option>Down</option>
+            <option data-manual="true" value="Other">Other</option>
+        </select>
+
+        <input 
+            id="dirManual" 
+            class="manual-input" 
+            type="text" 
+            placeholder="Type direction">
+
+        <label>Passenger Count</label>
+        <input id="pass" type="text" placeholder="Passenger Count">
+
+        <label>Destination</label>
+        <select id="dest" class="placeholder">
+            <option value="">Select Destination</option>
+            <option>USM</option>
+            <option>LSM</option>
+            <option>Soo</option>
+            <option>Mid Canal</option>
+            <option data-manual="true" value="Other">Other</option>
+        </select>
+
+        <input 
+            id="destManual" 
+            class="manual-input" 
+            type="text" 
+            placeholder="Type destination">
+
+        <label>Home Port</label>
+        <select id="homePort" class="placeholder">
+            <option value="">Select Home Port</option>
+            <option>Sault Michigan</option>
+            <option>Sault Canada</option>
+            <option data-manual="true" value="Other">Other</option>
+        </select>
+
+        <input 
+            id="homePortManual" 
+            class="manual-input" 
+            type="text" 
+            placeholder="Type home port">
+
+        <label>Time</label>
+        <div class="time-row">
+            <input 
+                id="entryTime" 
+                type="text" 
+                placeholder="Example: 03:45 PM or 15:45">
+        </div>
+
+        <label>Additional Notes</label>
+        <textarea id="notes" placeholder="Additional Notes"></textarea>
+
+        <button class="btn full" type="submit">
+            Save Entry
+        </button>
+
+    </form>
+
+</div>
+
+<div class="popup-overlay" id="missingPopup">
+    <div class="popup-box">
+        <h3>Missing Information</h3>
+        <p>Some fields are not filled out. Are you sure you want to continue?</p>
+
+        <div class="missing-list" id="missingList"></div>
+
+        <div class="popup-actions">
+            <button class="cancel-btn" type="button" id="cancelSubmit">
+                Go Back
+            </button>
+
+            <button class="continue-btn" type="button" id="continueSubmit">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="assets/app.js?v=20260707pairpage2"></script>
+
+<script>
+function getTimeSetting(){
+    return localStorage.getItem("timeFormat") || "12";
+}
+
+function formatDisplayTime(date){
+    return date.toLocaleTimeString([], {
+        hour:"2-digit",
+        minute:"2-digit",
+        hour12:getTimeSetting() === "12"
+    });
+}
+
+function setCurrentTime(force){
+    const input = document.getElementById("entryTime");
+    if(!input) return;
+    if(force !== true && String(input.value || "").trim()) return;
+    const now = new Date();
+    input.value = formatDisplayTime(now);
+    input.dispatchEvent(new Event("input", { bubbles:true }));
+    input.dispatchEvent(new Event("change", { bubbles:true }));
+}
+
+function cleanManualTime(value){
+    return String(value || "").trim();
+}
+
+setCurrentTime();
+function setupManualDropdown(selectId, inputId){
+    const select = document.getElementById(selectId);
+    const input = document.getElementById(inputId);
+
+    if(!select || !input) return;
+
+    function updateManualBox(){
+        const selectedOption = select.options[select.selectedIndex];
+
+        if(select.value === ""){
+            select.classList.add("placeholder");
+        }else{
+            select.classList.remove("placeholder");
+        }
+
+        if(selectedOption && selectedOption.dataset.manual === "true"){
+            input.style.display = "block";
+            input.focus();
+
+            if(input.value.trim() !== ""){
+                selectedOption.value = input.value.trim();
+            }else{
+                selectedOption.value = "Other";
+            }
+        }else{
+            input.style.display = "none";
+            input.value = "";
+
+            const manualOption = [...select.options].find(option => option.dataset.manual === "true");
+
+            if(manualOption){
+                manualOption.value = "Other";
+            }
+        }
+    }
+
+    select.addEventListener("change", updateManualBox);
+
+    input.addEventListener("input", function(){
+        const selectedOption = select.options[select.selectedIndex];
+
+        if(selectedOption && selectedOption.dataset.manual === "true"){
+            selectedOption.value = input.value.trim() || "Other";
+        }
+    });
+}
+
+setupManualDropdown("vessel", "vesselManual");
+setupManualDropdown("dir", "dirManual");
+setupManualDropdown("dest", "destManual");
+setupManualDropdown("homePort", "homePortManual");
+
+["vessel", "dir", "dest", "homePort"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el){
+        el.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+});
+
+const form = document.getElementById("entryForm");
+const popup = document.getElementById("missingPopup");
+const missingList = document.getElementById("missingList");
+const cancelSubmit = document.getElementById("cancelSubmit");
+const continueSubmit = document.getElementById("continueSubmit");
+
+let allowBypassSubmit = false;
+
+function getRealValue(selectId, manualId){
+    const select = document.getElementById(selectId);
+    const manual = document.getElementById(manualId);
+    const selectedOption = select.options[select.selectedIndex];
+
+    if(selectedOption && selectedOption.dataset.manual === "true"){
+        return manual.value.trim();
+    }
+
+    return select.value.trim();
+}
+
+function getMissingFields(){
+    const requiredFields = [
+        {
+            name:"Vessel Name",
+            value:getRealValue("vessel", "vesselManual")
+        },
+        {
+            name:"Registration",
+            value:document.getElementById("reg").value.trim()
+        },
+        {
+            name:"Direction",
+            value:getRealValue("dir", "dirManual")
+        },
+        {
+            name:"Passenger Count",
+            value:document.getElementById("pass").value.trim()
+        },
+        {
+            name:"Destination",
+            value:getRealValue("dest", "destManual")
+        },
+        {
+            name:"Home Port",
+            value:getRealValue("homePort", "homePortManual")
+        },
+        {
+            name:"Time",
+            value:cleanManualTime(document.getElementById("entryTime").value)
+        }
+    ];
+
+    return requiredFields.filter(field => !field.value);
+}
+
+function showMissingPopup(missing){
+    missingList.innerHTML = "";
+
+    missing.forEach(field => {
+        const item = document.createElement("div");
+        item.textContent = "• " + field.name;
+        missingList.appendChild(item);
+    });
+
+    popup.classList.add("active");
+}
+
+function hideMissingPopup(){
+    popup.classList.remove("active");
+}
+
+form.addEventListener("submit", function(e){
+    if(allowBypassSubmit){
+        return;
+    }
+
+    if(window.shouldConfirmBeforeSave && !window.shouldConfirmBeforeSave()){
+        return;
+    }
+
+    const missing = getMissingFields();
+
+    if(missing.length > 0){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        showMissingPopup(missing);
+        return false;
+    }
+}, true);
+
+cancelSubmit.addEventListener("click", function(){
+    hideMissingPopup();
+});
+
+continueSubmit.addEventListener("click", function(){
+    allowBypassSubmit = true;
+    hideMissingPopup();
+    form.requestSubmit();
+});
+
+popup.addEventListener("click", function(e){
+    if(e.target === popup){
+        hideMissingPopup();
+    }
+});
+
+setupNormalForm("Commercial Boat");
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+    });
+}
+
+</script>
+
+
+
+</body>
+</html>

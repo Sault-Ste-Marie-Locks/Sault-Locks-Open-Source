@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>Sault Canada Locks Tracker - Tour Boat</title>
+<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sault Locks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+
+<style>
+
+:root{
+    --safe-top:env(safe-area-inset-top, 0px);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+}
+
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,
+body{
+    margin:0;
+    width:100%;
+    min-height:100%;
+    overflow-x:hidden;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+}
+
+body.light{
+    background:var(--bg);
+    color:var(--text);
+}
+
+.page.tour-page{
+    width:100%;
+    max-width:460px;
+    min-height:100dvh;
+    margin:0 auto;
+    padding:calc(12px + var(--safe-top)) 14px calc(110px + var(--safe-bottom));
+    background:transparent;
+    overflow-x:hidden;
+}
+
+.clean-entry-header{
+    height:40px;
+    min-height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin:0 0 14px;
+    padding:0;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+}
+
+.clean-header-btn{
+    width:38px;
+    height:38px;
+    min-width:38px;
+    min-height:38px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    padding:0;
+    text-decoration:none;
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    box-shadow:var(--inner), 0 6px 16px rgba(0,0,0,.08);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+}
+
+.clean-header-btn:active{
+    transform:scale(.96);
+}
+
+.clean-header-btn svg{
+    width:21px;
+    height:21px;
+    stroke:currentColor;
+    stroke-width:2.35;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+.clean-header-spacer{
+    width:38px;
+    height:38px;
+    min-width:38px;
+}
+
+.clean-header-title{
+    flex:1;
+    min-width:0;
+    text-align:center;
+    line-height:1.05;
+}
+
+.clean-header-title span{
+    display:block;
+    color:var(--text);
+    font-size:17px;
+    font-weight:950;
+    letter-spacing:-.04em;
+}
+
+.clean-header-title small{
+    display:block;
+    margin-top:4px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+}
+
+html.theme-dark body,
+html.app-dark body{
+    background:linear-gradient(180deg,#0f172a 0%,#111827 100%) !important;
+    color:#f8fafc !important;
+}
+
+html.theme-dark .clean-header-btn,
+html.app-dark .clean-header-btn{
+    background:rgba(23,32,51,.94) !important;
+    border-color:rgba(148,163,184,.22) !important;
+    color:#f8fafc !important;
+    box-shadow:0 8px 18px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+html.theme-dark .clean-header-title span,
+html.app-dark .clean-header-title span{
+    color:#f8fafc !important;
+}
+
+html.theme-dark .clean-header-title small,
+html.app-dark .clean-header-title small{
+    color:#a9b8cb !important;
+}
+
+body.light .clean-header-btn,
+html.theme-light .clean-header-btn{
+    background:linear-gradient(180deg,#ffffff,var(--blue-soft,#E8F5FC)) !important;
+    border-color:rgba(var(--accent-rgb,52,141,188),.34) !important;
+    color:var(--blue,#348DBC) !important;
+    box-shadow:0 8px 18px rgba(var(--accent-rgb,52,141,188),.10) !important;
+}
+
+body.light .clean-header-title span,
+html.theme-light .clean-header-title span{
+    color:#22233d !important;
+}
+
+.time-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-bottom:14px;
+}
+
+.time-row input{
+    margin-bottom:0;
+    flex:1;
+}
+
+.time-btn{
+    height:51px;
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong);
+    border-radius:12px;
+    padding:0 14px;
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+    cursor:pointer;
+    box-shadow:var(--inner);
+}
+
+.time-btn:active{
+    transform:scale(.97);
+    background:var(--card-3);
+}
+
+@media(max-width:370px){
+    .page.tour-page{
+        padding-left:12px;
+        padding-right:12px;
+    }
+
+    .clean-header-title span{
+        font-size:16px;
+    }
+
+    .clean-header-btn,
+    .clean-header-spacer{
+        width:37px;
+        height:37px;
+        min-width:37px;
+        min-height:37px;
+    }
+}
+
+input::placeholder,
+textarea::placeholder{
+    color:var(--muted);
+    opacity:1;
+}
+
+select{
+    color:var(--text);
+    scrollbar-width:thin;
+    scrollbar-color:var(--border-strong) var(--input);
+}
+
+select.placeholder{
+    color:var(--muted);
+}
+
+select::-webkit-scrollbar{
+    width:8px;
+}
+
+select::-webkit-scrollbar-track{
+    background:var(--input);
+    border-radius:999px;
+}
+
+select::-webkit-scrollbar-thumb{
+    background:var(--border-strong);
+    border-radius:999px;
+}
+
+select::-webkit-scrollbar-thumb:hover{
+    background:var(--blue);
+}
+
+.auto-card{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:14px;
+    margin-bottom:14px;
+    box-shadow:var(--inner);
+}
+
+.auto-card h3{
+    margin:0 0 10px;
+    color:var(--text);
+    font-size:15px;
+    font-weight:950;
+}
+
+.auto-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+
+.auto-item{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:11px;
+}
+
+.auto-item span{
+    display:block;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:850;
+    margin-bottom:4px;
+}
+
+.auto-item strong{
+    display:block;
+    color:var(--text);
+    font-size:14px;
+    line-height:1.15;
+    font-weight:950;
+    word-break:break-word;
+}
+
+.help-text{
+    margin:-4px 0 14px;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.4;
+    font-weight:750;
+}
+
+.hidden-save-fields{
+    display:none !important;
+}
+
+/* Popup */
+.popup-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9999;
+}
+
+body.light .popup-overlay{
+    background:rgba(16,32,48,.35);
+}
+
+.popup-overlay.active{
+    display:flex;
+}
+
+.popup-box{
+    width:100%;
+    max-width:360px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    animation:popupIn .18s ease;
+}
+
+body.light .popup-box{
+    box-shadow:0 20px 60px rgba(47,134,183,.18);
+}
+
+@keyframes popupIn{
+    from{
+        opacity:0;
+        transform:scale(.94) translateY(8px);
+    }
+    to{
+        opacity:1;
+        transform:scale(1) translateY(0);
+    }
+}
+
+.popup-box h3{
+    color:var(--text);
+    font-size:20px;
+    margin-bottom:8px;
+    font-weight:900;
+}
+
+.popup-box p{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.5;
+    margin-bottom:14px;
+    font-weight:700;
+}
+
+.missing-list{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px;
+    margin-bottom:18px;
+    color:var(--text);
+    font-size:14px;
+    font-weight:800;
+}
+
+.missing-list div{
+    padding:4px 0;
+}
+
+.popup-actions{
+    display:flex;
+    gap:10px;
+}
+
+.popup-actions button{
+    flex:1;
+    border:none;
+    border-radius:14px;
+    padding:14px 12px;
+    font-size:14px;
+    font-weight:900;
+}
+
+.cancel-btn{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border-strong) !important;
+}
+
+.continue-btn{
+    background:var(--blue);
+    color:#fff;
+    border:1px solid var(--blue-border) !important;
+}
+
+.cancel-btn:active,
+.continue-btn:active{
+    transform:scale(.98);
+}
+
+body.light .continue-btn{
+    background:#348dbc;
+    color:#fff;
+    border-color:#5cadd8 !important;
+}
+
+@media(max-width:360px){
+    .auto-grid{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+<div class="page tour-page">
+
+    <header class="clean-entry-header" aria-label="Tour boat header">
+        <a class="clean-header-btn" href="index.html" aria-label="Back">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 18 9 12l6-6"></path>
+            </svg>
+        </a>
+
+        <div class="clean-header-title">
+            <span>Tour Boat</span>
+            <small>New Entry</small>
+        </div>
+
+        <div class="clean-header-spacer" aria-hidden="true"></div>
+    </header>
+
+    <form class="form" id="entryForm">
+
+        
+
+        <label>Vessel Name</label>
+        <select id="vessel" class="placeholder">
+            <option value="">Select Vessel</option>
+            <option>Nokomis</option>
+            <option>Le Voyageur</option>
+            <option>Holiday</option>
+            <option>Hiawatha</option>
+            <option>Bide-A-Wee</option>
+            <option>Miss Marie</option>
+            <option>Parks Canada</option>
+            <option>Purvis</option>
+            <option>Allure</option>
+            <option>Birds Eye</option>
+        </select>
+
+        <label>Direction</label>
+        <select id="dir" class="placeholder">
+            <option value="">Select Direction</option>
+            <option>Up</option>
+            <option>Down</option>
+        </select>
+
+        <label>Passenger Count</label>
+        <input id="pass" type="text" inputmode="numeric" placeholder="Passenger Count">
+
+        <label>Time</label>
+        <div class="time-row">
+            <input
+                id="entryTime"
+                type="text"
+                placeholder="Example: 03:45 PM or 15:45">
+</div>
+
+        <div class="auto-card">
+            <h3>Other Details</h3>
+
+            <div class="auto-grid">
+                <div class="auto-item">
+                    <span>Destination</span>
+                    <strong id="destPreview">Select direction</strong>
+                </div>
+
+                <div class="auto-item">
+                    <span>Registration</span>
+                    <strong id="regPreview">Select vessel</strong>
+                </div>
+
+                <div class="auto-item">
+                    <span>Home Port</span>
+                    <strong id="homePortPreview">Select vessel</strong>
+                </div>
+
+                <div class="auto-item">
+                    <span>Canal</span>
+                    <strong>Sault Canada Locks</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden-save-fields">
+            <input id="reg" type="text">
+            <input id="canal" value="Sault Canada Locks" readonly>
+            <input id="dest" type="text">
+            <input id="homePort" type="text">
+            <textarea id="notes"></textarea>
+        </div>
+
+        <button class="btn full" type="submit">
+            Save Entry
+        </button>
+
+    </form>
+
+</div>
+
+<div class="popup-overlay" id="missingPopup">
+    <div class="popup-box">
+        <h3>Missing Information</h3>
+        <p>Some fields are not filled out. Are you sure you want to continue?</p>
+
+        <div class="missing-list" id="missingList"></div>
+
+        <div class="popup-actions">
+            <button class="cancel-btn" type="button" id="cancelSubmit">
+                Go Back
+            </button>
+
+            <button class="continue-btn" type="button" id="continueSubmit">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="assets/app.js?v=20260707pairpage2"></script>
+
+<script>
+function getTimeSetting(){
+    return localStorage.getItem("timeFormat") || "12";
+}
+
+function formatDisplayTime(date){
+    return date.toLocaleTimeString([], {
+        hour:"2-digit",
+        minute:"2-digit",
+        hour12:getTimeSetting() === "12"
+    });
+}
+
+function setCurrentTime(force){
+    const input = document.getElementById("entryTime");
+    if(!input) return;
+    if(force !== true && String(input.value || "").trim()) return;
+    const now = new Date();
+    input.value = formatDisplayTime(now);
+    input.dispatchEvent(new Event("input", { bubbles:true }));
+    input.dispatchEvent(new Event("change", { bubbles:true }));
+}
+
+function cleanManualTime(value){
+    return String(value || "").trim();
+}
+
+const tourBoatPresets = {
+    "Nokomis": {
+        reg:"0531",
+        homePort:"Sault Michigan"
+    },
+    "Le Voyageur": {
+        reg:"0533",
+        homePort:"Sault Michigan"
+    },
+    "Holiday": {
+        reg:"0507",
+        homePort:"Sault Michigan"
+    },
+    "Hiawatha": {
+        reg:"0510",
+        homePort:"Sault Michigan"
+    },
+    "Bide-A-Wee": {
+        reg:"0530",
+        homePort:"Sault Michigan"
+    },
+    "Miss Marie": {
+        reg:"0525",
+        homePort:"Sault Canada"
+    },
+    "Parks Canada": {
+        reg:"0560",
+        homePort:"Sault Canada"
+    },
+    "Purvis": {
+        reg:"0511",
+        homePort:"Sault Canada"
+    },
+    "Allure": {
+        reg:"1076",
+        homePort:"Sault Canada"
+    },
+    "Birds Eye": {
+        reg:"1544",
+        homePort:"Sault Michigan"
+    }
+};
+
+function setPlaceholderState(select){
+    if(!select) return;
+
+    if(select.value === ""){
+        select.classList.add("placeholder");
+    }else{
+        select.classList.remove("placeholder");
+    }
+}
+
+function updateAutoFields(){
+    const vessel = document.getElementById("vessel").value;
+    const dir = document.getElementById("dir").value;
+
+    const preset = (window.mobilePresetLookupForType ? window.mobilePresetLookupForType("Tour Boat", vessel) : null) || tourBoatPresets[vessel] || {
+        reg:"",
+        homePort:""
+    };
+
+    const destination = dir === "Up" ? "USM" : dir === "Down" ? "LSM" : "";
+
+    document.getElementById("reg").value = preset.reg || "";
+    document.getElementById("dest").value = destination;
+    document.getElementById("homePort").value = preset.homePort || "";
+    document.getElementById("canal").value = (window.getDefaultCanal ? window.getDefaultCanal() : "Sault Canada Locks");
+    document.getElementById("notes").value = destination ? "Tour boat destination auto-set from direction." : "";
+
+    document.getElementById("regPreview").textContent = preset.reg || "Not set";
+    document.getElementById("destPreview").textContent = destination || "Select direction";
+    document.getElementById("homePortPreview").textContent = preset.homePort || "Not set";
+
+    setCurrentTime();
+}
+
+setCurrentTime();
+updateAutoFields();
+
+document.getElementById("vessel").addEventListener("change", function(){
+    setPlaceholderState(this);
+    updateAutoFields();
+});
+
+document.getElementById("dir").addEventListener("change", function(){
+    setPlaceholderState(this);
+    updateAutoFields();
+});
+
+const form = document.getElementById("entryForm");
+const popup = document.getElementById("missingPopup");
+const missingList = document.getElementById("missingList");
+const cancelSubmit = document.getElementById("cancelSubmit");
+const continueSubmit = document.getElementById("continueSubmit");
+
+let allowBypassSubmit = false;
+
+function getMissingFields(){
+    updateAutoFields();
+
+    const requiredFields = [
+        {
+            name:"Vessel Name",
+            value:document.getElementById("vessel").value.trim()
+        },
+        {
+            name:"Direction",
+            value:document.getElementById("dir").value.trim()
+        },
+        {
+            name:"Passenger Count",
+            value:document.getElementById("pass").value.trim()
+        },
+        {
+            name:"Destination",
+            value:document.getElementById("dest").value.trim()
+        },
+        {
+            name:"Time",
+            value:document.getElementById("entryTime").value.trim()
+        }
+    ];
+
+    return requiredFields.filter(field => !field.value);
+}
+
+function showMissingPopup(missing){
+    missingList.innerHTML = "";
+
+    missing.forEach(field => {
+        const item = document.createElement("div");
+        item.textContent = "• " + field.name;
+        missingList.appendChild(item);
+    });
+
+    popup.classList.add("active");
+}
+
+function hideMissingPopup(){
+    popup.classList.remove("active");
+}
+
+form.addEventListener("submit", function(e){
+    updateAutoFields();
+
+    if(allowBypassSubmit){
+        return;
+    }
+
+    if(window.shouldConfirmBeforeSave && !window.shouldConfirmBeforeSave()){
+        return;
+    }
+
+    const missing = getMissingFields();
+
+    if(missing.length > 0){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        showMissingPopup(missing);
+        return false;
+    }
+}, true);
+
+cancelSubmit.addEventListener("click", function(){
+    hideMissingPopup();
+});
+
+continueSubmit.addEventListener("click", function(){
+    allowBypassSubmit = true;
+    hideMissingPopup();
+    updateAutoFields();
+    form.requestSubmit();
+});
+
+popup.addEventListener("click", function(e){
+    if(e.target === popup){
+        hideMissingPopup();
+    }
+});
+
+setupNormalForm("Tour Boat");
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+    });
+}
+</script>
+
+</body>
+</html>
