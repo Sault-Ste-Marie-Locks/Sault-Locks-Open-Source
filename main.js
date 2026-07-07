@@ -13,6 +13,7 @@ let mainWindow = null;
 let serverStarted = false;
 let booting = false;
 let updateCheckStarted = false;
+let updateWindow = null;
 
 function appRoot() { return __dirname; }
 function logDir() { const dir = path.join(app.getPath('userData'), 'logs'); fs.mkdirSync(dir, { recursive: true }); return dir; }
@@ -20,6 +21,43 @@ function logFile() { return path.join(logDir(), 'electron-app.log'); }
 function appendLog(text) { try { fs.appendFileSync(logFile(), text + '\n'); } catch (_) {} }
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 function currentVersion() { try { return app.getVersion(); } catch { return require(path.join(appRoot(), 'package.json')).version || '0.0.0'; } }
+
+
+function escapeHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function createUpdateWindow(latestVersion) {
+  if (updateWindow && !updateWindow.isDestroyed()) return updateWindow;
+  const icon = path.join(appRoot(), 'assets', 'lock-release.ico');
+  updateWindow = new BrowserWindow({
+    width: 560,
+    height: 310,
+    resizable: false,
+    maximizable: false,
+    minimizable: false,
+    title: 'Lock Release Updater',
+    icon,
+    backgroundColor: '#0f172a',
+    autoHideMenuBar: true,
+    alwaysOnTop: false,
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  updateWindow.setMenuBarVisibility(false);
+  const logoPath = path.join(appRoot(), 'assets', 'lock-release.png').replace(/\\/g, '/');
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Lock Release Updater</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#0f172a;color:#e5eefb;overflow:hidden}.wrap{height:100vh;padding:28px;background:linear-gradient(135deg,#0f172a,#111827 55%,#0b1220)}.top{display:flex;gap:16px;align-items:center}.icon{width:64px;height:64px;border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.35)}h1{font-size:24px;margin:0 0 4px}p{margin:0;color:#9fb0c7;font-size:14px;line-height:1.45}.card{margin-top:24px;padding:18px;border:1px solid rgba(148,163,184,.22);border-radius:18px;background:rgba(15,23,42,.68);box-shadow:0 18px 45px rgba(0,0,0,.28)}.row{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:10px}.stage{font-weight:700;font-size:15px}.pct{font-variant-numeric:tabular-nums;color:#c7d2fe}.bar{height:16px;border-radius:999px;background:#1f2937;overflow:hidden;border:1px solid rgba(148,163,184,.25)}.fill{height:100%;width:0%;background:linear-gradient(90deg,#0ea5e9,#22c55e);transition:width .2s ease}.detail{min-height:40px;margin-top:12px;color:#aebbd0;font-size:13px;white-space:pre-wrap}.foot{position:absolute;left:28px;right:28px;bottom:24px;color:#7f8ea3;font-size:12px}
+</style></head><body><div class="wrap"><div class="top"><img class="icon" src="file:///${logoPath}"><div><h1>Updating Lock Release</h1><p>Installing version ${escapeHtml(latestVersion)}. Keep this window open.</p></div></div><div class="card"><div class="row"><div class="stage" id="stage">Starting update...</div><div class="pct" id="pct">0%</div></div><div class="bar"><div class="fill" id="fill"></div></div><div class="detail" id="detail">Preparing update.</div></div><div class="foot">The app will close briefly and reopen automatically after the update finishes.</div><script>window.setUpdateProgress=function(stage,pct,detail){pct=Math.max(0,Math.min(100,Number(pct)||0));document.getElementById('stage').textContent=stage||'Working...';document.getElementById('pct').textContent=Math.round(pct)+'%';document.getElementById('fill').style.width=pct+'%';document.getElementById('detail').textContent=detail||'';};</script></div></body></html>`;
+  updateWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  updateWindow.on('closed', () => { updateWindow = null; });
+  return updateWindow;
+}
+function updateProgress(stage, percent, detail) {
+  appendLog(`UPDATE PROGRESS ${Math.round(percent || 0)}% ${stage || ''} ${detail || ''}`);
+  if (!updateWindow || updateWindow.isDestroyed()) return;
+  const script = `window.setUpdateProgress(${JSON.stringify(stage || 'Working...')}, ${Number(percent)||0}, ${JSON.stringify(detail || '')})`;
+  updateWindow.webContents.executeJavaScript(script).catch(() => {});
+}
 
 function readJsonSafe(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return fallback; }
@@ -103,10 +141,9 @@ function getJson(url, headers = {}) {
     req.setTimeout(15000, () => { req.destroy(new Error('Update check timed out')); });
   });
 }
-function downloadFile(url, target, headers = {}) {
+function downloadFile(url, target, headers = {}, onProgress) {
   return new Promise((resolve, reject) => {
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    const file = fs.createWriteStream(target);
     const run = (downloadUrl) => {
       let finalHeaders = {
         'User-Agent': `${APP_NAME.replace(/\s+/g, '-')}/${currentVersion()}`,
@@ -123,11 +160,19 @@ function downloadFile(url, target, headers = {}) {
         if (res.statusCode < 200 || res.statusCode >= 300) {
           res.resume(); reject(new Error(`Download failed: HTTP ${res.statusCode}`)); return;
         }
+        const total = Number(res.headers['content-length'] || 0);
+        let received = 0;
+        const file = fs.createWriteStream(target);
+        res.on('data', chunk => {
+          received += chunk.length;
+          if (typeof onProgress === 'function' && total > 0) onProgress(received, total);
+        });
         res.pipe(file);
-        file.on('finish', () => file.close(resolve));
+        file.on('finish', () => file.close(() => resolve({ received, total })));
+        file.on('error', reject);
       });
       req.on('error', reject);
-      req.setTimeout(120000, () => req.destroy(new Error('Update download timed out')));
+      req.setTimeout(180000, () => req.destroy(new Error('Update download timed out')));
     };
     run(url);
   });
@@ -295,15 +340,21 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
   const tempDir = path.join(os.tmpdir(), `LockReleaseUpdate_${Date.now()}`);
   fs.mkdirSync(tempDir, { recursive: true });
   const zipPath = path.join(tempDir, 'Lock_Release_Windows.zip');
-  dialog.showMessageBoxSync(mainWindow, {
-    type: 'info',
-    title: 'Downloading Lock Release update',
-    message: `Downloading Lock Release ${latestVersion}...`,
-    detail: 'Click OK and wait. The app will close and reopen when the update is ready.',
-    buttons: ['OK']
-  });
+
+  createUpdateWindow(latestVersion);
+  updateProgress('Preparing update', 3, 'Creating temporary update folder...');
+  await wait(500);
+
   const headers = (config && config.privateRepo) ? githubHeaders(config, 'application/octet-stream') : {};
-  await downloadFile(downloadUrl, zipPath, headers);
+  updateProgress('Downloading update', 8, 'Connecting to GitHub release asset...');
+  await downloadFile(downloadUrl, zipPath, headers, (received, total) => {
+    const pct = total > 0 ? 8 + (received / total) * 72 : 40;
+    const mb = (received / 1024 / 1024).toFixed(1);
+    const totalMb = total > 0 ? (total / 1024 / 1024).toFixed(1) : '?';
+    updateProgress('Downloading update', pct, `${mb} MB of ${totalMb} MB downloaded`);
+  });
+
+  updateProgress('Preparing installer', 84, 'Update downloaded. Preparing safe installer...');
   const scriptPath = path.join(tempDir, 'install-lock-release-update.ps1');
   fs.writeFileSync(scriptPath, updatePowerShell(), 'utf8');
   const installDir = path.dirname(process.execPath);
@@ -316,9 +367,11 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
     '-AppPid', String(process.pid)
   ];
   appendLog('Starting updater script: ' + scriptPath);
+  updateProgress('Installing update', 95, 'Lock Release will close now. It should reopen automatically when the update finishes.');
+  await wait(1200);
   const child = spawn('powershell.exe', args, { detached: true, stdio: 'ignore', windowsHide: true });
   child.unref();
-  app.quit();
+  setTimeout(() => app.quit(), 400);
 }
 function updatePowerShell() {
   return String.raw`param(
@@ -330,10 +383,20 @@ function updatePowerShell() {
 $ErrorActionPreference = 'Stop'
 $log = Join-Path $env:TEMP 'LockReleaseUpdateInstall.log'
 function Log($m){ Add-Content -Path $log -Value ("$(Get-Date -Format o) $m") }
+function Retry($Name, [scriptblock]$Action, [int]$Tries = 12) {
+  for ($i=1; $i -le $Tries; $i++) {
+    try { & $Action; return }
+    catch {
+      Log ("$Name try $i failed: " + $_.Exception.Message)
+      if ($i -eq $Tries) { throw }
+      Start-Sleep -Milliseconds 900
+    }
+  }
+}
 try {
   Log 'Starting Lock Release update install'
-  Start-Sleep -Seconds 1
   try { Stop-Process -Id $AppPid -Force -ErrorAction SilentlyContinue } catch {}
+  try { Wait-Process -Id $AppPid -Timeout 25 -ErrorAction SilentlyContinue } catch {}
   Start-Sleep -Seconds 2
 
   $backupRoot = Join-Path $env:LOCALAPPDATA 'Lock Release Desktop Backups'
@@ -360,9 +423,13 @@ try {
   }
   if (-not $src) { throw 'Update ZIP did not contain Lock Release.exe' }
 
-  if (Test-Path $InstallDir) { Remove-Item (Join-Path $InstallDir '*') -Recurse -Force -ErrorAction SilentlyContinue }
+  Retry 'Clear old app files' {
+    if (Test-Path $InstallDir) {
+      Get-ChildItem $InstallDir -Force | Remove-Item -Recurse -Force -ErrorAction Stop
+    }
+  }
   New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-  Copy-Item (Join-Path $src '*') $InstallDir -Recurse -Force
+  Retry 'Copy new app files' { Copy-Item (Join-Path $src '*') $InstallDir -Recurse -Force -ErrorAction Stop }
   Log 'New app files copied'
 
   if (Test-Path (Join-Path $dbTemp 'database')) {
@@ -374,8 +441,10 @@ try {
   }
 
   $newExe = Join-Path $InstallDir 'Lock Release.exe'
+  if (-not (Test-Path $newExe)) { throw "Updated Lock Release.exe was not found at $newExe" }
+  Start-Sleep -Seconds 1
   Start-Process -FilePath $newExe -WorkingDirectory $InstallDir
-  Log 'Update complete'
+  Log 'Update complete and app relaunched'
 } catch {
   Log ('FAILED: ' + $_.Exception.Message)
   Add-Type -AssemblyName PresentationFramework -ErrorAction SilentlyContinue

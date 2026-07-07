@@ -1,17 +1,17 @@
-﻿{
-    "name":  "lock-release-desktop",
-    "version":  "1.0.10",
-    "description":  "Lock Release real desktop app with public GitHub updates",
-    "main":  "main.js",
-    "private":  true,
-    "author":  "Lock Release",
-    "productName":  "Lock Release",
-    "scripts":  {
-                    "start":  "electron .",
-                    "build-win":  "electron-packager . \"Lock Release\" --platform=win32 --arch=x64 --overwrite --out=dist"
-                },
-    "devDependencies":  {
-                            "electron":  "latest",
-                            "@electron/packager":  "latest"
-                        }
+{
+  "name": "lock-release-desktop",
+  "version": "1.0.11",
+  "description": "Lock Release real desktop app with public GitHub updates",
+  "main": "main.js",
+  "private": true,
+  "author": "Lock Release",
+  "productName": "Lock Release",
+  "scripts": {
+    "start": "electron .",
+    "build-win": "electron-packager . \"Lock Release\" --platform=win32 --arch=x64 --overwrite --out=dist"
+  },
+  "devDependencies": {
+    "electron": "latest",
+    "@electron/packager": "latest"
+  }
 }

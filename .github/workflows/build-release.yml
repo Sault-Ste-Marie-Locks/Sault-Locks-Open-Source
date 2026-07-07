@@ -1,4 +1,4 @@
-﻿name: Build Lock Release Windows Update
+name: Build Lock Release Windows Update
 
 on:
   push:
