@@ -44,28 +44,44 @@ function createUpdateWindow(latestVersion) {
   if (updateWindow && !updateWindow.isDestroyed()) return updateWindow;
   const icon = path.join(appRoot(), 'assets', 'lock-release.ico');
   updateWindow = new BrowserWindow({
-    width: 620,
-    height: 360,
+    width: 680,
+    height: 420,
     resizable: false,
     maximizable: false,
     minimizable: false,
     title: 'Lock Release Updater',
     icon,
-    backgroundColor: '#08111f',
+    backgroundColor: '#f6f7f9',
     autoHideMenuBar: true,
     alwaysOnTop: true,
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   updateWindow.setMenuBarVisibility(false);
-  const logoPath = path.join(appRoot(), 'assets', 'lock-release.png').replace(/\\/g, '/');
+
+  let logoSrc = '';
+  try {
+    const logoFile = path.join(appRoot(), 'assets', 'lock-release.png');
+    logoSrc = `data:image/png;base64,${fs.readFileSync(logoFile).toString('base64')}`;
+  } catch (_) {}
+
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>Lock Release Updater</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#08111f;color:#eaf2ff;overflow:hidden}.wrap{height:100vh;padding:30px;background:radial-gradient(circle at top left,rgba(34,197,94,.20),transparent 32%),linear-gradient(135deg,#08111f,#101827 62%,#07111f)}.top{display:flex;gap:16px;align-items:center}.icon{width:66px;height:66px;border-radius:18px;box-shadow:0 18px 48px rgba(0,0,0,.45)}h1{font-size:25px;margin:0 0 5px;font-weight:800;letter-spacing:-.02em}p{margin:0;color:#9fb2cc;font-size:14px;line-height:1.45}.card{margin-top:26px;padding:20px;border:1px solid rgba(148,163,184,.20);border-radius:20px;background:rgba(15,23,42,.78);box-shadow:0 22px 60px rgba(0,0,0,.32)}.row{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:12px}.stage{font-weight:800;font-size:15px;color:#f8fafc}.pct{font-variant-numeric:tabular-nums;color:#dbeafe;font-weight:800}.bar{height:18px;border-radius:999px;background:#162033;overflow:hidden;border:1px solid rgba(148,163,184,.25)}.fill{height:100%;width:0%;background:linear-gradient(90deg,#38bdf8,#22c55e);box-shadow:0 0 24px rgba(34,197,94,.38);transition:width .22s ease}.detail{min-height:44px;margin-top:14px;color:#b6c6dc;font-size:13px;white-space:pre-wrap;line-height:1.4}.subtle{margin-top:14px;color:#77859a;font-size:12px}.foot{position:absolute;left:30px;right:30px;bottom:24px;color:#7f8ea3;font-size:12px}.err .fill{background:linear-gradient(90deg,#f97316,#ef4444)}.done .fill{background:linear-gradient(90deg,#22c55e,#84cc16)}
-</style></head><body><div class="wrap"><div class="top"><img class="icon" src="file:///${logoPath}"><div><h1>Updating Lock Release</h1><p>Installing version ${escapeHtml(latestVersion)}. This should only take a minute.</p></div></div><div class="card" id="card"><div class="row"><div class="stage" id="stage">Starting update...</div><div class="pct" id="pct">0%</div></div><div class="bar"><div class="fill" id="fill"></div></div><div class="detail" id="detail">Preparing update.</div><div class="subtle" id="subtle">Do not close this window while files are being replaced.</div></div><div class="foot">Lock Release will restart automatically after the update applies.</div><script>window.setUpdateProgress=function(stage,pct,detail,state){pct=Math.max(0,Math.min(100,Number(pct)||0));document.getElementById('stage').textContent=stage||'Working...';document.getElementById('pct').textContent=Math.round(pct)+'%';document.getElementById('fill').style.width=pct+'%';document.getElementById('detail').textContent=detail||'';document.getElementById('card').className='card '+(state||'');};</script></div></body></html>`;
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;font-family:"Segoe UI Variable","Segoe UI",system-ui,Arial,sans-serif;background:#f6f7f9;color:#1f2937;overflow:hidden;font-size:14px}
+.shell{height:100%;padding:22px;background:linear-gradient(180deg,#fbfcff 0%,#f6f7f9 100%)}
+.window{height:100%;border:1px solid #dde2ea;border-radius:18px;background:#fff;box-shadow:0 18px 50px rgba(15,23,42,.14);overflow:hidden;display:flex;flex-direction:column}
+.header{height:112px;padding:22px 26px;display:flex;align-items:center;gap:18px;border-bottom:1px solid #e5eaf1;background:linear-gradient(180deg,#ffffff,#fbfcfe)}
+.logo{width:64px;height:64px;border-radius:16px;border:1px solid #dde2ea;background:#f8fafc;display:grid;place-items:center;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+.logo img{width:54px;height:54px;object-fit:contain;display:block}.logoFallback{font-weight:800;color:#2563eb;font-size:20px}.titleBlock{min-width:0;flex:1}
+.eyebrow{font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+h1{margin:0 0 6px;font-size:26px;line-height:1.12;letter-spacing:-.03em;font-weight:750;color:#111827}.subtitle{margin:0;color:#64748b;line-height:1.45}.subtitle strong{color:#1f2937}.versionTag{display:inline-flex;align-items:center;min-height:28px;padding:4px 10px;border-radius:999px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-weight:800;font-size:12px;white-space:nowrap}
+.content{padding:24px 26px;display:flex;flex-direction:column;gap:18px;flex:1}.statusRow{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.stageLabel{font-size:12px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.stage{font-size:20px;font-weight:750;letter-spacing:-.02em;color:#1f2937}.pct{font-size:32px;font-weight:750;letter-spacing:-.04em;color:#2563eb;font-variant-numeric:tabular-nums;line-height:1}.detail{margin-top:8px;color:#64748b;line-height:1.45;min-height:38px;white-space:pre-wrap}.progressBox{border:1px solid #dde2ea;background:#fafbfc;border-radius:16px;padding:16px;box-shadow:0 1px 2px rgba(15,23,42,.04)}.bar{height:12px;border-radius:999px;background:#e5eaf1;overflow:hidden;border:1px solid #d6dde8}.fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#38bdf8);transition:width .25s ease}.progressMeta{display:flex;justify-content:space-between;gap:12px;margin-top:10px;color:#64748b;font-size:12px}.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.step{border:1px solid #e5eaf1;background:#fff;border-radius:14px;padding:12px}.num{width:24px;height:24px;border-radius:999px;display:grid;place-items:center;background:#eff6ff;color:#2563eb;font-weight:800;font-size:12px;margin-bottom:9px}.step strong{display:block;color:#334155;font-size:12px;margin-bottom:3px}.step span{display:block;color:#94a3b8;font-size:11px;line-height:1.3}.footer{padding:14px 26px;border-top:1px solid #e5eaf1;background:#fbfcfe;color:#64748b;display:flex;justify-content:space-between;gap:14px;font-size:12px}.safe{display:inline-block;width:8px;height:8px;border-radius:50%;background:#15803d;margin-right:8px}.err .fill{background:linear-gradient(90deg,#b42318,#f97316)}.err .pct{color:#b42318}.err .versionTag{background:#fff7f7;color:#b42318;border-color:#fecaca}.done .fill{background:linear-gradient(90deg,#15803d,#22c55e)}.done .pct{color:#15803d}.done .versionTag{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+</style></head><body><div class="shell"><div class="window card" id="card"><div class="header"><div class="logo">${logoSrc ? `<img src="${logoSrc}" alt="Lock Release">` : `<div class="logoFallback">LR</div>`}</div><div class="titleBlock"><div class="eyebrow">Lock Release desktop</div><h1>Installing update</h1><p class="subtitle">Updating to <strong>version ${escapeHtml(latestVersion)}</strong>. Your data will be kept.</p></div><div class="versionTag" id="statusPill">Working</div></div><div class="content"><div class="statusRow"><div><div class="stageLabel">Current step</div><div class="stage" id="stage">Preparing update...</div><div class="detail" id="detail">Getting the update ready.</div></div><div class="pct" id="pct">0%</div></div><div class="progressBox"><div class="bar"><div class="fill" id="fill"></div></div><div class="progressMeta"><span id="metaLeft">Please keep Lock Release open while this finishes.</span><span>Usually under 1 minute</span></div></div><div class="steps"><div class="step"><div class="num">1</div><strong>Download</strong><span>Fetch update package</span></div><div class="step"><div class="num">2</div><strong>Extract</strong><span>Prepare new files</span></div><div class="step"><div class="num">3</div><strong>Apply</strong><span>Replace app files</span></div><div class="step"><div class="num">4</div><strong>Restart</strong><span>Open latest version</span></div></div></div><div class="footer"><div><span class="safe"></span>Lock Release will reopen after the update finishes.</div><div>Do not close this window.</div></div></div></div><script>window.setUpdateProgress=function(stage,pct,detail,state){pct=Math.max(0,Math.min(100,Number(pct)||0));var safeState=state||'';var status=safeState==='done'?'Complete':safeState==='err'?'Error':'Working';document.getElementById('stage').textContent=stage||'Working...';document.getElementById('pct').textContent=Math.round(pct)+'%';document.getElementById('fill').style.width=pct+'%';document.getElementById('detail').textContent=detail||'';document.getElementById('statusPill').textContent=status;document.getElementById('card').className='window card '+safeState;};</script></body></html>`;
   updateWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   updateWindow.on('closed', () => { updateWindow = null; });
   return updateWindow;
 }
+
 function updateProgress(stage, percent, detail, state) {
   appendLog(`UPDATE PROGRESS ${Math.round(percent || 0)}% ${stage || ''} ${detail || ''}`);
   if (!updateWindow || updateWindow.isDestroyed()) return;
@@ -484,6 +500,65 @@ async function installSourceModeUpdate(zipPath, latestVersion, tempDir) {
   relaunchSourceAppHidden();
   setTimeout(() => app.quit(), 600);
 }
+
+async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
+  const extractDir = path.join(tempDir, 'packaged_extracted');
+  updateProgress('Extracting update', 82, 'Unpacking downloaded files...');
+  await expandZip(zipPath, extractDir);
+
+  const srcApp = findSourceApp(extractDir);
+  appendLog('Packaged source update app folder found: ' + srcApp);
+  if (!srcApp) return false;
+
+  const root = appRoot();
+  const backupRoot = path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'LockReleaseDesktopBackups');
+  fs.mkdirSync(backupRoot, { recursive: true });
+  const backupDir = path.join(backupRoot, 'before_update_' + new Date().toISOString().replace(/[:.]/g, '-'));
+
+  updateProgress('Backing up current app', 87, 'Saving a backup before replacing files...');
+  try {
+    fs.cpSync(root, backupDir, {
+      recursive: true,
+      force: true,
+      filter: p => !p.includes(`${path.sep}node_modules${path.sep}`) && !p.includes(`${path.sep}dist${path.sep}`)
+    });
+  } catch (err) {
+    appendLog('Packaged backup skipped/failed: ' + err.message);
+  }
+
+  updateProgress('Applying update', 93, 'Replacing app source files inside resources/app...');
+  copySourceUpdate(srcApp, root);
+  safeVersionWrite(latestVersion);
+
+  const marker = path.join(root, '.lock-release-version');
+  let writtenVersion = '';
+  try { writtenVersion = fs.readFileSync(marker, 'utf8').trim(); } catch (_) {}
+  appendLog(`Packaged source update applied. Version marker=${writtenVersion || '(missing)'} target=${normalizeVersion(latestVersion)}`);
+  if (normalizeVersion(writtenVersion) !== normalizeVersion(latestVersion)) {
+    throw new Error('Update copied, but the version marker did not save correctly.');
+  }
+
+  updateProgress('Update complete', 100, 'Lock Release was updated. Restarting now...', 'done');
+  await wait(900);
+
+  // app.relaunch is much more reliable than a hidden PowerShell helper for the manual real-EXE build.
+  // The older helper sometimes copied nothing, failed silently, or did not reopen the app.
+  try {
+    app.relaunch({ execPath: process.execPath, args: [] });
+    appendLog('Requested Electron app.relaunch after packaged source update. execPath=' + process.execPath);
+  } catch (err) {
+    appendLog('app.relaunch failed, trying detached spawn: ' + err.message);
+    try {
+      const child = spawn(process.execPath, [], { detached: true, stdio: 'ignore', windowsHide: true, cwd: path.dirname(process.execPath) });
+      child.unref();
+    } catch (spawnErr) {
+      appendLog('detached relaunch failed: ' + spawnErr.message);
+    }
+  }
+  setTimeout(() => app.exit(0), 350);
+  return true;
+}
+
 async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
   const tempDir = path.join(os.tmpdir(), `LockReleaseUpdate_${Date.now()}`);
   fs.mkdirSync(tempDir, { recursive: true });
@@ -510,6 +585,9 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
       return;
     }
 
+    const didPackagedSourceUpdate = await installPackagedSourceUpdate(zipPath, latestVersion, tempDir);
+    if (didPackagedSourceUpdate) return;
+
     updateProgress('Preparing installer', 84, 'Update downloaded. Preparing safe installer...');
     const scriptPath = path.join(tempDir, 'install-lock-release-update.ps1');
     fs.writeFileSync(scriptPath, updatePowerShell(), 'utf8');
@@ -523,7 +601,8 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
       '-ExePath', exePath,
       '-AppRoot', appRoot(),
       '-SourceMode', '0',
-      '-AppPid', String(process.pid)
+      '-AppPid', String(process.pid),
+      '-LatestVersion', String(latestVersion || '')
     ];
     appendLog(`Starting packaged updater script. installDir=${installDir}; script=${scriptPath}`);
     updateProgress('Installing update', 95, 'Lock Release will close now. It should reopen automatically when the update finishes.');
@@ -544,7 +623,8 @@ function updatePowerShell() {
   [Parameter(Mandatory=$true)][string]$ExePath,
   [Parameter(Mandatory=$true)][string]$AppRoot,
   [Parameter(Mandatory=$true)][int]$SourceMode,
-  [Parameter(Mandatory=$true)][int]$AppPid
+  [Parameter(Mandatory=$true)][int]$AppPid,
+  [Parameter(Mandatory=$false)][string]$LatestVersion = ''
 )
 $ErrorActionPreference = 'Stop'
 $log = Join-Path $env:TEMP 'LockReleaseUpdateInstall.log'
@@ -615,12 +695,46 @@ try {
     return
   }
 
+  # V6 source-aware real EXE updater:
+  # GitHub releases usually contain resources/app source files, not a full built EXE.
+  # For the manual real EXE install, keep the Electron runtime and replace only resources/app.
+  $srcApp = Find-SourceApp $extract
+  if ($srcApp) {
+    Log "Source app update detected: $srcApp"
+    $backupRoot = Join-Path $env:LOCALAPPDATA 'LockReleaseDesktopBackups'
+    New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+    $backupDir = Join-Path $backupRoot ('before_update_' + (Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'))
+    if (Test-Path $AppRoot) { Copy-Item $AppRoot $backupDir -Recurse -Force -ErrorAction SilentlyContinue }
+
+    Retry 'Copy source update into resources/app' { Copy-AppSource $srcApp $AppRoot }
+    if ($LatestVersion) {
+      Set-Content -Path (Join-Path $AppRoot '.lock-release-version') -Value $LatestVersion -Encoding UTF8 -Force
+      $pkgPath = Join-Path $AppRoot 'package.json'
+      if (Test-Path $pkgPath) {
+        try {
+          $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
+          $pkg.version = $LatestVersion
+          $pkg | ConvertTo-Json -Depth 50 | Set-Content $pkgPath -Encoding UTF8
+        } catch { Log ('Could not update package version marker: ' + $_.Exception.Message) }
+      }
+    }
+
+    $newExe = $ExePath
+    if (-not (Test-Path $newExe)) { $newExe = Join-Path $InstallDir 'Lock Release.exe' }
+    if (-not (Test-Path $newExe)) { throw "Lock Release.exe was not found after source update at $newExe" }
+    Start-Sleep -Seconds 1
+    Start-Process -FilePath $newExe -WorkingDirectory $InstallDir
+    Log 'Source-aware packaged update complete and app relaunched'
+    return
+  }
+
+  # Fallback: support full packaged update ZIPs too.
   $src = $null
   if (Test-Path (Join-Path $extract 'Lock Release.exe')) { $src = $extract }
   if (-not $src) {
     $src = Get-ChildItem -Path $extract -Directory -Recurse -ErrorAction SilentlyContinue | Where-Object { Test-Path (Join-Path $_.FullName 'Lock Release.exe') } | Select-Object -First 1 -ExpandProperty FullName
   }
-  if (-not $src) { throw 'Update ZIP did not contain Lock Release.exe' }
+  if (-not $src) { throw 'Update ZIP did not contain resources/app source files or Lock Release.exe' }
 
   $backupRoot = Join-Path $env:LOCALAPPDATA 'Lock Release Desktop Backups'
   New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
@@ -658,6 +772,7 @@ process.on('unhandledRejection', err => appendLog('UNHANDLED: ' + (err && err.st
 
 app.setName(APP_NAME);
 app.setAppUserModelId('com.lockrelease.desktop');
+try { app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: currentVersion(), iconPath: path.join(appRoot(), 'assets', 'lock-release.png') }); } catch (_) {}
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {

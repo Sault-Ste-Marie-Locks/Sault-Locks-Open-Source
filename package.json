@@ -1,7 +1,7 @@
 {
   "name": "lock-release-desktop",
-  "version": "1.0.12",
-  "description": "Lock Release real desktop app with public GitHub updates",
+  "version": "1.0.14",
+  "description": "Lock Release real desktop app with reliable in-place update relaunch fix",
   "main": "main.js",
   "private": true,
   "author": "Lock Release",
