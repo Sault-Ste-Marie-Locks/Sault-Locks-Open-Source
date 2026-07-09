@@ -20,14 +20,23 @@ function logDir() { const dir = path.join(app.getPath('userData'), 'logs'); fs.m
 function logFile() { return path.join(logDir(), 'electron-app.log'); }
 function appendLog(text) { try { fs.appendFileSync(logFile(), text + '\n'); } catch (_) {} }
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+function versionMarkerPaths() {
+  const paths = [];
+  try { paths.push(path.join(app.getPath('userData'), '.lock-release-version')); } catch (_) {}
+  try { paths.push(path.join(appRoot(), '.lock-release-version')); } catch (_) {}
+  return paths.filter(Boolean);
+}
 function currentVersion() {
-  try {
-    const marker = path.join(appRoot(), '.lock-release-version');
-    if (fs.existsSync(marker)) {
-      const v = fs.readFileSync(marker, 'utf8').trim();
-      if (v) return v;
-    }
-  } catch (_) {}
+  // Prefer the userData marker. It survives source-file replacement and fixes update loops
+  // if Windows blocks writing inside resources/app for any reason.
+  for (const marker of versionMarkerPaths()) {
+    try {
+      if (fs.existsSync(marker)) {
+        const v = fs.readFileSync(marker, 'utf8').trim();
+        if (v) return v;
+      }
+    } catch (_) {}
+  }
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(appRoot(), 'package.json'), 'utf8'));
     if (pkg && pkg.version) return String(pkg.version);
@@ -95,7 +104,7 @@ function readJsonSafe(file, fallback) {
 function updateConfig() {
   return readJsonSafe(path.join(appRoot(), 'update-config.json'), {
     githubRepo: 'OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates',
-    checkOnStartup: true,
+    checkOnStartup: false,
     allowPrerelease: false,
     assetName: 'Lock_Release_Windows.zip',
     privateRepo: false,
@@ -317,7 +326,7 @@ async function checkForUpdatesOnStartup() {
   if (updateCheckStarted) return;
   updateCheckStarted = true;
   const config = updateConfig();
-  if (!config.checkOnStartup) return;
+  if (!config.checkOnStartup) { appendLog('Updater disabled by update-config.json. Skipping startup update check.'); return; }
   const repo = String(config.githubRepo || '').trim();
   if (!repo || repo.includes('PUT-YOUR') || !repo.includes('/')) {
     appendLog('Updater skipped: update-config.json has no GitHub repo yet.');
@@ -359,7 +368,7 @@ async function checkForUpdatesOnStartup() {
   if (!config.allowPrerelease && release.prerelease) return;
   const latestVersion = normalizeVersion(release.tag_name || release.name || '0.0.0');
   const installedVersion = normalizeVersion(currentVersion());
-  appendLog(`Installed version: ${installedVersion}; latest release: ${latestVersion}`);
+  appendLog(`Installed version: ${installedVersion}; latest release: ${latestVersion}; appRoot=${appRoot()}`);
   if (compareVersions(latestVersion, installedVersion) <= 0) return;
 
   const assets = Array.isArray(release.assets) ? release.assets : [];
@@ -452,15 +461,59 @@ function copySourceUpdate(src, dst) {
   }
 }
 function safeVersionWrite(version) {
-  try { fs.writeFileSync(path.join(appRoot(), '.lock-release-version'), normalizeVersion(version), 'utf8'); } catch (err) { appendLog('Failed writing version marker: ' + err.message); }
+  const normalized = normalizeVersion(version);
+  for (const marker of versionMarkerPaths()) {
+    try {
+      fs.mkdirSync(path.dirname(marker), { recursive: true });
+      fs.writeFileSync(marker, normalized, 'utf8');
+      appendLog('Wrote version marker: ' + marker + ' = ' + normalized);
+    } catch (err) {
+      appendLog('Failed writing version marker ' + marker + ': ' + err.message);
+    }
+  }
   try {
     const pkgPath = path.join(appRoot(), 'package.json');
     const pkg = readJsonSafe(pkgPath, null);
     if (pkg) {
-      pkg.version = normalizeVersion(version);
+      pkg.version = normalized;
       fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), 'utf8');
+      appendLog('Updated package.json version to ' + normalized);
     }
   } catch (err) { appendLog('Failed updating package.json version: ' + err.message); }
+}
+function psSingleQuote(v) {
+  return String(v || '').replace(/'/g, "''");
+}
+function relaunchPackagedAppAfterExit() {
+  const exePath = process.execPath;
+  const workDir = path.dirname(process.execPath);
+  const pid = process.pid;
+  const scriptPath = path.join(os.tmpdir(), `LockReleaseRelaunch_${Date.now()}.ps1`);
+  const relaunchLog = path.join(os.tmpdir(), 'LockReleaseRelaunch.log');
+  const ps = `$ErrorActionPreference='SilentlyContinue'
+` +
+    `Add-Content -Path '${psSingleQuote(relaunchLog)}' -Value "$(Get-Date -Format o) waiting for PID ${pid}"
+` +
+    `try { Wait-Process -Id ${pid} -Timeout 25 } catch {}
+` +
+    `Start-Sleep -Milliseconds 900
+` +
+    `Add-Content -Path '${psSingleQuote(relaunchLog)}' -Value "$(Get-Date -Format o) starting ${psSingleQuote(exePath)}"
+` +
+    `Start-Process -FilePath '${psSingleQuote(exePath)}' -WorkingDirectory '${psSingleQuote(workDir)}'
+`;
+  try {
+    fs.writeFileSync(scriptPath, ps, 'utf8');
+    const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', scriptPath], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true
+    });
+    child.unref();
+    appendLog('Started reliable relaunch helper: ' + scriptPath);
+  } catch (err) {
+    appendLog('Failed starting reliable relaunch helper: ' + err.message);
+  }
 }
 function relaunchSourceAppHidden() {
   const root = appRoot().replace(/'/g, "''");
@@ -541,21 +594,10 @@ async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
   updateProgress('Update complete', 100, 'Lock Release was updated. Restarting now...', 'done');
   await wait(900);
 
-  // app.relaunch is much more reliable than a hidden PowerShell helper for the manual real-EXE build.
-  // The older helper sometimes copied nothing, failed silently, or did not reopen the app.
-  try {
-    app.relaunch({ execPath: process.execPath, args: [] });
-    appendLog('Requested Electron app.relaunch after packaged source update. execPath=' + process.execPath);
-  } catch (err) {
-    appendLog('app.relaunch failed, trying detached spawn: ' + err.message);
-    try {
-      const child = spawn(process.execPath, [], { detached: true, stdio: 'ignore', windowsHide: true, cwd: path.dirname(process.execPath) });
-      child.unref();
-    } catch (spawnErr) {
-      appendLog('detached relaunch failed: ' + spawnErr.message);
-    }
-  }
-  setTimeout(() => app.exit(0), 350);
+  // Relaunch from a separate helper that waits until this process is fully closed.
+  // Starting another EXE too early can hit Electron's single-instance lock and immediately quit.
+  relaunchPackagedAppAfterExit();
+  setTimeout(() => app.exit(0), 500);
   return true;
 }
 
