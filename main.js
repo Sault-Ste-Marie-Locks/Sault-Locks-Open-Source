@@ -104,7 +104,7 @@ function readJsonSafe(file, fallback) {
 function updateConfig() {
   return readJsonSafe(path.join(appRoot(), 'update-config.json'), {
     githubRepo: 'OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates',
-    checkOnStartup: false,
+    checkOnStartup: true,
     allowPrerelease: false,
     assetName: 'Lock_Release_Windows.zip',
     privateRepo: false,
@@ -555,48 +555,40 @@ async function installSourceModeUpdate(zipPath, latestVersion, tempDir) {
 }
 
 async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
-  const extractDir = path.join(tempDir, 'packaged_extracted');
-  updateProgress('Extracting update', 82, 'Unpacking downloaded files...');
+  const extractDir = path.join(tempDir, 'packaged_extracted_check');
+  updateProgress('Checking update package', 82, 'Verifying the update package before restarting...');
   await expandZip(zipPath, extractDir);
 
   const srcApp = findSourceApp(extractDir);
-  appendLog('Packaged source update app folder found: ' + srcApp);
+  appendLog('Packaged update app folder found: ' + srcApp);
   if (!srcApp) return false;
 
-  const root = appRoot();
-  const backupRoot = path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'LockReleaseDesktopBackups');
-  fs.mkdirSync(backupRoot, { recursive: true });
-  const backupDir = path.join(backupRoot, 'before_update_' + new Date().toISOString().replace(/[:.]/g, '-'));
+  // Do not copy files from inside the running app process. Windows/Electron can hold locks,
+  // and relaunch can die when this process exits. Use an outside helper that waits for this
+  // process to fully close, applies the source update, writes the version markers, then opens
+  // the exact installed EXE again.
+  const scriptPath = path.join(tempDir, 'install-lock-release-update-v12.ps1');
+  fs.writeFileSync(scriptPath, updatePowerShell(), 'utf8');
 
-  updateProgress('Backing up current app', 87, 'Saving a backup before replacing files...');
-  try {
-    fs.cpSync(root, backupDir, {
-      recursive: true,
-      force: true,
-      filter: p => !p.includes(`${path.sep}node_modules${path.sep}`) && !p.includes(`${path.sep}dist${path.sep}`)
-    });
-  } catch (err) {
-    appendLog('Packaged backup skipped/failed: ' + err.message);
-  }
+  const installDir = path.dirname(process.execPath);
+  const exePath = process.execPath;
+  const args = [
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', scriptPath,
+    '-ZipPath', zipPath,
+    '-InstallDir', installDir,
+    '-ExePath', exePath,
+    '-AppRoot', appRoot(),
+    '-UserDataDir', app.getPath('userData'),
+    '-SourceMode', '0',
+    '-AppPid', String(process.pid),
+    '-LatestVersion', String(latestVersion || '')
+  ];
 
-  updateProgress('Applying update', 93, 'Replacing app source files inside resources/app...');
-  copySourceUpdate(srcApp, root);
-  safeVersionWrite(latestVersion);
-
-  const marker = path.join(root, '.lock-release-version');
-  let writtenVersion = '';
-  try { writtenVersion = fs.readFileSync(marker, 'utf8').trim(); } catch (_) {}
-  appendLog(`Packaged source update applied. Version marker=${writtenVersion || '(missing)'} target=${normalizeVersion(latestVersion)}`);
-  if (normalizeVersion(writtenVersion) !== normalizeVersion(latestVersion)) {
-    throw new Error('Update copied, but the version marker did not save correctly.');
-  }
-
-  updateProgress('Update complete', 100, 'Lock Release was updated. Restarting now...', 'done');
+  appendLog(`Starting V12 external updater helper. installDir=${installDir}; appRoot=${appRoot()}; script=${scriptPath}; latest=${latestVersion}`);
+  updateProgress('Installing update', 95, 'Lock Release will close now. A separate helper will finish the update and reopen it.');
   await wait(900);
-
-  // Relaunch from a separate helper that waits until this process is fully closed.
-  // Starting another EXE too early can hit Electron's single-instance lock and immediately quit.
-  relaunchPackagedAppAfterExit();
+  const child = spawn('powershell.exe', args, { detached: true, stdio: 'ignore', windowsHide: true });
+  child.unref();
   setTimeout(() => app.exit(0), 500);
   return true;
 }
@@ -642,6 +634,7 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
       '-InstallDir', installDir,
       '-ExePath', exePath,
       '-AppRoot', appRoot(),
+      '-UserDataDir', app.getPath('userData'),
       '-SourceMode', '0',
       '-AppPid', String(process.pid),
       '-LatestVersion', String(latestVersion || '')
@@ -664,6 +657,7 @@ function updatePowerShell() {
   [Parameter(Mandatory=$true)][string]$InstallDir,
   [Parameter(Mandatory=$true)][string]$ExePath,
   [Parameter(Mandatory=$true)][string]$AppRoot,
+  [Parameter(Mandatory=$false)][string]$UserDataDir = '',
   [Parameter(Mandatory=$true)][int]$SourceMode,
   [Parameter(Mandatory=$true)][int]$AppPid,
   [Parameter(Mandatory=$false)][string]$LatestVersion = ''
@@ -671,18 +665,18 @@ function updatePowerShell() {
 $ErrorActionPreference = 'Stop'
 $log = Join-Path $env:TEMP 'LockReleaseUpdateInstall.log'
 function Log($m){ Add-Content -Path $log -Value ("$(Get-Date -Format o) $m") }
-function Retry($Name, [scriptblock]$Action, [int]$Tries = 14) {
+function Retry($Name, [scriptblock]$Action, [int]$Tries = 18) {
   for ($i=1; $i -le $Tries; $i++) {
     try { & $Action; return }
     catch {
       Log ("$Name try $i failed: " + $_.Exception.Message)
       if ($i -eq $Tries) { throw }
-      Start-Sleep -Milliseconds 900
+      Start-Sleep -Milliseconds 1000
     }
   }
 }
 function Copy-AppSource($From, $To) {
-  $skip = @('node_modules', 'dist', '.git', '.github')
+  $skip = @('node_modules', 'dist', '.git', '.github', 'update-payload')
   New-Item -ItemType Directory -Path $To -Force | Out-Null
   Get-ChildItem -LiteralPath $From -Force | ForEach-Object {
     if ($skip -contains $_.Name) { return }
@@ -709,37 +703,41 @@ function Find-SourceApp($ExtractRoot) {
   if ($source) { return $source.FullName }
   return $null
 }
+function Set-VersionMarkers($TargetAppRoot) {
+  if (-not $LatestVersion) { return }
+  $clean = ($LatestVersion -replace '^v','') -replace '[^0-9.].*$',''
+  if (-not $clean) { $clean = $LatestVersion }
+  $markerTargets = @()
+  if ($TargetAppRoot) { $markerTargets += (Join-Path $TargetAppRoot '.lock-release-version') }
+  if ($UserDataDir) { $markerTargets += (Join-Path $UserDataDir '.lock-release-version') }
+  foreach ($marker in $markerTargets) {
+    try {
+      New-Item -ItemType Directory -Path (Split-Path $marker -Parent) -Force | Out-Null
+      Set-Content -Path $marker -Value $clean -Encoding UTF8 -Force
+      Log "Wrote version marker $marker = $clean"
+    } catch { Log ('Could not write marker ' + $marker + ': ' + $_.Exception.Message) }
+  }
+  $pkgPath = Join-Path $TargetAppRoot 'package.json'
+  if (Test-Path $pkgPath) {
+    try {
+      $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
+      $pkg.version = $clean
+      $pkg | ConvertTo-Json -Depth 50 | Set-Content $pkgPath -Encoding UTF8
+      Log "Updated package.json version to $clean"
+    } catch { Log ('Could not update package.json: ' + $_.Exception.Message) }
+  }
+}
 try {
-  Log "Starting Lock Release update install. SourceMode=$SourceMode InstallDir=$InstallDir AppRoot=$AppRoot"
+  Log "Starting V12 Lock Release update install. SourceMode=$SourceMode InstallDir=$InstallDir AppRoot=$AppRoot UserDataDir=$UserDataDir LatestVersion=$LatestVersion"
+
   try { Stop-Process -Id $AppPid -Force -ErrorAction SilentlyContinue } catch {}
-  try { Wait-Process -Id $AppPid -Timeout 25 -ErrorAction SilentlyContinue } catch {}
+  try { Wait-Process -Id $AppPid -Timeout 30 -ErrorAction SilentlyContinue } catch {}
   Start-Sleep -Seconds 2
 
   $extract = Join-Path $env:TEMP ('LockReleaseExtract_' + [guid]::NewGuid().ToString())
   New-Item -ItemType Directory -Path $extract -Force | Out-Null
   Expand-Archive -LiteralPath $ZipPath -DestinationPath $extract -Force
 
-  if ($SourceMode -eq 1) {
-    $srcApp = Find-SourceApp $extract
-    if (-not $srcApp) { throw 'Update ZIP did not contain an Electron source app folder.' }
-
-    $backupRoot = Join-Path $env:LOCALAPPDATA 'Lock Release BAT App Backups'
-    New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
-    $backupDir = Join-Path $backupRoot ('before_update_' + (Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'))
-    if (Test-Path $AppRoot) { Copy-Item $AppRoot $backupDir -Recurse -Force -ErrorAction SilentlyContinue }
-
-    Retry 'Copy source update files' { Copy-AppSource $srcApp $AppRoot }
-    Log 'Source app update files copied'
-
-    $ps = "Set-Location -LiteralPath '$($AppRoot.Replace("'","''"))'; npm install; npx electron ."
-    Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-Command',$ps) -WindowStyle Hidden
-    Log 'Source mode update complete and app relaunched hidden via PowerShell'
-    return
-  }
-
-  # V6 source-aware real EXE updater:
-  # GitHub releases usually contain resources/app source files, not a full built EXE.
-  # For the manual real EXE install, keep the Electron runtime and replace only resources/app.
   $srcApp = Find-SourceApp $extract
   if ($srcApp) {
     Log "Source app update detected: $srcApp"
@@ -749,36 +747,28 @@ try {
     if (Test-Path $AppRoot) { Copy-Item $AppRoot $backupDir -Recurse -Force -ErrorAction SilentlyContinue }
 
     Retry 'Copy source update into resources/app' { Copy-AppSource $srcApp $AppRoot }
-    if ($LatestVersion) {
-      Set-Content -Path (Join-Path $AppRoot '.lock-release-version') -Value $LatestVersion -Encoding UTF8 -Force
-      $pkgPath = Join-Path $AppRoot 'package.json'
-      if (Test-Path $pkgPath) {
-        try {
-          $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
-          $pkg.version = $LatestVersion
-          $pkg | ConvertTo-Json -Depth 50 | Set-Content $pkgPath -Encoding UTF8
-        } catch { Log ('Could not update package version marker: ' + $_.Exception.Message) }
-      }
-    }
+    Set-VersionMarkers $AppRoot
 
     $newExe = $ExePath
     if (-not (Test-Path $newExe)) { $newExe = Join-Path $InstallDir 'Lock Release.exe' }
     if (-not (Test-Path $newExe)) { throw "Lock Release.exe was not found after source update at $newExe" }
-    Start-Sleep -Seconds 1
+    Start-Sleep -Seconds 2
     Start-Process -FilePath $newExe -WorkingDirectory $InstallDir
-    Log 'Source-aware packaged update complete and app relaunched'
+    Log 'V12 source update complete and app relaunched'
     return
   }
 
-  # Fallback: support full packaged update ZIPs too.
+  # Fallback: full packaged update ZIP.
   $src = $null
   if (Test-Path (Join-Path $extract 'Lock Release.exe')) { $src = $extract }
   if (-not $src) {
-    $src = Get-ChildItem -Path $extract -Directory -Recurse -ErrorAction SilentlyContinue | Where-Object { Test-Path (Join-Path $_.FullName 'Lock Release.exe') } | Select-Object -First 1 -ExpandProperty FullName
+    $src = Get-ChildItem -Path $extract -Directory -Recurse -ErrorAction SilentlyContinue |
+      Where-Object { Test-Path (Join-Path $_.FullName 'Lock Release.exe') } |
+      Select-Object -First 1 -ExpandProperty FullName
   }
   if (-not $src) { throw 'Update ZIP did not contain resources/app source files or Lock Release.exe' }
 
-  $backupRoot = Join-Path $env:LOCALAPPDATA 'Lock Release Desktop Backups'
+  $backupRoot = Join-Path $env:LOCALAPPDATA 'LockReleaseDesktopBackups'
   New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
   $backupDir = Join-Path $backupRoot ('before_update_' + (Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'))
   if (Test-Path $InstallDir) { Copy-Item $InstallDir $backupDir -Recurse -Force -ErrorAction SilentlyContinue }
@@ -789,14 +779,16 @@ try {
     }
   }
   New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-  Retry 'Copy new app files' { Copy-Item (Join-Path $src '*') $InstallDir -Recurse -Force -ErrorAction Stop }
-  Log 'New packaged app files copied'
+  Retry 'Copy new packaged app files' { Copy-Item (Join-Path $src '*') $InstallDir -Recurse -Force -ErrorAction Stop }
+
+  $newAppRoot = Join-Path $InstallDir 'resources\app'
+  Set-VersionMarkers $newAppRoot
 
   $newExe = Join-Path $InstallDir 'Lock Release.exe'
   if (-not (Test-Path $newExe)) { throw "Updated Lock Release.exe was not found at $newExe" }
-  Start-Sleep -Seconds 1
+  Start-Sleep -Seconds 2
   Start-Process -FilePath $newExe -WorkingDirectory $InstallDir
-  Log 'Packaged mode update complete and app relaunched'
+  Log 'V12 packaged update complete and app relaunched'
 } catch {
   Log ('FAILED: ' + $_.Exception.Message)
   Add-Type -AssemblyName PresentationFramework -ErrorAction SilentlyContinue

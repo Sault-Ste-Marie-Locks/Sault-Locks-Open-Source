@@ -1,7 +1,7 @@
 {
   "name": "lock-release-desktop",
   "version": "0.0.0",
-  "description": "Lock Release real desktop app with startup updates enabled and forced update check",
+  "description": "Lock Release real desktop app with V12 external updater helper",
   "main": "main.js",
   "private": true,
   "author": "Lock Release",
