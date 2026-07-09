@@ -1,4 +1,4 @@
-name: Build Lock Release Windows Update
+﻿name: Build Lock Release Windows Update
 
 on:
   push:
@@ -13,33 +13,41 @@ jobs:
       - name: Checkout private source
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
       - name: Set automatic build version
         shell: pwsh
         run: |
           $version = "1.0.$env:GITHUB_RUN_NUMBER"
           Write-Host "BUILD_VERSION=$version"
           "BUILD_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
           $pkg.version = $version
           $pkg | ConvertTo-Json -Depth 50 | Set-Content package.json -Encoding UTF8
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Windows app directly
+      - name: Create source update ZIP
         shell: pwsh
         run: |
-          npx electron-packager . "Lock Release" --platform=win32 --arch=x64 --overwrite --out=dist
+          Remove-Item update-payload -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path "update-payload\resources\app" -Force | Out-Null
 
-      - name: Create update ZIP
-        shell: pwsh
-        run: |
-          Compress-Archive -Path "dist\Lock Release-win32-x64\*" -DestinationPath "Lock_Release_Windows.zip" -Force
+          $exclude = @(
+            ".git",
+            "node_modules",
+            "dist",
+            "update-payload",
+            "*.zip",
+            "*.exe",
+            "*.log"
+          )
+
+          Get-ChildItem -Force | Where-Object {
+            $name = $_.Name
+            -not ($exclude | Where-Object { $name -like $_ })
+          } | ForEach-Object {
+            Copy-Item $_.FullName -Destination "update-payload\resources\app" -Recurse -Force
+          }
+
+          Compress-Archive -Path "update-payload\*" -DestinationPath "Lock_Release_Windows.zip" -Force
 
       - name: Publish release to public updates repo
         shell: pwsh
@@ -50,4 +58,5 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes
           }
+
           gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop update."
