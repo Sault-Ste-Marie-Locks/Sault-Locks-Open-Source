@@ -665,36 +665,42 @@ function safeVersionWrite(version) {
 function psSingleQuote(v) {
   return String(v || '').replace(/'/g, "''");
 }
-function relaunchPackagedAppAfterExit() {
+function cmdQuote(v) {
+  return '"' + String(v || '').replace(/"/g, '""') + '"';
+}
+function relaunchPackagedAppAutoOpen() {
   const exePath = process.execPath;
   const workDir = path.dirname(process.execPath);
-  const pid = process.pid;
-  const scriptPath = path.join(os.tmpdir(), `LockReleaseRelaunch_${Date.now()}.ps1`);
-  const relaunchLog = path.join(os.tmpdir(), 'LockReleaseRelaunch.log');
-  const ps = `$ErrorActionPreference='SilentlyContinue'
-` +
-    `Add-Content -Path '${psSingleQuote(relaunchLog)}' -Value "$(Get-Date -Format o) waiting for PID ${pid}"
-` +
-    `try { Wait-Process -Id ${pid} -Timeout 25 } catch {}
-` +
-    `Start-Sleep -Milliseconds 900
-` +
-    `Add-Content -Path '${psSingleQuote(relaunchLog)}' -Value "$(Get-Date -Format o) starting ${psSingleQuote(exePath)}"
-` +
-    `Start-Process -FilePath '${psSingleQuote(exePath)}' -WorkingDirectory '${psSingleQuote(workDir)}'
-`;
+  appendLog('V17 auto-open relaunch requested. exe=' + exePath + '; cwd=' + workDir);
+
+  // First use Electron's native relaunch. This is the cleanest way to reopen the app after update.
   try {
-    fs.writeFileSync(scriptPath, ps, 'utf8');
-    const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', scriptPath], {
+    app.relaunch({ execPath: exePath, args: [] });
+    appendLog('V17 Electron app.relaunch scheduled.');
+  } catch (err) {
+    appendLog('V17 app.relaunch failed: ' + (err && err.message || err));
+  }
+
+  // Safety fallback: after the old process exits, start the app only if it is not already running.
+  // This avoids the update completing but leaving the user with no app window.
+  try {
+    const cmd = 'timeout /t 6 /nobreak >nul & tasklist /FI "IMAGENAME eq Lock Release.exe" | find /I "Lock Release.exe" >nul || start "" /D ' + cmdQuote(workDir) + ' ' + cmdQuote(exePath);
+    const child = spawn('cmd.exe', ['/d', '/s', '/c', cmd], {
       detached: true,
       stdio: 'ignore',
       windowsHide: true
     });
     child.unref();
-    appendLog('Started reliable relaunch helper: ' + scriptPath);
+    appendLog('V17 fallback relaunch helper scheduled through cmd.exe.');
   } catch (err) {
-    appendLog('Failed starting reliable relaunch helper: ' + err.message);
+    appendLog('V17 fallback relaunch helper failed: ' + (err && err.message || err));
   }
+
+  // Force exit instead of app.quit(); quit can be cancelled by windows or before-quit handlers.
+  setTimeout(() => {
+    appendLog('V17 exiting current process for relaunch.');
+    app.exit(0);
+  }, 900);
 }
 function relaunchSourceAppHidden() {
   const root = appRoot().replace(/'/g, "''");
@@ -744,7 +750,7 @@ async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
   appendLog('Packaged update app folder found: ' + srcApp);
   if (!srcApp) return false;
 
-  // V16 fix: apply the update directly before quitting.
+  // V17 fix: apply the update directly before quitting and use native auto-open relaunch.
   // The external helper was not reliably running on some PCs, so the files/markers stayed at 0.0.0.
   // Since this app uses an unpacked resources/app folder, HTML/CSS/JS/package files can be copied
   // while Electron is still running. We delta-copy only changed files, write both version markers,
@@ -754,12 +760,11 @@ async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
 
   updateProgress('Writing version', 96, 'Saving installed version so this update is not offered again...');
   safeVersionWrite(latestVersion);
-  appendLog(`V16 direct update applied. latest=${latestVersion}; copied=${stats && stats.copied}; skipped=${stats && stats.skipped}; appRoot=${appRoot()}`);
+  appendLog(`V17 direct update applied. latest=${latestVersion}; copied=${stats && stats.copied}; skipped=${stats && stats.skipped}; appRoot=${appRoot()}`);
 
   updateProgress('Update complete', 100, 'Lock Release was updated. Restarting now...', 'done');
   await wait(900);
-  relaunchPackagedAppAfterExit();
-  setTimeout(() => app.quit(), 600);
+  relaunchPackagedAppAutoOpen();
   return true;
 }
 

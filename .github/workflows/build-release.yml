@@ -63,4 +63,4 @@ jobs:
             gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes
           }
 
-          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V16 applies updates directly before quitting, delta-copies changed files, writes markers, and then relaunches."
+          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V17 applies updates directly, delta-copies changed files, writes markers, then auto-opens using Electron relaunch with a cmd fallback."
