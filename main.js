@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, shell } = require('electron');
+const { app, BrowserWindow, dialog, shell, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -15,6 +15,11 @@ let serverStarted = false;
 let booting = false;
 let updateCheckStarted = false;
 let updateWindow = null;
+let tray = null;
+let isQuitting = false;
+let phoneServerRunning = false;
+let lastPhoneServerUrl = '';
+const PHONE_LINK_URL = `http://127.0.0.1:${APP_PORT}/phone-link.html`;
 
 function appRoot() { return __dirname; }
 function logDir() { const dir = path.join(app.getPath('userData'), 'logs'); fs.mkdirSync(dir, { recursive: true }); return dir; }
@@ -434,6 +439,125 @@ async function startBundledServer() {
   const ready = await waitForServer(35000);
   if (!ready) throw new Error(`The local Lock Release service did not start on port ${APP_PORT}.\n\nLog file:\n${logFile()}`);
 }
+
+function localApiJson(pathname, method = 'GET') {
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: APP_PORT,
+      path: pathname,
+      method,
+      timeout: 5000,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+    }, res => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => {
+        let parsed = {};
+        try { parsed = body ? JSON.parse(body) : {}; } catch (_) { parsed = { raw: body }; }
+        if (res.statusCode >= 200 && res.statusCode < 400) return resolve(parsed);
+        const err = new Error(`Local API ${method} ${pathname} failed with HTTP ${res.statusCode}`);
+        err.response = parsed;
+        reject(err);
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error(`Local API ${method} ${pathname} timed out`)));
+    req.end();
+  });
+}
+async function refreshPhoneServerState() {
+  try {
+    const state = await localApiJson('/api/phone-server/status', 'GET');
+    phoneServerRunning = !!state.running;
+    lastPhoneServerUrl = state.url || '';
+    updateTrayMenu();
+    return state;
+  } catch (err) {
+    appendLog('TRAY phone status failed: ' + (err && err.stack || err));
+    updateTrayMenu();
+    return null;
+  }
+}
+async function setPhoneServerFromTray(running) {
+  try {
+    const state = await localApiJson('/api/phone-server/' + (running ? 'start' : 'stop'), 'POST');
+    phoneServerRunning = !!state.running;
+    lastPhoneServerUrl = state.url || '';
+    appendLog(`TRAY phone server ${running ? 'started' : 'stopped'}`);
+    updateTrayMenu();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      try { mainWindow.webContents.send?.('phone-server-state-changed', state); } catch (_) {}
+    }
+  } catch (err) {
+    appendLog('TRAY phone server action failed: ' + (err && err.stack || err));
+    try { dialog.showErrorBox('Phone Server', `Could not ${running ? 'start' : 'stop'} the phone server.\n\n${err && err.message || err}`); } catch (_) {}
+  }
+}
+async function showApp(url = APP_URL) {
+  try {
+    if (!serverStarted) await startBundledServer();
+    if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+    if (url && mainWindow && !mainWindow.isDestroyed()) {
+      try {
+        const current = mainWindow.webContents.getURL();
+        if (current !== url) mainWindow.loadURL(url);
+      } catch (_) { mainWindow.loadURL(url); }
+    }
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+    updateTrayMenu();
+  } catch (err) {
+    appendLog('TRAY show app failed: ' + (err && err.stack || err));
+  }
+}
+function hideAppWindow() {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+  updateTrayMenu();
+}
+function quitFromTray() {
+  isQuitting = true;
+  try { if (tray) tray.destroy(); } catch (_) {}
+  app.quit();
+}
+function updateTrayMenu() {
+  if (!tray) return;
+  const visible = !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible());
+  const phoneLabel = phoneServerRunning ? 'Phone Server: Running' : 'Phone Server: Stopped';
+  const menu = Menu.buildFromTemplate([
+    { label: phoneLabel, enabled: false },
+    { type: 'separator' },
+    { label: visible ? 'Hide Lock Release' : 'Show Lock Release', click: () => visible ? hideAppWindow() : showApp(APP_URL) },
+    { label: 'Open Phone Link', click: () => showApp(PHONE_LINK_URL) },
+    { type: 'separator' },
+    { label: 'Start Phone Server', enabled: !phoneServerRunning, click: () => setPhoneServerFromTray(true) },
+    { label: 'Stop Phone Server', enabled: phoneServerRunning, click: () => setPhoneServerFromTray(false) },
+    { label: 'Refresh Phone Server Status', click: () => refreshPhoneServerState() },
+    { type: 'separator' },
+    { label: 'Quit Lock Release', click: () => quitFromTray() }
+  ]);
+  tray.setContextMenu(menu);
+  tray.setToolTip(`${APP_NAME} - ${phoneLabel}${lastPhoneServerUrl ? ' - ' + lastPhoneServerUrl : ''}`);
+}
+function createTray() {
+  if (tray) return tray;
+  const ico = path.join(appRoot(), 'assets', 'lock-release.ico');
+  const png = path.join(appRoot(), 'assets', 'lock-release.png');
+  const icon = fs.existsSync(ico) ? ico : png;
+  tray = new Tray(icon);
+  tray.setToolTip(`${APP_NAME} - Running in background`);
+  tray.on('click', () => {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) hideAppWindow();
+    else showApp(APP_URL);
+  });
+  updateTrayMenu();
+  return tray;
+}
+
 function createWindow() {
   const icon = path.join(appRoot(), 'assets', 'lock-release.ico');
   mainWindow = new BrowserWindow({
@@ -454,13 +578,27 @@ function createWindow() {
     setTimeout(() => checkForUpdatesOnStartup().catch(err => appendLog('UPDATE CHECK ERROR: ' + (err && err.stack || err))), 1200);
   });
   mainWindow.loadURL(APP_URL);
-  mainWindow.on('closed', () => { mainWindow = null; });
+  mainWindow.on('close', event => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+      appendLog('Main window hidden to tray/background.');
+      updateTrayMenu();
+    }
+  });
+  mainWindow.on('show', () => updateTrayMenu());
+  mainWindow.on('hide', () => updateTrayMenu());
+  mainWindow.on('minimize', () => updateTrayMenu());
+  mainWindow.on('closed', () => { mainWindow = null; updateTrayMenu(); });
 }
+
 async function boot() {
   if (booting) return;
   booting = true;
   try {
     await startBundledServer();
+    createTray();
+    refreshPhoneServerState().catch(err => appendLog('Initial tray phone status failed: ' + (err && err.stack || err)));
     createWindow();
   } catch (err) {
     appendLog('BOOT ERROR: ' + (err && err.stack || err));
@@ -1025,12 +1163,16 @@ if (!gotLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-    }
+    showApp(APP_URL);
   });
-  app.whenReady().then(boot);
+  app.whenReady().then(() => {
+    createTray();
+    return boot();
+  });
 }
-app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) boot(); });
-app.on('window-all-closed', () => app.quit());
+app.on('before-quit', () => { isQuitting = true; });
+app.on('activate', () => { showApp(APP_URL); });
+app.on('window-all-closed', () => {
+  // Keep Lock Release running in the background/tray. Use the tray Quit item to exit.
+  appendLog('All windows closed; staying alive in tray/background.');
+});

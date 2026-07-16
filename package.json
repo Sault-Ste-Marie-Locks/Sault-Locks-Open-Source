@@ -1,7 +1,7 @@
 {
   "name": "lock-release-desktop",
   "version": "0.0.0",
-  "description": "Lock Release desktop app with V18 updater safety and Pterodactyl app-file fixes",
+  "description": "Lock Release desktop app with tray/background controls and DB-safe updates",
   "main": "main.js",
   "private": true,
   "author": "Lock Release",
