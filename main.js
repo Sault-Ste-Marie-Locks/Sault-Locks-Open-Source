@@ -4,6 +4,7 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const os = require('os');
+const crypto = require('crypto');
 const { execFile, spawn } = require('child_process');
 
 const APP_PORT = 6117;
@@ -27,22 +28,33 @@ function versionMarkerPaths() {
   return paths.filter(Boolean);
 }
 function currentVersion() {
-  // Prefer the userData marker. It survives source-file replacement and fixes update loops
-  // if Windows blocks writing inside resources/app for any reason.
+  // V14 loop fix: do not trust only the first marker file.
+  // Older installs could leave a stale 0.0.0 marker in userData while resources/app/package.json
+  // was updated correctly. Returning that stale marker caused the app to ask for the same update again.
+  // Read every possible version source and use the highest semver value.
+  const candidates = [];
   for (const marker of versionMarkerPaths()) {
     try {
       if (fs.existsSync(marker)) {
-        const v = fs.readFileSync(marker, 'utf8').trim();
-        if (v) return v;
+        const v = fs.readFileSync(marker, 'utf8').replace(/^﻿/, '').trim();
+        if (v) candidates.push(v);
       }
     } catch (_) {}
   }
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(appRoot(), 'package.json'), 'utf8'));
-    if (pkg && pkg.version) return String(pkg.version);
+    if (pkg && pkg.version) candidates.push(String(pkg.version));
   } catch (_) {}
-  try { return app.getVersion(); } catch (_) {}
-  return '0.0.0';
+  try {
+    const av = app.getVersion();
+    if (av) candidates.push(String(av));
+  } catch (_) {}
+
+  let best = '0.0.0';
+  for (const v of candidates) {
+    if (compareVersions(v, best) > 0) best = normalizeVersion(v);
+  }
+  return best;
 }
 
 
@@ -140,7 +152,10 @@ function githubHeaders(config, accept) {
   return headers;
 }
 function normalizeVersion(v) {
-  return String(v || '0.0.0').trim().replace(/^v/i, '').replace(/[^0-9.].*$/, '');
+  // Handle PowerShell UTF-8 BOMs and non-semver tag text so update checks do not loop.
+  const raw = String(v ?? '0.0.0').replace(/^\uFEFF/, '').trim().replace(/^v/i, '');
+  const match = raw.match(/\d+(?:\.\d+)*/);
+  return match ? match[0] : '0.0.0';
 }
 function compareVersions(a, b) {
   const aa = normalizeVersion(a).split('.').map(n => parseInt(n, 10) || 0);
@@ -441,24 +456,62 @@ function findSourceApp(extractRoot) {
   }
   return null;
 }
-function copyFileSafe(src, dst) {
+function fileHash(file) {
+  const h = crypto.createHash('sha256');
+  h.update(fs.readFileSync(file));
+  return h.digest('hex');
+}
+function sameFileContent(src, dst) {
+  try {
+    if (!fs.existsSync(dst)) return false;
+    const a = fs.statSync(src);
+    const b = fs.statSync(dst);
+    if (!a.isFile() || !b.isFile()) return false;
+    if (a.size !== b.size) return false;
+    return fileHash(src) === fileHash(dst);
+  } catch (_) {
+    return false;
+  }
+}
+function copyFileIfChanged(src, dst, stats) {
   fs.mkdirSync(path.dirname(dst), { recursive: true });
+  if (sameFileContent(src, dst)) {
+    if (stats) stats.skipped++;
+    return false;
+  }
   fs.copyFileSync(src, dst);
+  try { fs.utimesSync(dst, fs.statSync(src).atime, fs.statSync(src).mtime); } catch (_) {}
+  if (stats) stats.copied++;
+  appendLog('Updated changed file: ' + dst);
+  return true;
 }
 function copySourceUpdate(src, dst) {
-  const skip = new Set(['node_modules', 'dist', '.git', '.github']);
+  // Delta copy: do not remove/rewrite whole folders. Only files with changed content are replaced.
+  // This prevents updates from touching every file/timestamp when only one HTML/JS/CSS file changed.
+  const skipTop = new Set(['node_modules', 'dist', '.git', '.github', 'update-payload']);
+  const stats = { copied: 0, skipped: 0, dirs: 0 };
   fs.mkdirSync(dst, { recursive: true });
-  for (const item of fs.readdirSync(src, { withFileTypes: true })) {
-    if (skip.has(item.name)) continue;
-    const from = path.join(src, item.name);
-    const to = path.join(dst, item.name);
-    if (item.isDirectory()) {
-      if (fs.existsSync(to)) fs.rmSync(to, { recursive: true, force: true });
-      fs.cpSync(from, to, { recursive: true, force: true });
-    } else if (item.isFile()) {
-      copyFileSafe(from, to);
+  const walk = (fromDir) => {
+    for (const item of fs.readdirSync(fromDir, { withFileTypes: true })) {
+      const from = path.join(fromDir, item.name);
+      const rel = path.relative(src, from);
+      const top = rel.split(path.sep)[0];
+      if (skipTop.has(top)) continue;
+      const to = path.join(dst, rel);
+      if (item.isDirectory()) {
+        if (!fs.existsSync(to)) {
+          fs.mkdirSync(to, { recursive: true });
+          stats.dirs++;
+        }
+        walk(from);
+      } else if (item.isFile()) {
+        copyFileIfChanged(from, to, stats);
+      }
     }
-  }
+  };
+  walk(src);
+  appendLog(`Delta update copy complete. Copied ${stats.copied} changed file(s), skipped ${stats.skipped} unchanged file(s), created ${stats.dirs} folder(s).`);
+  return stats;
 }
 function safeVersionWrite(version) {
   const normalized = normalizeVersion(version);
@@ -567,7 +620,7 @@ async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
   // and relaunch can die when this process exits. Use an outside helper that waits for this
   // process to fully close, applies the source update, writes the version markers, then opens
   // the exact installed EXE again.
-  const scriptPath = path.join(tempDir, 'install-lock-release-update-v12.ps1');
+  const scriptPath = path.join(tempDir, 'install-lock-release-update-v14.ps1');
   fs.writeFileSync(scriptPath, updatePowerShell(), 'utf8');
 
   const installDir = path.dirname(process.execPath);
@@ -584,7 +637,7 @@ async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
     '-LatestVersion', String(latestVersion || '')
   ];
 
-  appendLog(`Starting V12 external updater helper. installDir=${installDir}; appRoot=${appRoot()}; script=${scriptPath}; latest=${latestVersion}`);
+  appendLog(`Starting V14 external updater helper. installDir=${installDir}; appRoot=${appRoot()}; script=${scriptPath}; latest=${latestVersion}`);
   updateProgress('Installing update', 95, 'Lock Release will close now. A separate helper will finish the update and reopen it.');
   await wait(900);
   const child = spawn('powershell.exe', args, { detached: true, stdio: 'ignore', windowsHide: true });
@@ -675,19 +728,47 @@ function Retry($Name, [scriptblock]$Action, [int]$Tries = 18) {
     }
   }
 }
+function Same-FileContent($A, $B) {
+  try {
+    if (-not (Test-Path -LiteralPath $B)) { return $false }
+    $aItem = Get-Item -LiteralPath $A -ErrorAction Stop
+    $bItem = Get-Item -LiteralPath $B -ErrorAction Stop
+    if ($aItem.Length -ne $bItem.Length) { return $false }
+    $aHash = (Get-FileHash -LiteralPath $A -Algorithm SHA256 -ErrorAction Stop).Hash
+    $bHash = (Get-FileHash -LiteralPath $B -Algorithm SHA256 -ErrorAction Stop).Hash
+    return ($aHash -eq $bHash)
+  } catch { return $false }
+}
 function Copy-AppSource($From, $To) {
+  # Delta copy: only copy files that are actually different. Do not wipe whole folders.
   $skip = @('node_modules', 'dist', '.git', '.github', 'update-payload')
+  $script:CopiedFiles = 0
+  $script:SkippedFiles = 0
   New-Item -ItemType Directory -Path $To -Force | Out-Null
-  Get-ChildItem -LiteralPath $From -Force | ForEach-Object {
-    if ($skip -contains $_.Name) { return }
-    $dest = Join-Path $To $_.Name
+  $fromRoot = (Resolve-Path -LiteralPath $From).Path.TrimEnd('\','/')
+  Get-ChildItem -LiteralPath $From -Force -Recurse | ForEach-Object {
+    $full = $_.FullName
+    if ($full.Length -le $fromRoot.Length) { return }
+    $rel = $full.Substring($fromRoot.Length).TrimStart('\','/')
+    if ($rel -eq '.') { return }
+    $top = ($rel -split '[\\/]')[0]
+    if ($skip -contains $top) { return }
+    $dest = Join-Path $To $rel
     if ($_.PSIsContainer) {
-      if (Test-Path $dest) { Remove-Item -LiteralPath $dest -Recurse -Force -ErrorAction SilentlyContinue }
-      Copy-Item -LiteralPath $_.FullName -Destination $dest -Recurse -Force
+      if (-not (Test-Path -LiteralPath $dest)) { New-Item -ItemType Directory -Path $dest -Force | Out-Null }
     } else {
+      if (Same-FileContent $_.FullName $dest) {
+        $script:SkippedFiles++
+        return
+      }
+      New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
       Copy-Item -LiteralPath $_.FullName -Destination $dest -Force
+      try { (Get-Item -LiteralPath $dest).LastWriteTimeUtc = $_.LastWriteTimeUtc } catch {}
+      $script:CopiedFiles++
+      Log "Updated changed file: $dest"
     }
   }
+  Log "Delta update copy complete. Copied $script:CopiedFiles changed file(s), skipped $script:SkippedFiles unchanged file(s)."
 }
 function Find-SourceApp($ExtractRoot) {
   if (Test-Path (Join-Path $ExtractRoot 'package.json')) { return $ExtractRoot }
@@ -713,7 +794,8 @@ function Set-VersionMarkers($TargetAppRoot) {
   foreach ($marker in $markerTargets) {
     try {
       New-Item -ItemType Directory -Path (Split-Path $marker -Parent) -Force | Out-Null
-      Set-Content -Path $marker -Value $clean -Encoding UTF8 -Force
+      $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+      [System.IO.File]::WriteAllText($marker, $clean, $utf8NoBom)
       Log "Wrote version marker $marker = $clean"
     } catch { Log ('Could not write marker ' + $marker + ': ' + $_.Exception.Message) }
   }
@@ -722,13 +804,14 @@ function Set-VersionMarkers($TargetAppRoot) {
     try {
       $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
       $pkg.version = $clean
-      $pkg | ConvertTo-Json -Depth 50 | Set-Content $pkgPath -Encoding UTF8
+      $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+      [System.IO.File]::WriteAllText($pkgPath, ($pkg | ConvertTo-Json -Depth 50), $utf8NoBom)
       Log "Updated package.json version to $clean"
     } catch { Log ('Could not update package.json: ' + $_.Exception.Message) }
   }
 }
 try {
-  Log "Starting V12 Lock Release update install. SourceMode=$SourceMode InstallDir=$InstallDir AppRoot=$AppRoot UserDataDir=$UserDataDir LatestVersion=$LatestVersion"
+  Log "Starting V14 Lock Release update install. SourceMode=$SourceMode InstallDir=$InstallDir AppRoot=$AppRoot UserDataDir=$UserDataDir LatestVersion=$LatestVersion"
 
   try { Stop-Process -Id $AppPid -Force -ErrorAction SilentlyContinue } catch {}
   try { Wait-Process -Id $AppPid -Timeout 30 -ErrorAction SilentlyContinue } catch {}
@@ -754,7 +837,7 @@ try {
     if (-not (Test-Path $newExe)) { throw "Lock Release.exe was not found after source update at $newExe" }
     Start-Sleep -Seconds 2
     Start-Process -FilePath $newExe -WorkingDirectory $InstallDir
-    Log 'V12 source update complete and app relaunched'
+    Log 'V14 source update complete and app relaunched'
     return
   }
 
@@ -788,7 +871,7 @@ try {
   if (-not (Test-Path $newExe)) { throw "Updated Lock Release.exe was not found at $newExe" }
   Start-Sleep -Seconds 2
   Start-Process -FilePath $newExe -WorkingDirectory $InstallDir
-  Log 'V12 packaged update complete and app relaunched'
+  Log 'V14 packaged update complete and app relaunched'
 } catch {
   Log ('FAILED: ' + $_.Exception.Message)
   Add-Type -AssemblyName PresentationFramework -ErrorAction SilentlyContinue
