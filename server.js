@@ -23,14 +23,60 @@ const DASHBOARD_PORT = Number(process.env.SERVER_PORT || process.env.PORT || 611
 const PUBLIC_HOST = process.env.PUBLIC_HOST || '';
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || '';
 const root = __dirname;
-const dbDir = path.join(root, 'database');
+
+// IMPORTANT: live data must never live inside the installed app folder.
+// Updates replace files under resources/app, so the SQLite DB and writable data
+// are stored under Electron userData/AppData instead. On Pterodactyl/plain Node,
+// LOCK_RELEASE_* env vars can point these paths wherever the server should store data.
+const defaultUserRoot = process.env.APPDATA ? path.join(process.env.APPDATA, 'Lock Release') : root;
+const userRoot = process.env.LOCK_RELEASE_USER_DATA || defaultUserRoot;
+const dbDir = process.env.LOCK_RELEASE_DB_DIR || path.join(userRoot, 'database');
 const dbFile = path.join(dbDir, 'soo-locks.db');
-const dataDir = path.join(root, 'data');
-const jsonDataFile = path.join(root, 'data-backup', 'dashboard-data-before-sqlite.json');
+const dataDir = process.env.LOCK_RELEASE_DATA_DIR || path.join(userRoot, 'data');
+const dataBackupDir = process.env.LOCK_RELEASE_DATA_BACKUP_DIR || path.join(userRoot, 'data-backup');
+const legacyDbDir = path.join(root, 'database');
+const legacyDbFile = path.join(legacyDbDir, 'soo-locks.db');
+const legacyDataDir = path.join(root, 'data');
+const legacyBackupDir = path.join(root, 'data-backup');
+const jsonDataFile = path.join(dataBackupDir, 'dashboard-data-before-sqlite.json');
 const jsonFallbackFile = path.join(dataDir, 'dashboard-data.json');
 const mime = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'application/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.ico':'image/x-icon','.webmanifest':'application/manifest+json'};
 
+function copyFileIfMissing(src, dst) {
+  try {
+    if (src && fs.existsSync(src) && !fs.existsSync(dst)) {
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.copyFileSync(src, dst);
+    }
+  } catch (err) {
+    console.warn('Seed copy skipped:', src, '->', dst, err && err.message || err);
+  }
+}
+function copyDirIfMissing(src, dst) {
+  try {
+    if (!src || !fs.existsSync(src)) return;
+    fs.mkdirSync(dst, { recursive: true });
+    for (const item of fs.readdirSync(src, { withFileTypes: true })) {
+      const from = path.join(src, item.name);
+      const to = path.join(dst, item.name);
+      if (item.isDirectory()) copyDirIfMissing(from, to);
+      else if (item.isFile()) copyFileIfMissing(from, to);
+    }
+  } catch (err) {
+    console.warn('Seed folder copy skipped:', src, '->', dst, err && err.message || err);
+  }
+}
+
 fs.mkdirSync(dbDir, {recursive:true});
+fs.mkdirSync(dataDir, {recursive:true});
+fs.mkdirSync(dataBackupDir, {recursive:true});
+
+// One-time migration/seed from older installs that kept data under resources/app.
+// Existing AppData files always win, so updates cannot overwrite live data.
+copyFileIfMissing(legacyDbFile, dbFile);
+copyDirIfMissing(legacyDataDir, dataDir);
+copyDirIfMissing(legacyBackupDir, dataBackupDir);
+
 const db = new Database(dbFile);
 if (usingBuiltInSqlite) {
   db.exec('PRAGMA journal_mode = WAL');

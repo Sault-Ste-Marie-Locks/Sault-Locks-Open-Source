@@ -377,13 +377,19 @@ function prepareWritableStorage() {
   const userRoot = app.getPath('userData');
   const dbDir = path.join(userRoot, 'database');
   const dataDir = path.join(userRoot, 'data');
+  const dataBackupDir = path.join(userRoot, 'data-backup');
   fs.mkdirSync(dbDir, { recursive: true });
   fs.mkdirSync(dataDir, { recursive: true });
+  fs.mkdirSync(dataBackupDir, { recursive: true });
   process.env.LOCK_RELEASE_USER_DATA = userRoot;
   process.env.LOCK_RELEASE_DB_DIR = dbDir;
   process.env.LOCK_RELEASE_DATA_DIR = dataDir;
+  process.env.LOCK_RELEASE_DATA_BACKUP_DIR = dataBackupDir;
   try { copyDirRecursive(path.join(appRoot(), 'database'), dbDir); } catch (err) { appendLog('DB seed copy skipped: ' + (err && err.message || err)); }
   try { copyDirRecursive(path.join(appRoot(), 'data'), dataDir); } catch (err) { appendLog('Data seed copy skipped: ' + (err && err.message || err)); }
+  try { copyDirRecursive(path.join(appRoot(), 'data-backup'), dataBackupDir); } catch (err) { appendLog('Data backup seed copy skipped: ' + (err && err.message || err)); }
+  appendLog('Writable data root: ' + userRoot);
+  appendLog('Writable SQLite DB: ' + path.join(dbDir, 'soo-locks.db'));
 }
 
 function checkUrl(url, timeoutMs = 700) {

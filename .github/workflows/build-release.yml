@@ -66,4 +66,4 @@ jobs:
             gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes
           }
 
-          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V18 includes the Pterodactyl app-file fixes and excludes database/data folders from updates so user data is not overwritten."
+          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V19 keeps the live SQLite database in AppData/userData and excludes database/data folders from update packages so updates cannot wipe records."
