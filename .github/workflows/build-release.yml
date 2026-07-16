@@ -63,4 +63,4 @@ jobs:
             gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes
           }
 
-          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V14 uses delta copy and highest-version marker detection to prevent update loops."
+          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V15 uses the app EXE itself as the update helper, delta-copies changed files, writes markers, and relaunches reliably."

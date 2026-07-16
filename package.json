@@ -1,7 +1,7 @@
 {
   "name": "lock-release-desktop",
   "version": "0.0.0",
-  "description": "Lock Release real desktop app with V14 stale marker update loop fix",
+  "description": "Lock Release real desktop app with V15 EXE helper updater fix",
   "main": "main.js",
   "private": true,
   "author": "Lock Release",

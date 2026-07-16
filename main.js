@@ -21,6 +21,134 @@ function logDir() { const dir = path.join(app.getPath('userData'), 'logs'); fs.m
 function logFile() { return path.join(logDir(), 'electron-app.log'); }
 function appendLog(text) { try { fs.appendFileSync(logFile(), text + '\n'); } catch (_) {} }
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+function helperLog(text) {
+  try {
+    const target = path.join(os.tmpdir(), 'LockReleaseExeUpdateHelper.log');
+    fs.appendFileSync(target, new Date().toISOString() + ' ' + text + '\n');
+  } catch (_) {}
+}
+function getArgValue(name) {
+  const idx = process.argv.indexOf(name);
+  if (idx >= 0 && idx + 1 < process.argv.length) return process.argv[idx + 1];
+  return '';
+}
+function sleepSync(ms) {
+  try {
+    const buf = new SharedArrayBuffer(4);
+    const view = new Int32Array(buf);
+    Atomics.wait(view, 0, 0, ms);
+  } catch (_) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {}
+  }
+}
+function waitForPidExitSync(pid, timeoutMs) {
+  const end = Date.now() + timeoutMs;
+  while (Date.now() < end) {
+    try {
+      process.kill(pid, 0);
+      sleepSync(800);
+    } catch (_) {
+      return true;
+    }
+  }
+  return false;
+}
+function cleanVersionForHelper(v) {
+  const s = String(v || '').trim().replace(/^v/i, '').replace(/[^0-9.].*$/, '');
+  return s || String(v || '').trim() || '0.0.0';
+}
+function sha256FileSync(file) {
+  const hash = crypto.createHash('sha256');
+  hash.update(fs.readFileSync(file));
+  return hash.digest('hex');
+}
+function sameFileSync(a, b) {
+  try {
+    if (!fs.existsSync(b)) return false;
+    const sa = fs.statSync(a);
+    const sb = fs.statSync(b);
+    if (sa.size !== sb.size) return false;
+    return sha256FileSync(a) === sha256FileSync(b);
+  } catch (_) { return false; }
+}
+function copyDeltaSync(from, to) {
+  const skipTop = new Set(['node_modules', 'dist', '.git', '.github', 'update-payload']);
+  let copied = 0;
+  let skipped = 0;
+  const root = path.resolve(from);
+  fs.mkdirSync(to, { recursive: true });
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const src = path.join(dir, entry.name);
+      const rel = path.relative(root, src);
+      const top = rel.split(path.sep)[0];
+      if (skipTop.has(top)) continue;
+      const dest = path.join(to, rel);
+      if (entry.isDirectory()) {
+        fs.mkdirSync(dest, { recursive: true });
+        walk(src);
+      } else if (entry.isFile()) {
+        if (sameFileSync(src, dest)) {
+          skipped++;
+          continue;
+        }
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.copyFileSync(src, dest);
+        try { fs.utimesSync(dest, fs.statSync(src).atime, fs.statSync(src).mtime); } catch (_) {}
+        copied++;
+        helperLog('updated file: ' + dest);
+      }
+    }
+  }
+  walk(root);
+  helperLog(`delta copy complete copied=${copied} skipped=${skipped}`);
+}
+function writeVersionMarkersForHelper(appRootPath, userDataDir, latestVersion) {
+  const clean = cleanVersionForHelper(latestVersion);
+  const targets = [path.join(appRootPath, '.lock-release-version')];
+  if (userDataDir) targets.push(path.join(userDataDir, '.lock-release-version'));
+  for (const marker of targets) {
+    try {
+      fs.mkdirSync(path.dirname(marker), { recursive: true });
+      fs.writeFileSync(marker, clean, { encoding: 'utf8' });
+      helperLog('wrote marker ' + marker + ' = ' + clean);
+    } catch (err) { helperLog('marker write failed ' + marker + ': ' + err.message); }
+  }
+  try {
+    const pkgPath = path.join(appRootPath, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    pkg.version = clean;
+    fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), 'utf8');
+    helperLog('updated package.json version = ' + clean);
+  } catch (err) { helperLog('package version write failed: ' + err.message); }
+}
+function runExeUpdateHelperSyncFromArgs() {
+  const configPath = getArgValue('--lock-release-update-helper');
+  if (!configPath) throw new Error('missing helper config path');
+  const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  helperLog('V15 exe helper start config=' + configPath);
+  helperLog('srcApp=' + cfg.srcApp + ' appRoot=' + cfg.appRoot + ' latest=' + cfg.latestVersion + ' parentPid=' + cfg.parentPid);
+  if (cfg.parentPid) waitForPidExitSync(Number(cfg.parentPid), 45000);
+  sleepSync(1200);
+  if (!cfg.srcApp || !fs.existsSync(path.join(cfg.srcApp, 'package.json'))) throw new Error('helper source app is missing package.json: ' + cfg.srcApp);
+  if (!cfg.appRoot) throw new Error('helper appRoot missing');
+  copyDeltaSync(cfg.srcApp, cfg.appRoot);
+  writeVersionMarkersForHelper(cfg.appRoot, cfg.userDataDir || '', cfg.latestVersion || '0.0.0');
+  const exePath = cfg.exePath || path.join(cfg.installDir || '', 'Lock Release.exe');
+  sleepSync(1000);
+  if (!fs.existsSync(exePath)) throw new Error('helper cannot find exe to relaunch: ' + exePath);
+  helperLog('relaunching ' + exePath);
+  const child = spawn(exePath, [], { cwd: cfg.installDir || path.dirname(exePath), detached: true, stdio: 'ignore', windowsHide: false });
+  child.unref();
+  helperLog('V15 exe helper done');
+}
+if (process.argv.includes('--lock-release-update-helper')) {
+  try { runExeUpdateHelperSyncFromArgs(); }
+  catch (err) { helperLog('V15 exe helper FAILED: ' + (err && err.stack || err)); }
+  process.exit(0);
+}
 function versionMarkerPaths() {
   const paths = [];
   try { paths.push(path.join(app.getPath('userData'), '.lock-release-version')); } catch (_) {}
@@ -616,31 +744,27 @@ async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
   appendLog('Packaged update app folder found: ' + srcApp);
   if (!srcApp) return false;
 
-  // Do not copy files from inside the running app process. Windows/Electron can hold locks,
-  // and relaunch can die when this process exits. Use an outside helper that waits for this
-  // process to fully close, applies the source update, writes the version markers, then opens
-  // the exact installed EXE again.
-  const scriptPath = path.join(tempDir, 'install-lock-release-update-v14.ps1');
-  fs.writeFileSync(scriptPath, updatePowerShell(), 'utf8');
-
+  // V15 fix: use this same EXE as an external updater helper instead of hidden PowerShell.
+  // On some PCs PowerShell starts but never applies the update, leaving version 0.0.0 and causing
+  // the same update prompt again. The EXE helper survives this app closing, delta-copies only
+  // changed files, writes both version markers, updates package.json, then relaunches Lock Release.
   const installDir = path.dirname(process.execPath);
   const exePath = process.execPath;
-  const args = [
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', scriptPath,
-    '-ZipPath', zipPath,
-    '-InstallDir', installDir,
-    '-ExePath', exePath,
-    '-AppRoot', appRoot(),
-    '-UserDataDir', app.getPath('userData'),
-    '-SourceMode', '0',
-    '-AppPid', String(process.pid),
-    '-LatestVersion', String(latestVersion || '')
-  ];
+  const helperConfigPath = path.join(tempDir, 'lock-release-update-helper-config.json');
+  fs.writeFileSync(helperConfigPath, JSON.stringify({
+    srcApp,
+    appRoot: appRoot(),
+    userDataDir: app.getPath('userData'),
+    installDir,
+    exePath,
+    parentPid: process.pid,
+    latestVersion: String(latestVersion || '')
+  }, null, 2), 'utf8');
 
-  appendLog(`Starting V14 external updater helper. installDir=${installDir}; appRoot=${appRoot()}; script=${scriptPath}; latest=${latestVersion}`);
+  appendLog(`Starting V15 EXE updater helper. installDir=${installDir}; appRoot=${appRoot()}; helperConfig=${helperConfigPath}; latest=${latestVersion}`);
   updateProgress('Installing update', 95, 'Lock Release will close now. A separate helper will finish the update and reopen it.');
   await wait(900);
-  const child = spawn('powershell.exe', args, { detached: true, stdio: 'ignore', windowsHide: true });
+  const child = spawn(process.execPath, ['--lock-release-update-helper', helperConfigPath], { detached: true, stdio: 'ignore', windowsHide: false });
   child.unref();
   setTimeout(() => app.exit(0), 500);
   return true;
@@ -811,7 +935,7 @@ function Set-VersionMarkers($TargetAppRoot) {
   }
 }
 try {
-  Log "Starting V14 Lock Release update install. SourceMode=$SourceMode InstallDir=$InstallDir AppRoot=$AppRoot UserDataDir=$UserDataDir LatestVersion=$LatestVersion"
+  Log "Starting V15 Lock Release update install. SourceMode=$SourceMode InstallDir=$InstallDir AppRoot=$AppRoot UserDataDir=$UserDataDir LatestVersion=$LatestVersion"
 
   try { Stop-Process -Id $AppPid -Force -ErrorAction SilentlyContinue } catch {}
   try { Wait-Process -Id $AppPid -Timeout 30 -ErrorAction SilentlyContinue } catch {}
@@ -837,7 +961,7 @@ try {
     if (-not (Test-Path $newExe)) { throw "Lock Release.exe was not found after source update at $newExe" }
     Start-Sleep -Seconds 2
     Start-Process -FilePath $newExe -WorkingDirectory $InstallDir
-    Log 'V14 source update complete and app relaunched'
+    Log 'V15 source update complete and app relaunched'
     return
   }
 
@@ -871,7 +995,7 @@ try {
   if (-not (Test-Path $newExe)) { throw "Updated Lock Release.exe was not found at $newExe" }
   Start-Sleep -Seconds 2
   Start-Process -FilePath $newExe -WorkingDirectory $InstallDir
-  Log 'V14 packaged update complete and app relaunched'
+  Log 'V15 packaged update complete and app relaunched'
 } catch {
   Log ('FAILED: ' + $_.Exception.Message)
   Add-Type -AssemblyName PresentationFramework -ErrorAction SilentlyContinue
