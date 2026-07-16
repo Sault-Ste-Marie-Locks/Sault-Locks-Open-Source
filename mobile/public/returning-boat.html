@@ -436,7 +436,7 @@ body.light .continue-btn{
     </div>
 </div>
 
-<script src="assets/app.js?v=20260707pairpage2"></script>
+<script src="assets/app.js?v=20260711returntimepoll1"></script>
 
 <script>
 (function(){
@@ -455,11 +455,7 @@ body.light .continue-btn{
     }
 
     function formatDisplayTime(date){
-        return date.toLocaleTimeString([], {
-            hour:"2-digit",
-            minute:"2-digit",
-            hour12:getTimeSetting() === "12"
-        });
+        return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
     }
 
     function setCurrentTime(force){
@@ -682,95 +678,39 @@ body.light .continue-btn{
         try{return JSON.parse(raw);}catch(e){return null;}
     }
 
-    function looksLikeEntry(item){
-        if(!item || typeof item !== "object" || Array.isArray(item)) return false;
-
-        return !!(
-            item.entryType !== undefined ||
-            item.formType !== undefined ||
-            item.type !== undefined ||
-            item.category !== undefined ||
-            item.vessel !== undefined ||
-            item.vesselName !== undefined ||
-            item.boatName !== undefined ||
-            item.reg !== undefined ||
-            item.registration !== undefined ||
-            item.vesselReg !== undefined
-        );
-    }
-
-    function collectEntriesFromValue(value, found, seenObjects){
-        if(!value) return;
-
-        if(Array.isArray(value)){
-            value.forEach(item => collectEntriesFromValue(item, found, seenObjects));
-            return;
-        }
-
-        if(typeof value !== "object") return;
-
-        if(seenObjects.has(value)) return;
-        seenObjects.add(value);
-
-        if(looksLikeEntry(value)){
-            found.push(value);
-        }
-
-        Object.keys(value).forEach(key => {
-            if(["traffic", "logs", "entries", "records", "items", "data", "dailyTraffic", "phoneEvents"].includes(key) || Array.isArray(value[key])){
-                collectEntriesFromValue(value[key], found, seenObjects);
-            }
-        });
-    }
-
     function readAllStoredEntries(){
         const found = [];
-        const seenObjects = new WeakSet();
 
         try{
             if(typeof window.getLogs === "function"){
                 const logs = window.getLogs();
-                collectEntriesFromValue(logs, found, seenObjects);
+                if(Array.isArray(logs)) found.push(...logs);
             }
         }catch(e){}
 
-        const priorityKeys = [
-            "saultLocksLogs",
-            "saultLocksTrackerLogs",
-            "ssmCanalDashboard.v1",
-            "ssmCanalDashboard.logs",
-            "ssmCanalDashboard.entries",
-            "dailyTrafficLogs",
-            "logs",
-            "entries",
-            "savedEntries",
-            "lockLogs",
-            "saultLogs"
-        ];
-
-        const allKeys = [...new Set(priorityKeys.concat(Object.keys(localStorage)))];
-
-        allKeys.forEach(key => {
+        // Use the dashboard traffic snapshot only as a fallback when the mobile
+        // log cache has not loaded yet. Never combine both copies of the same
+        // synced entry, and never crawl registry or entryPresets.
+        if(!found.length){
             try{
-                const raw = localStorage.getItem(key);
-                if(!raw || raw.length > 2500000) return;
-                const parsed = safeParse(raw);
-                collectEntriesFromValue(parsed, found, seenObjects);
+                const dashboard = safeParse(localStorage.getItem("ssmCanalDashboard.v1") || "");
+                if(dashboard && Array.isArray(dashboard.traffic)) found.push(...dashboard.traffic);
             }catch(e){}
-        });
+        }
 
         const unique = [];
         const seenKeys = new Set();
-
         found.forEach(entry => {
+            if(!entry || typeof entry !== "object" || Array.isArray(entry)) return;
+            const identity = normalize(pick(entry, ["mobileId", "oldId", "id", "dashboardId", "recordId"]))
+                .replace(/^(mobile:|old:|id:|key:)/, "");
             const key = [
+                identity,
                 getEntryTypeNorm(entry),
                 getBoatKey(entry),
                 getEntryDate(entry),
-                getEntryTime(entry),
-                normalize(pick(entry, ["id", "mobileId", "oldId"]))
+                normalizeMilitaryTime(getEntryTime(entry), getEntryTime(entry))
             ].join("|");
-
             if(seenKeys.has(key)) return;
             seenKeys.add(key);
             unique.push(entry);
@@ -801,45 +741,62 @@ body.light .continue-btn{
 
     let returnBoatChoices = [];
 
+    function entrySortValue(entry){
+        const date = getEntryDate(entry) || todayKey();
+        const time = normalizeMilitaryTime(getEntryTime(entry), "00:00");
+        const parsed = Date.parse(`${date}T${time}:00`);
+        if(Number.isFinite(parsed)) return parsed;
+        const created = Date.parse(pick(entry, ["createdAt", "timestamp", "savedAt"]));
+        return Number.isFinite(created) ? created : 0;
+    }
+
+    function buildWaitingReturnBoats(todayEntries){
+        const openByKey = new Map();
+        todayEntries
+            .filter(entry => isReturnEntry(entry) || isBoatEntry(entry))
+            .sort((a, b) => entrySortValue(a) - entrySortValue(b))
+            .forEach(entry => {
+                const key = getBoatKey(entry);
+                if(!key) return;
+
+                if(isReturnEntry(entry)){
+                    const waiting = openByKey.get(key) || [];
+                    if(waiting.length) waiting.shift();
+                    if(waiting.length) openByKey.set(key, waiting);
+                    else openByKey.delete(key);
+                    return;
+                }
+
+                const waiting = openByKey.get(key) || [];
+                waiting.push(entry);
+                openByKey.set(key, waiting);
+            });
+
+        return [...openByKey.values()]
+            .flat()
+            .map(extractBoat)
+            .sort(sortNewestFirst);
+    }
+
     function buildReturnDropdown(keepCurrent){
         const vesselSelect = document.getElementById("vessel");
         if(!vesselSelect) return;
 
         const currentKey = keepCurrent ? vesselSelect.dataset.selectedBoatKey : "";
         const todayEntries = readAllStoredEntries().filter(isTodayEntry);
-
-        const returnedKeys = new Set(
-            todayEntries
-                .filter(isReturnEntry)
-                .map(getBoatKey)
-                .filter(Boolean)
-        );
-
-        const addedKeys = new Set();
-
-        returnBoatChoices = todayEntries
-            .filter(isBoatEntry)
-            .map(extractBoat)
-            .filter(boat => {
-                if(!boat.vessel || !boat.key) return false;
-                if(returnedKeys.has(boat.key)) return false;
-                if(addedKeys.has(boat.key)) return false;
-                addedKeys.add(boat.key);
-                return true;
-            })
-            .sort(sortNewestFirst);
+        returnBoatChoices = buildWaitingReturnBoats(todayEntries);
 
         vesselSelect.innerHTML = "";
 
         const placeholder = document.createElement("option");
         placeholder.value = "";
-        placeholder.textContent = returnBoatChoices.length ? "Select a boat to return" : "No boats available to return";
+        placeholder.textContent = returnBoatChoices.length ? "Select a boat waiting to return" : "No boats waiting to return";
         vesselSelect.appendChild(placeholder);
 
         returnBoatChoices.forEach((boat, index) => {
             const option = document.createElement("option");
             option.value = boat.vessel;
-            option.textContent = boat.vessel;
+            option.textContent = `${boat.vessel}${boat.reg ? ` • ${boat.reg}` : ""}${boat.time ? ` • ${normalizeMilitaryTime(boat.time, boat.time)}` : ""}`;
             option.dataset.index = String(index);
             option.dataset.key = boat.key;
             vesselSelect.appendChild(option);
@@ -925,6 +882,15 @@ body.light .continue-btn{
         setCurrentTime(false);
         buildReturnDropdown(false);
 
+        window.addEventListener("ssm-mobile-logs-synced", function(){
+            buildReturnDropdown(true);
+        });
+        window.addEventListener("pageshow", function(){
+            buildReturnDropdown(true);
+        });
+        window.addEventListener("focus", function(){
+            buildReturnDropdown(true);
+        });
 
         vesselSelect.addEventListener("change", autofillReturnBoat);
 
@@ -935,6 +901,11 @@ body.light .continue-btn{
         }
 
         setupMissingInfoPopup(form);
+
+        form.addEventListener("submit", function(){
+            const time = document.getElementById("entryTime");
+            if(time) time.value = normalizeMilitaryTime(time.value, formatDisplayTime(new Date()));
+        }, true);
 
         setTimeout(function(){
             if(!vesselSelect.value) buildReturnDropdown(true);

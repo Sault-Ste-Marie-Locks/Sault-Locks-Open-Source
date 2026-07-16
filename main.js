@@ -74,7 +74,7 @@ function sameFileSync(a, b) {
   } catch (_) { return false; }
 }
 function copyDeltaSync(from, to) {
-  const skipTop = new Set(['node_modules', 'dist', '.git', '.github', 'update-payload']);
+  const skipTop = new Set(['node_modules', 'dist', '.git', '.github', 'update-payload', 'database', 'data', 'data-backup']);
   let copied = 0;
   let skipped = 0;
   const root = path.resolve(from);
@@ -616,7 +616,7 @@ function copyFileIfChanged(src, dst, stats) {
 function copySourceUpdate(src, dst) {
   // Delta copy: do not remove/rewrite whole folders. Only files with changed content are replaced.
   // This prevents updates from touching every file/timestamp when only one HTML/JS/CSS file changed.
-  const skipTop = new Set(['node_modules', 'dist', '.git', '.github', 'update-payload']);
+  const skipTop = new Set(['node_modules', 'dist', '.git', '.github', 'update-payload', 'database', 'data', 'data-backup']);
   const stats = { copied: 0, skipped: 0, dirs: 0 };
   fs.mkdirSync(dst, { recursive: true });
   const walk = (fromDir) => {
@@ -864,7 +864,7 @@ function Same-FileContent($A, $B) {
 }
 function Copy-AppSource($From, $To) {
   # Delta copy: only copy files that are actually different. Do not wipe whole folders.
-  $skip = @('node_modules', 'dist', '.git', '.github', 'update-payload')
+  $skip = @('node_modules', 'dist', '.git', '.github', 'update-payload', 'database', 'data', 'data-backup')
   $script:CopiedFiles = 0
   $script:SkippedFiles = 0
   New-Item -ItemType Directory -Path $To -Force | Out-Null

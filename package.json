@@ -1,7 +1,7 @@
 {
   "name": "lock-release-desktop",
   "version": "0.0.0",
-  "description": "Lock Release real desktop app with V17 auto-open after update fix",
+  "description": "Lock Release desktop app with V18 updater safety and Pterodactyl app-file fixes",
   "main": "main.js",
   "private": true,
   "author": "Lock Release",

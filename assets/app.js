@@ -2,6 +2,37 @@ const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const todayISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 const nowTime = () => new Date().toTimeString().slice(0,5);
+function normalizeTime24(value, fallback=''){
+  const text=String(value ?? '').trim();
+  if(!text) return fallback;
+  let match=text.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*([ap])\.?m\.?$/i);
+  if(match){
+    let hour=Number(match[1]);
+    const minute=Number(match[2] || 0);
+    if(hour>=1 && hour<=12 && minute>=0 && minute<60){
+      if(match[3].toLowerCase()==='p' && hour!==12) hour+=12;
+      if(match[3].toLowerCase()==='a' && hour===12) hour=0;
+      return `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
+    }
+  }
+  match=text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?/);
+  if(match){
+    const hour=Number(match[1]);
+    const minute=Number(match[2]);
+    if(hour>=0 && hour<24 && minute>=0 && minute<60){
+      return `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
+    }
+  }
+  const parsed=new Date(text);
+  if(!Number.isNaN(parsed.getTime())){
+    return `${String(parsed.getHours()).padStart(2,'0')}:${String(parsed.getMinutes()).padStart(2,'0')}`;
+  }
+  return fallback || text;
+}
+function dashboardClockTime(){
+  const d=new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+}
 const prettyDate = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString(undefined,{year:'numeric',month:'short',day:'2-digit'}) : '';
 const storeKey = 'ssmCanalDashboard.v1';
 const themeKey = 'ssmCanalDashboard.darkMode';
@@ -118,15 +149,41 @@ function persistLocal(){
 }
 function save(){persistLocal(); pushServerData();}
 async function pushServerData(){try{await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}catch(e){}}
+let dashboardPullInFlight=false;
+let dashboardLastServerSignature='';
+function dashboardHashAdd(hash, value){
+  const text=String(value ?? '');
+  for(let i=0;i<text.length;i++){
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+function dashboardServerSignature(payload){
+  let hash=2166136261;
+  const traffic=Array.isArray(payload?.traffic)?payload.traffic:[];
+  for(const r of traffic){
+    hash=dashboardHashAdd(hash,[r?.dashboardId,r?.id,r?.mobileId,r?.oldId,r?.date,r?.time,r?.canal,r?.vessel,r?.type,r?.direction,r?.updatedAt,r?.completed].join('|'));
+  }
+  hash=dashboardHashAdd(hash,JSON.stringify(payload?.entryPresets||{}));
+  hash=dashboardHashAdd(hash,JSON.stringify(payload?.phones||[]));
+  hash=dashboardHashAdd(hash,JSON.stringify(payload?.phoneServer||{}));
+  return `${traffic.length}:${hash}`;
+}
 async function pullServerData(){
+  if(dashboardPullInFlight || document.hidden) return;
+  dashboardPullInFlight=true;
   try{
     const r=await fetch('/api/data',{cache:'no-store'}); if(!r.ok) return;
     const serverData=await r.json();
     if(serverData&&Array.isArray(serverData.traffic)){
+      const nextSignature=dashboardServerSignature(serverData);
+      if(nextSignature===dashboardLastServerSignature) return;
+      dashboardLastServerSignature=nextSignature;
       const localRegistry = Array.isArray(data.registry) ? data.registry : [];
       data={...data,...serverData};
       // Server is authoritative for traffic so mobile/dashboard deletes do not come back from browser localStorage.
-      data.traffic=(serverData.traffic||[]).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||'')));
+      data.traffic=(serverData.traffic||[]).map(r=>({...r,time:normalizeTime24(r.time||r.entryTime||r.reverseTime,String(r.time||''))})).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||'')));
       data.registry=mergeByKey(localRegistry, serverData.registry||[], r => `${String(r.canal||'').trim()}|${String(r.vessel||'').trim().toUpperCase()}`);
       data.phones=Array.isArray(serverData.phones) ? serverData.phones : []; // Server is authoritative so unlinked phones do not come back from local cache.
       data.phoneEvents=serverData.phoneEvents || data.phoneEvents || [];
@@ -141,7 +198,7 @@ async function pullServerData(){
       }
       persistLocal(); render();
     }
-  }catch(e){}
+  }catch(e){}finally{dashboardPullInFlight=false;}
 }
 
 const oldDbImportKey = 'ssmCanalDashboard.oldDbCsvImport.v2';
@@ -389,7 +446,7 @@ function buildEntryFromEditor(){
     type:$('#editTrafficType')?.value || 'RB',
     direction:$('#editTrafficDirection')?.value || '',
     reverse:$('#editTrafficReverse')?.value || '',
-    time:$('#editTrafficTime')?.value || nowTime(),
+    time:normalizeTime24($('#editTrafficTime')?.value, nowTime()),
     passengers:Number($('#editTrafficPassengers')?.value || 0) || 0,
     destination:($('#editTrafficDestination')?.value || '').toUpperCase(),
     homePort:$('#editTrafficHomePort')?.value || '',
@@ -1092,7 +1149,8 @@ function renderPairCode(){
   meta.innerHTML=`Expires in ${seconds}s · scan QR, then enter this code · <button class="text-link" type="button" id="copyPairLink">Copy pairing page</button>`;
   if(qrBox&&qrImg){
     qrBox.hidden=false;
-    qrImg.src='https://api.qrserver.com/v1/create-qr-code/?size=190x190&margin=12&data='+encodeURIComponent(pairLink);
+    const qrSrc='https://api.qrserver.com/v1/create-qr-code/?size=190x190&margin=12&data='+encodeURIComponent(pairLink);
+    if(qrImg.getAttribute('src')!==qrSrc) qrImg.src=qrSrc;
     qrBox.title=pairLink;
   }
   const copyBtn=$('#copyPairLink');
@@ -1101,7 +1159,38 @@ function renderPairCode(){
 
 async function generatePhoneCode(){if(!phoneServerState.running){toast('Start the phone server first'); return;} activePair={code:String(Math.floor(100000+Math.random()*900000)),expires:Date.now()+120000}; savePair(); try{const r=await fetch('/api/pair/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(activePair)}); const out=await r.json().catch(()=>({})); if(!r.ok||!out.ok){activePair=null; savePair(); if(r.status===423){phoneServerState={...phoneServerState,running:false,url:'',startedAt:null}; savePhoneServerState();} renderPhoneServer(); renderPairCode(); toast(out.error||'Start the phone server first'); return;} if(out&&out.code){activePair.code=out.code; activePair.expires=out.expires||activePair.expires; savePair();}}catch(e){activePair=null; savePair(); renderPairCode(); toast('Could not create phone code'); return;} renderPairCode(); toast('Pairing code generated');}
 function render(){applyTheme(); const today=todayISO(); const todayTraffic=data.traffic.filter(r=>r.date===today); const totalPassengers=todayTraffic.reduce((a,r)=>a+(Number(r.passengers)||0),0); const dailyVessels=new Set(todayTraffic.map(r=>(r.vessel||r.canal||'').trim()).filter(Boolean)).size; setText('#statRecords',todayTraffic.length); setText('#statPassengers',totalPassengers.toLocaleString()); setText('#statLockages',todayTraffic.length); setText('#statRegistered',dailyVessels); setText('#todayLabel',new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})); setHTML('#recentTable',trafficRows([...data.traffic].slice(-6).reverse(),true)); setHTML('#trafficTable',trafficRows(data.traffic,true)); setHTML('#registryTable',registryRows(data.registry)); setHTML('#phoneTable',phoneRows()); setHTML('#phoneEventLog', phoneEventRows()); setHTML('#vesselList',data.registry.map(r=>`<option value="${r.vessel}"></option>`).join('')); setHTML('#countryOptions',(data.countries||[]).map(c=>`<option value="${htmlEscape(c.country||c)}"></option>`).join('')); setHTML('#stateOptions',(data.states||[]).map(st=>`<option value="${htmlEscape(st.stateProv||st)}"></option>`).join('')); renderPairCode(); renderPhoneServer(); renderChart(); renderReport(); runSearch(); renderEntryPresets();}
-function bindEvents(){applyTheme(); document.addEventListener('click',e=>{const btn=e.target.closest('[data-entry-action]'); if(!btn) return; const action=btn.dataset.entryAction; if(action==='edit') openEntryEditor(btn.dataset.entryId); if(action==='delete') deleteTrafficById(btn.dataset.entryId); if(action==='close-edit') closeEntryEditor();}); if($('#trafficDate')) $('#trafficDate').value=todayISO(); if($('#trafficTime')) $('#trafficTime').value=nowTime(); if($('#reportDate')) $('#reportDate').value=todayISO(); if($('#reportMonth')) $('#reportMonth').value=todayISO().slice(0,7); if($('#startDate')) $('#startDate').value=todayISO().slice(0,8)+'01'; if($('#endDate')) $('#endDate').value=todayISO(); setupEntryTypeChooser(); const q=new URLSearchParams(window.location.search).get('q'); if(q&&$('#globalSearch')) $('#globalSearch').value=q; $('#globalSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=e.target.value.trim(); if(!$('#searchTable') && v) location.href='search.html?q='+encodeURIComponent(v);}}); $('#syncTime')?.addEventListener('click',()=>{if($('#trafficDate')) $('#trafficDate').value=todayISO(); if($('#trafficTime')) $('#trafficTime').value=nowTime(); toast('Time updated');}); $('#trafficVessel')?.addEventListener('change',fillFromRegistry); $('#trafficCanalReg')?.addEventListener('change',fillFromRegistry); $('#trafficForm')?.addEventListener('submit',async e=>{e.preventDefault(); const row={id:'desktop_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),date:$('#trafficDate').value,canal:$('#trafficCanalReg').value,vessel:$('#trafficVessel').value.toUpperCase(),vesselReg:$('#trafficVesselReg').value,type:$('#trafficType').value,direction:$('#trafficDirection').value,reverse:$('#trafficReverse').value,time:$('#trafficTime').value,passengers:Number($('#trafficPassengers').value)||0,destination:$('#trafficDestination').value.toUpperCase(),homePort:$('#trafficHomePort').value,status:'Pending',completed:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),source:'Desktop Dashboard'}; try{const res=await fetch('/api/dashboard/entry/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:row.id,entry:row})}); const out=await res.json().catch(()=>({})); if(!res.ok||!out.ok) throw new Error(out.error||'Save failed'); if(Array.isArray(out.traffic)) data.traffic=out.traffic; else data.traffic.push(out.entry||row); persistLocal(); e.target.reset(); $('#trafficDate').value=todayISO(); $('#trafficTime').value=nowTime(); $('#trafficPassengers').value=0; reapplySelectedEntryType(); render(); toast('Traffic record added'); setTimeout(()=>{window.location.href='daily.html';},450);}catch(err){console.error(err); toast('Save failed — check server console');}}); $('#registrationForm')?.addEventListener('submit',e=>{e.preventDefault(); data.registry.push({canal:$('#regCanal').value,owner:$('#regOwner').value,vessel:$('#regVessel').value.toUpperCase(),length:$('#regLength').value,regType:$('#regType').value,vesselReg:$('#regNumber').value,type:$('#regVesselType').value,city:$('#regCity').value,country:$('#regCountry').value,state:$('#regState').value,address:$('#regAddress').value}); save(); e.target.reset(); render(); toast('Registration saved');}); ['searchDate','searchCanal','searchVessel','searchType','searchDestination','searchHomePort','globalSearch'].forEach(id=>$('#'+id)?.addEventListener('input',runSearch)); $('#runSearch')?.addEventListener('click',runSearch); $('#clearSearch')?.addEventListener('click',()=>{$$('#search input').forEach(i=>i.value=''); runSearch();}); $$('.tab').forEach(t=>t.addEventListener('click',()=>switchReport(t.dataset.report))); ['reportDate','reportMonth','startDate','endDate'].forEach(id=>$('#'+id)?.addEventListener('input',renderReport)); $('#printCurrentReport')?.addEventListener('click',()=>printReport()); $('#printDailyReport')?.addEventListener('click',()=>printReport('dailyReport')); $('#printMonthlyReport')?.addEventListener('click',()=>printReport('monthlyReport')); $('#exportData')?.addEventListener('click',exportData); $('#easyExport')?.addEventListener('click',exportData); $('#resetData')?.addEventListener('click',()=>{if(confirm('Reset all demo data?')){data=JSON.parse(JSON.stringify(demo)); data.phones=[]; activePair=null; savePair(); save(); render(); toast('Demo data reset');}}); $('#generatePairCode')?.addEventListener('click',generatePhoneCode); $('#cancelPairCode')?.addEventListener('click',async()=>{activePair=null; savePair(); try{await fetch('/api/pair/cancel',{method:'POST'});}catch(e){} renderPairCode(); toast('Pairing link cancelled');}); $('#startPhoneServer')?.addEventListener('click',startPhoneServer); $('#stopPhoneServer')?.addEventListener('click',stopPhoneServer); refreshPhoneServerStatus(); pullSharedPresets(); pullServerData(); setInterval(()=>{pullSharedPresets(); pullServerData();},5000); $('#darkModeToggle')?.addEventListener('change',e=>{localStorage.setItem(themeKey,String(e.target.checked)); applyTheme(); toast(e.target.checked?'Dark Mode enabled':'Light Mode enabled');}); $('#presetForm')?.addEventListener('submit',e=>{e.preventDefault(); const preset=readPresetForm(); const originalType=$('#presetOriginalType')?.value; const originalName=$('#presetOriginalName')?.value; if(!preset.name){toast('Add a vessel name'); return;} saveEntryPreset(preset.type,preset.name,preset.canalReg,originalType,originalName,preset); e.target.reset(); clearPresetEditState(); renderEntryPresets(); toast(originalName?'Preset updated successfully':'Preset added successfully'); setTimeout(()=>{location.href='management.html';},350);}); $('#resetPresets')?.addEventListener('click',()=>{vesselPresetGroups=cloneDefaultVesselPresets(); saveEntryPresets(); clearPresetEditState(); renderEntryPresets(); toast('Vessel presets reset');}); $('#presetCancelEdit')?.addEventListener('click',()=>{clearPresetEditState(); $('#presetForm')?.reset(); toast('Edit cancelled');}); ['presetSearch','presetFilter'].forEach(id=>$('#'+id)?.addEventListener('input',renderEntryPresets)); $('#presetFilter')?.addEventListener('change',renderEntryPresets); setInterval(()=>{setText('#clock',new Date().toLocaleTimeString()); renderPairCode();},1000);}
+function bindEvents(){applyTheme(); document.addEventListener('click',e=>{const btn=e.target.closest('[data-entry-action]'); if(!btn) return; const action=btn.dataset.entryAction; if(action==='edit') openEntryEditor(btn.dataset.entryId); if(action==='delete') deleteTrafficById(btn.dataset.entryId); if(action==='close-edit') closeEntryEditor();}); if($('#trafficDate')) $('#trafficDate').value=todayISO(); if($('#trafficTime')) $('#trafficTime').value=nowTime(); if($('#reportDate')) $('#reportDate').value=todayISO(); if($('#reportMonth')) $('#reportMonth').value=todayISO().slice(0,7); if($('#startDate')) $('#startDate').value=todayISO().slice(0,8)+'01'; if($('#endDate')) $('#endDate').value=todayISO(); setupEntryTypeChooser(); const q=new URLSearchParams(window.location.search).get('q'); if(q&&$('#globalSearch')) $('#globalSearch').value=q; $('#globalSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=e.target.value.trim(); if(!$('#searchTable') && v) location.href='search.html?q='+encodeURIComponent(v);}}); $('#syncTime')?.addEventListener('click',()=>{if($('#trafficDate')) $('#trafficDate').value=todayISO(); if($('#trafficTime')) $('#trafficTime').value=nowTime(); toast('Time updated');}); $('#trafficVessel')?.addEventListener('change',fillFromRegistry); $('#trafficCanalReg')?.addEventListener('change',fillFromRegistry); $('#trafficForm')?.addEventListener('submit',async e=>{e.preventDefault(); const row={id:'desktop_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),date:$('#trafficDate').value,canal:$('#trafficCanalReg').value,vessel:$('#trafficVessel').value.toUpperCase(),vesselReg:$('#trafficVesselReg').value,type:$('#trafficType').value,direction:$('#trafficDirection').value,reverse:$('#trafficReverse').value,time:normalizeTime24($('#trafficTime').value,nowTime()),passengers:Number($('#trafficPassengers').value)||0,destination:$('#trafficDestination').value.toUpperCase(),homePort:$('#trafficHomePort').value,status:'Pending',completed:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),source:'Desktop Dashboard'}; try{const res=await fetch('/api/dashboard/entry/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:row.id,entry:row})}); const out=await res.json().catch(()=>({})); if(!res.ok||!out.ok) throw new Error(out.error||'Save failed'); if(Array.isArray(out.traffic)) data.traffic=out.traffic; else data.traffic.push(out.entry||row); persistLocal(); e.target.reset(); $('#trafficDate').value=todayISO(); $('#trafficTime').value=nowTime(); $('#trafficPassengers').value=0; reapplySelectedEntryType(); render(); toast('Traffic record added'); setTimeout(()=>{window.location.href='daily.html';},450);}catch(err){console.error(err); toast('Save failed — check server console');}}); $('#registrationForm')?.addEventListener('submit',e=>{e.preventDefault(); data.registry.push({canal:$('#regCanal').value,owner:$('#regOwner').value,vessel:$('#regVessel').value.toUpperCase(),length:$('#regLength').value,regType:$('#regType').value,vesselReg:$('#regNumber').value,type:$('#regVesselType').value,city:$('#regCity').value,country:$('#regCountry').value,state:$('#regState').value,address:$('#regAddress').value}); save(); e.target.reset(); render(); toast('Registration saved');}); ['searchDate','searchCanal','searchVessel','searchType','searchDestination','searchHomePort','globalSearch'].forEach(id=>$('#'+id)?.addEventListener('input',runSearch)); $('#runSearch')?.addEventListener('click',runSearch); $('#clearSearch')?.addEventListener('click',()=>{$$('#search input').forEach(i=>i.value=''); runSearch();}); $$('.tab').forEach(t=>t.addEventListener('click',()=>switchReport(t.dataset.report))); ['reportDate','reportMonth','startDate','endDate'].forEach(id=>$('#'+id)?.addEventListener('input',renderReport)); $('#printCurrentReport')?.addEventListener('click',()=>printReport()); $('#printDailyReport')?.addEventListener('click',()=>printReport('dailyReport')); $('#printMonthlyReport')?.addEventListener('click',()=>printReport('monthlyReport')); $('#exportData')?.addEventListener('click',exportData); $('#easyExport')?.addEventListener('click',exportData); $('#resetData')?.addEventListener('click',()=>{if(confirm('Reset all demo data?')){data=JSON.parse(JSON.stringify(demo)); data.phones=[]; activePair=null; savePair(); save(); render(); toast('Demo data reset');}}); $('#generatePairCode')?.addEventListener('click',generatePhoneCode); $('#cancelPairCode')?.addEventListener('click',async()=>{activePair=null; savePair(); try{await fetch('/api/pair/cancel',{method:'POST'});}catch(e){} renderPairCode(); toast('Pairing link cancelled');}); $('#startPhoneServer')?.addEventListener('click',startPhoneServer); $('#stopPhoneServer')?.addEventListener('click',stopPhoneServer); refreshPhoneServerStatus(); pullSharedPresets(); pullServerData(); setInterval(()=>{if(!document.hidden){pullSharedPresets(); pullServerData();}},15000); document.addEventListener('visibilitychange',()=>{if(!document.hidden){pullSharedPresets(); pullServerData();}}); $('#darkModeToggle')?.addEventListener('change',e=>{localStorage.setItem(themeKey,String(e.target.checked)); applyTheme(); toast(e.target.checked?'Dark Mode enabled':'Light Mode enabled');}); $('#presetForm')?.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const form=e.currentTarget;
+    if(form.dataset.saving==='true') return;
+
+    const preset=readPresetForm();
+    const originalType=$('#presetOriginalType')?.value;
+    const originalName=$('#presetOriginalName')?.value;
+    const submitBtn=$('#presetSubmitBtn');
+
+    if(!preset.name){toast('Add a vessel name'); $('#presetVessel')?.focus(); return;}
+    if(!normalizePresetTypeKey(preset.type)){toast('Select a valid entry type'); return;}
+
+    form.dataset.saving='true';
+    presetSyncBusyUntil=Date.now()+20000;
+    if(submitBtn){submitBtn.disabled=true; submitBtn.textContent='Saving...';}
+
+    const result=await saveEntryPreset(preset.type,preset.name,preset.canalReg,originalType,originalName,preset,{quiet:true});
+    const confirmed=result&&result.ok&&findEntryPreset(preset.type,preset.name);
+
+    if(!confirmed){
+      form.dataset.saving='false';
+      if(submitBtn){submitBtn.disabled=false; submitBtn.textContent=originalName?'Save Changes':'Add Vessel Preset';}
+      toast('Preset was not saved — check that the dashboard server is running');
+      return;
+    }
+
+    try{sessionStorage.setItem('ssmCanalDashboard.presetSavedMessage', originalName?'Preset updated successfully':'Preset added successfully');}catch(_){ }
+    form.reset();
+    clearPresetEditState();
+    location.href='management.html';
+  }); $('#resetPresets')?.addEventListener('click',()=>{vesselPresetGroups=cloneDefaultVesselPresets(); saveEntryPresets(); clearPresetEditState(); renderEntryPresets(); toast('Vessel presets reset');}); $('#presetCancelEdit')?.addEventListener('click',()=>{clearPresetEditState(); $('#presetForm')?.reset(); toast('Edit cancelled');}); ['presetSearch','presetFilter'].forEach(id=>$('#'+id)?.addEventListener('input',renderEntryPresets)); $('#presetFilter')?.addEventListener('change',renderEntryPresets); setInterval(()=>{setText('#clock',dashboardClockTime()); if($('#pairCode')) renderPairCode();},1000);}
 /* Mobile app form options + save logic ported into the dashboard New Entry page */
 const defaultEntryPresets = {
   "Nokomis":"0531","Le Voyageur":"0533","Holiday":"0507","Hiawatha":"0510","Bide-A-Wee":"0530","Miss Marie":"0525","Parks Canada":"0560","Purvis":"0511","Allure":"1076","Anushka Police Service":"0650","OPP":"0540","RCMP":"0667","City Police":"0567","Canadian Coast Guard":"1198","American Coast Guard":"0665","US Border Patrol":"1225","MNR - Northern Vigil":"0562","Beauty and the Beast":"0762","Chillin Out":"1214"
@@ -1152,7 +1241,8 @@ function presetObj(name, reg='', extra={}){
     city: extra.city || details.city || '',
     country: extra.country || details.country || '',
     state: extra.state || details.state || '',
-    postalCode: extra.postalCode || extra.postal || ''
+    postalCode: extra.postalCode || extra.postal || '',
+    homePort: extra.homePort || extra.homeport || extra.port || details.homePort || details.homeport || ''
   };
 }
 function presetsFromNames(names){return names.map(name=>presetObj(name, defaultEntryPresets[name]||''));}
@@ -1171,7 +1261,8 @@ function normalizePresetItem(item){
   return presetObj(name, item.reg || item.canalReg || item.canal || item.registration || '', {
     canalReg:item.canalReg || item.canal || item.reg || '',
     owner:item.owner || '', length:item.length || '', regType:item.regType || '', vesselReg:item.vesselReg || item.registration || '',
-    vesselType:item.vesselType || item.type || '', address:item.address || '', city:item.city || '', country:item.country || '', state:item.state || '', postalCode:item.postalCode || item.postal || ''
+    vesselType:item.vesselType || item.type || '', address:item.address || '', city:item.city || '', country:item.country || '', state:item.state || '', postalCode:item.postalCode || item.postal || '',
+    homePort:item.homePort || item.homeport || item.port || ''
   });
 }
 function normalizeVesselPresets(raw){
@@ -1190,22 +1281,84 @@ function normalizeVesselPresets(raw){
   return out;
 }
 let vesselPresetGroups = applyDeletedPresetTombstones(normalizeVesselPresets(dashSafeParse(localStorage.getItem(presetKey), null) || dashSafeParse(localStorage.getItem(oldPresetKey), null)));
+let presetSaveInFlight = null;
 async function pullSharedPresets(){
-  if(Date.now() < presetSyncBusyUntil) return;
-  try{const res=await fetch('/api/presets',{cache:'no-store'}); if(!res.ok) return; const out=await res.json(); if(out&&out.entryPresets){vesselPresetGroups=applyDeletedPresetTombstones(normalizeVesselPresets(out.entryPresets)); safeLocalSet(presetKey,JSON.stringify(vesselPresetGroups)); data.entryPresets=vesselPresetGroups; renderEntryPresets(); refreshDashboardPresetDropdowns();}}catch(e){}
+  if(Date.now() < presetSyncBusyUntil || presetSaveInFlight) return;
+  try{
+    const res=await fetch('/api/presets',{cache:'no-store'});
+    if(!res.ok) return;
+    const out=await res.json();
+    if(Date.now() < presetSyncBusyUntil || presetSaveInFlight) return;
+    if(out&&out.entryPresets){
+      const nextGroups=applyDeletedPresetTombstones(normalizeVesselPresets(out.entryPresets));
+      const changed=JSON.stringify(nextGroups)!==JSON.stringify(vesselPresetGroups);
+      if(!changed) return;
+      vesselPresetGroups=nextGroups;
+      safeLocalSet(presetKey,JSON.stringify(vesselPresetGroups));
+      data.entryPresets=vesselPresetGroups;
+      renderEntryPresets();
+      refreshDashboardPresetDropdowns();
+    }
+  }catch(e){
+    console.warn('Preset refresh failed', e);
+  }
 }
-function saveEntryPresets(options={}){
+async function saveEntryPresets(options={}){
+  presetSyncBusyUntil=Math.max(presetSyncBusyUntil, Date.now() + 15000);
   vesselPresetGroups=applyDeletedPresetTombstones(normalizeVesselPresets(vesselPresetGroups));
   safeLocalSet(presetKey, JSON.stringify(vesselPresetGroups));
   data.entryPresets=vesselPresetGroups;
-  const payload={entryPresets:vesselPresetGroups,replace:true,action:'replace',deletedPresets:readDeletedPresetMarks()};
-  try{fetch('/api/presets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json()).then(out=>{if(out&&out.entryPresets){vesselPresetGroups=applyDeletedPresetTombstones(normalizeVesselPresets(out.entryPresets));safeLocalSet(presetKey,JSON.stringify(vesselPresetGroups));data.entryPresets=vesselPresetGroups;if(!options.quiet) render();refreshDashboardPresetDropdowns();}}).catch(()=>{});}catch(e){}
+  persistLocal();
+
+  const payload={
+    entryPresets:vesselPresetGroups,
+    replace:true,
+    action:'replace',
+    deletedPresets:readDeletedPresetMarks(),
+    restoredPreset:options.restoredPreset || null,
+    savedAt:new Date().toISOString()
+  };
+
+  const request=(async()=>{
+    try{
+      const res=await fetch('/api/presets',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload),
+        cache:'no-store'
+      });
+      const out=await res.json().catch(()=>({}));
+      if(!res.ok || !out.ok || !out.entryPresets){
+        throw new Error(out.error || `Preset save failed (${res.status})`);
+      }
+
+      vesselPresetGroups=applyDeletedPresetTombstones(normalizeVesselPresets(out.entryPresets));
+      safeLocalSet(presetKey,JSON.stringify(vesselPresetGroups));
+      data.entryPresets=vesselPresetGroups;
+      persistLocal();
+      if(!options.quiet) renderEntryPresets();
+      refreshDashboardPresetDropdowns();
+      return {ok:true, entryPresets:vesselPresetGroups};
+    }catch(error){
+      console.error('Preset save failed', error);
+      return {ok:false, error};
+    }finally{
+      presetSyncBusyUntil=Math.max(presetSyncBusyUntil, Date.now() + 3000);
+    }
+  })();
+
+  presetSaveInFlight=request;
+  const result=await request;
+  if(presetSaveInFlight===request) presetSaveInFlight=null;
+  return result;
 }
-function getVesselPresets(type){return vesselPresetGroups[type] || [];}
+function getVesselPresets(type){return vesselPresetGroups[normalizePresetTypeKey(type) || type] || [];}
 function findEntryPreset(type,name){
-  const exact = getVesselPresets(type).find(p=>p.name===name);
+  const typeKey=normalizePresetTypeKey(type) || type;
+  const nameKey=presetTextKey(name);
+  const exact=getVesselPresets(typeKey).find(p=>presetTextKey(p&&p.name)===nameKey);
   if(exact) return exact;
-  return Object.values(vesselPresetGroups).flat().find(p=>p.name===name) || null;
+  return Object.values(vesselPresetGroups).flat().find(p=>presetTextKey(p&&p.name)===nameKey) || null;
 }
 function refreshDashboardPresetDropdowns(){
   const kind = selectedEntryType || ($('#trafficType')?.value || '');
@@ -1243,18 +1396,24 @@ function readPresetForm(){
     postalCode: $('#presetPostalCode')?.value.trim() || ''
   };
 }
-function saveEntryPreset(type,name,reg,originalType,originalName,extra={}){
-  type=normalizePresetTypeKey(type) || type;
+async function saveEntryPreset(type,name,reg,originalType,originalName,extra={},saveOptions={}){
+  type=normalizePresetTypeKey(type);
+  name=String(name||'').replace(/\s+/g,' ').trim();
+  if(!type || !name) return {ok:false,error:new Error('A valid preset type and vessel name are required')};
+
   clearPresetDeletedMark(type,name);
   if(originalName){
-    clearPresetDeletedMark(originalType||type, originalName);
-    const oldType = originalType || type;
-    vesselPresetGroups[oldType] = getVesselPresets(oldType).filter(p=>p.name !== originalName);
+    const oldType=normalizePresetTypeKey(originalType)||type;
+    clearPresetDeletedMark(oldType, originalName);
+    const oldNameKey=presetTextKey(originalName);
+    vesselPresetGroups[oldType]=getVesselPresets(oldType).filter(p=>presetTextKey(p&&p.name)!==oldNameKey);
   }
-  vesselPresetGroups[type] = getVesselPresets(type).filter(p=>p.name !== name);
-  vesselPresetGroups[type].push(presetObj(name, reg||extra.canalReg||'', extra));
-  vesselPresetGroups[type].sort((a,b)=>a.name.localeCompare(b.name));
-  saveEntryPresets();
+
+  const nameKey=presetTextKey(name);
+  vesselPresetGroups[type]=getVesselPresets(type).filter(p=>presetTextKey(p&&p.name)!==nameKey);
+  vesselPresetGroups[type].push(presetObj(name, reg||extra.canalReg||'', {...extra,vesselType:extra.vesselType||type}));
+  vesselPresetGroups[type].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  return saveEntryPresets({...saveOptions,restoredPreset:{type,name}});
 }
 function htmlEscape(value){return String(value ?? '').replace(/[&<>'"]/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));}
 function filteredPresetEntries(){
@@ -1661,3 +1820,10 @@ bindEvents();
 initPresetEditPage();
 initDashboardMobileEntryForm();
 render();
+try{
+  const presetSavedMessage=sessionStorage.getItem('ssmCanalDashboard.presetSavedMessage');
+  if(presetSavedMessage){
+    sessionStorage.removeItem('ssmCanalDashboard.presetSavedMessage');
+    setTimeout(()=>toast(presetSavedMessage),80);
+  }
+}catch(_){ }

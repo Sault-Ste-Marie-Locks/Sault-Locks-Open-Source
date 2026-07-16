@@ -4,8 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Sault Canada Locks Tracker - Tour Boat</title>
-<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
+<script src="assets/theme-boot.js?v=20260711tourpresetfix4"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260711tourpresetfix4"/>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
@@ -546,7 +546,7 @@ body.light .continue-btn{
     </div>
 </div>
 
-<script src="assets/app.js?v=20260707pairpage2"></script>
+<script src="assets/app.js?v=20260711returntimepoll1"></script>
 
 <script>
 function getTimeSetting(){
@@ -554,11 +554,7 @@ function getTimeSetting(){
 }
 
 function formatDisplayTime(date){
-    return date.toLocaleTimeString([], {
-        hour:"2-digit",
-        minute:"2-digit",
-        hour12:getTimeSetting() === "12"
-    });
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function setCurrentTime(force){
@@ -628,20 +624,138 @@ function setPlaceholderState(select){
     }
 }
 
-function updateAutoFields(){
-    const vessel = document.getElementById("vessel").value;
-    const dir = document.getElementById("dir").value;
+function normalizePresetText(value){
+    return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
 
-    const preset = (window.mobilePresetLookupForType ? window.mobilePresetLookupForType("Tour Boat", vessel) : null) || tourBoatPresets[vessel] || {
+function getPresetVesselName(preset){
+    if(!preset || typeof preset !== "object") return "";
+
+    return preset.vessel ||
+        preset.vesselName ||
+        preset.name ||
+        preset.title ||
+        preset.label ||
+        "";
+}
+
+function getPresetEntryType(preset){
+    if(!preset || typeof preset !== "object") return "";
+
+    return preset.entryType ||
+        preset.formType ||
+        preset.presetType ||
+        preset.category ||
+        preset.type ||
+        "";
+}
+
+function getPresetRegistration(preset){
+    if(!preset || typeof preset !== "object") return "";
+
+    // Dashboard/mobile preset sync stores the registration mainly as canalReg.
+    // Older builds may use reg, registration, or vesselReg.
+    return String(
+        preset.canalReg ??
+        preset.reg ??
+        preset.registration ??
+        preset.vesselReg ??
+        preset.registrationNumber ??
+        preset.regNumber ??
+        preset.vesselRegistration ??
+        preset.officialNumber ??
+        ""
+    ).trim();
+}
+
+function getPresetHomePort(preset){
+    if(!preset || typeof preset !== "object") return "";
+
+    return String(
+        preset.homePort ??
+        preset.home_port ??
+        preset.port ??
+        ""
+    ).trim();
+}
+
+function isExactTourPreset(preset, vessel){
+    if(!preset || typeof preset !== "object") return false;
+
+    const wantedName = normalizePresetText(vessel);
+    const presetName = normalizePresetText(getPresetVesselName(preset));
+
+    // mobilePresetLookupForType("Tour Boat", ...) already limits the search to
+    // the dashboard TB group. Only verify that the returned vessel matches.
+    return !presetName || presetName === wantedName;
+}
+
+function getSelectedVesselOptionPreset(){
+    const vesselField = document.getElementById("vessel");
+    if(!vesselField || vesselField.tagName !== "SELECT") return null;
+
+    const option = vesselField.options[vesselField.selectedIndex];
+    if(!option || !option.value) return null;
+
+    return {
+        name:option.value,
+        canalReg:option.dataset.reg || "",
+        homePort:option.dataset.homePort || ""
+    };
+}
+
+function resolveTourBoatPreset(vessel){
+    const fallback = tourBoatPresets[vessel] || {
         reg:"",
         homePort:""
     };
 
+    let syncedPreset = null;
+
+    if(vessel && typeof window.mobilePresetLookupForType === "function"){
+        try{
+            syncedPreset = window.mobilePresetLookupForType("Tour Boat", vessel);
+        }catch(error){
+            console.warn("Tour Boat preset lookup failed", error);
+        }
+    }
+
+    // mobilePresetLookupForType already searches only the dashboard's TB group.
+    // Keep only the vessel-name check so a valid synced preset is not rejected
+    // merely because its normalized object does not include an entry type field.
+    if(!isExactTourPreset(syncedPreset, vessel)){
+        syncedPreset = null;
+    }
+
+    const optionPreset = getSelectedVesselOptionPreset();
+
+    return {
+        // Dashboard data is authoritative. The selected option carries the same
+        // synced values and works while the lookup cache is being refreshed.
+        reg:getPresetRegistration(syncedPreset) ||
+            getPresetRegistration(optionPreset) ||
+            getPresetRegistration(fallback),
+        homePort:getPresetHomePort(syncedPreset) ||
+            getPresetHomePort(optionPreset) ||
+            getPresetHomePort(fallback)
+    };
+}
+
+function updateAutoFields(){
+    const vessel = document.getElementById("vessel").value;
+    const dir = document.getElementById("dir").value;
+    const preset = resolveTourBoatPreset(vessel);
+
     const destination = dir === "Up" ? "USM" : dir === "Down" ? "LSM" : "";
 
-    document.getElementById("reg").value = preset.reg || "";
+    document.getElementById("reg").value = preset.reg;
     document.getElementById("dest").value = destination;
-    document.getElementById("homePort").value = preset.homePort || "";
+    document.getElementById("homePort").value = preset.homePort;
     document.getElementById("canal").value = (window.getDefaultCanal ? window.getDefaultCanal() : "Sault Canada Locks");
     document.getElementById("notes").value = destination ? "Tour boat destination auto-set from direction." : "";
 
@@ -652,17 +766,25 @@ function updateAutoFields(){
     setCurrentTime();
 }
 
+function refreshTourAutoFieldsAfterSharedHandlers(){
+    updateAutoFields();
+
+    // setupNormalForm() also listens for field changes. Run once more after all
+    // shared handlers so it cannot leave a registration from another preset.
+    setTimeout(updateAutoFields, 0);
+}
+
 setCurrentTime();
 updateAutoFields();
 
 document.getElementById("vessel").addEventListener("change", function(){
     setPlaceholderState(this);
-    updateAutoFields();
+    refreshTourAutoFieldsAfterSharedHandlers();
 });
 
 document.getElementById("dir").addEventListener("change", function(){
     setPlaceholderState(this);
-    updateAutoFields();
+    refreshTourAutoFieldsAfterSharedHandlers();
 });
 
 const form = document.getElementById("entryForm");
@@ -758,6 +880,25 @@ popup.addEventListener("click", function(e){
 });
 
 setupNormalForm("Tour Boat");
+
+// Keep the exact Tour Boat registration after the shared form setup and after
+// a fresh preset sync from the dashboard.
+refreshTourAutoFieldsAfterSharedHandlers();
+
+// This is the real event dispatched by assets/app.js after linked dashboard
+// presets are stored on the phone.
+window.addEventListener("mobileDashboardPresetsUpdated", refreshTourAutoFieldsAfterSharedHandlers);
+
+// Request a fresh preset pull now when the phone is linked, then update the
+// preview as soon as the dashboard response finishes.
+if(typeof window.mobileRefreshDashboardPresets === "function"){
+    Promise.resolve(window.mobileRefreshDashboardPresets(false))
+        .then(refreshTourAutoFieldsAfterSharedHandlers)
+        .catch(() => {});
+}
+
+window.addEventListener("pageshow", refreshTourAutoFieldsAfterSharedHandlers);
+window.addEventListener("focus", refreshTourAutoFieldsAfterSharedHandlers);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
     window.addEventListener("load", () => {

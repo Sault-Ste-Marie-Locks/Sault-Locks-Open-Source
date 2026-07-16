@@ -4,8 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Sault Canada Locks Tracker - Today Entries</title>
-<script src="assets/theme-boot.js?v=20260707deletefix2"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260707deletefix2"/>
+<script src="assets/theme-boot.js?v=20260711editfix1"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260711editfix1"/>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6C5CE7">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1444,7 +1444,7 @@ html.theme-dark body.logs-page .delete-confirm-icon{
     <h1>‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ </h1>
 
 
-<script src="assets/app.js?v=20260707deletefix2"></script>
+<script src="assets/app.js?v=20260711returntimepoll1"></script>
 
 <script>
 const POSSIBLE_KEYS = [
@@ -1465,6 +1465,8 @@ const sortSelect = document.getElementById("sortSelect");
 const displaySelect = document.getElementById("displaySelect");
 const typeFilter = document.getElementById("typeFilter");
 let editingIndex = null;
+let editingEntryKey = null;
+let pendingLogsRefresh = false;
 let pendingDeleteIndex = null;
 
 sortSelect.value = localStorage.getItem("entriesSort") || "newest";
@@ -1585,34 +1587,15 @@ function formatValue(value){
 }
 
 function getTimeFormatLocal(){
-    return localStorage.getItem("timeFormat") || "12";
+    return "24";
 }
 
 function formatSavedTime(value){
     if(!value) return "N/A";
-
-    const text = String(value).trim();
-
-    if(text.toLowerCase().includes("am") || text.toLowerCase().includes("pm")){
-        return escapeHTMLLocal(text);
-    }
-
-    const match = text.match(/^(\d{1,2}):(\d{2})/);
-
-    if(!match){
-        return escapeHTMLLocal(text);
-    }
-
-    const date = new Date();
-    date.setHours(Number(match[1]));
-    date.setMinutes(Number(match[2]));
-    date.setSeconds(0);
-
-    return escapeHTMLLocal(date.toLocaleTimeString([], {
-        hour:"2-digit",
-        minute:"2-digit",
-        hour12:getTimeFormatLocal() === "12"
-    }));
+    const normalized = window.normalizeMilitaryTime
+        ? window.normalizeMilitaryTime(value, String(value).trim())
+        : String(value).trim();
+    return escapeHTMLLocal(normalized);
 }
 
 function getEntryTitle(entry){
@@ -1638,6 +1621,51 @@ function getEntryTime(entry){
         entry.entryTime || 
         entry.reverseTime || 
         "";
+}
+
+// Keep edit mode attached to the same entry even if a background sync
+// replaces or reorders the local log array while the form is open.
+function getEntryStableKey(entry, index = -1){
+    if(!entry || typeof entry !== "object"){
+        return `missing:${index}`;
+    }
+
+    const directKey = entry.id ||
+        entry.entryId ||
+        entry.clientId ||
+        entry.uuid ||
+        entry.localId ||
+        entry.createdAt ||
+        entry.savedAt ||
+        entry.timestamp ||
+        entry.timeStamp;
+
+    if(directKey){
+        return `entry:${String(directKey)}`;
+    }
+
+    return [
+        "fallback",
+        getEntryType(entry),
+        getEntryTitle(entry),
+        entry.date || entry.entryDate || "",
+        getEntryTime(entry),
+        index
+    ].join("|");
+}
+
+function resolveEditingIndex(logs, fallbackIndex){
+    if(editingEntryKey){
+        const matchedIndex = logs.findIndex((entry, index) => {
+            return getEntryStableKey(entry, index) === editingEntryKey;
+        });
+
+        if(matchedIndex !== -1){
+            return matchedIndex;
+        }
+    }
+
+    return logs[fallbackIndex] ? fallbackIndex : -1;
 }
 
 function getEntryDate(entry){
@@ -2101,12 +2129,22 @@ function renderEditCard(entry, index){
 }
 
 function startEdit(index){
+    const logs = getLogsLocal();
+
+    if(!logs[index]){
+        return;
+    }
+
     editingIndex = index;
+    editingEntryKey = getEntryStableKey(logs[index], index);
+    pendingLogsRefresh = false;
     renderLogs();
 }
 
 function cancelEdit(){
     editingIndex = null;
+    editingEntryKey = null;
+    pendingLogsRefresh = false;
     renderLogs();
 }
 
@@ -2152,18 +2190,27 @@ function syncDeletedLogToDashboard(entry){
 }
 
 window.addEventListener("ssm-mobile-logs-synced", function(){
-    editingIndex = null;
+    // Background syncs can fire while the user is scrolling through the edit form.
+    // Never close or rebuild an active editor; apply the refreshed view after
+    // Save or Cancel instead.
+    if(editingIndex !== null){
+        pendingLogsRefresh = true;
+        return;
+    }
+
+    pendingLogsRefresh = false;
     renderLogs();
 });
 
 async function saveEdit(index){
     const logs = getLogsLocal();
+    const targetIndex = resolveEditingIndex(logs, index);
 
-    if(!logs[index]){
+    if(targetIndex === -1 || !logs[targetIndex]){
         return;
     }
 
-    const oldEntry = logs[index];
+    const oldEntry = logs[targetIndex];
 
     const entryType = document.getElementById(`edit_entryType_${index}`).value.trim();
     const vessel = document.getElementById(`edit_vessel_${index}`).value.trim();
@@ -2180,7 +2227,7 @@ async function saveEdit(index){
     const reason = document.getElementById(`edit_reason_${index}`).value.trim();
     const notes = document.getElementById(`edit_notes_${index}`).value.trim();
 
-    logs[index] = {
+    logs[targetIndex] = {
         ...oldEntry,
 
         entryType:entryType,
@@ -2236,9 +2283,11 @@ async function saveEdit(index){
     };
 
     saveLogsLocal(logs);
-    syncEditedLogToDashboard(logs[index]);
+    syncEditedLogToDashboard(logs[targetIndex]);
 
     editingIndex = null;
+    editingEntryKey = null;
+    pendingLogsRefresh = false;
     renderLogs();
 }
 
@@ -2338,6 +2387,8 @@ async function deleteLog(index){
 
     if(editingIndex === index){
         editingIndex = null;
+        editingEntryKey = null;
+        pendingLogsRefresh = false;
     }else if(editingIndex !== null && editingIndex > index){
         editingIndex -= 1;
     }
@@ -2376,28 +2427,38 @@ function clearFilters(){
     localStorage.removeItem("entriesDateFilter");
 
     editingIndex = null;
+    editingEntryKey = null;
+    pendingLogsRefresh = false;
     renderLogs();
 }
 
 searchInput.addEventListener("input", function(){
     editingIndex = null;
+    editingEntryKey = null;
+    pendingLogsRefresh = false;
     renderLogs();
 });
 
 sortSelect.addEventListener("change", function(){
     localStorage.setItem("entriesSort", sortSelect.value);
     editingIndex = null;
+    editingEntryKey = null;
+    pendingLogsRefresh = false;
     renderLogs();
 });
 
 displaySelect.addEventListener("change", function(){
     localStorage.setItem("entriesDisplay", displaySelect.value);
     editingIndex = null;
+    editingEntryKey = null;
+    pendingLogsRefresh = false;
     renderLogs();
 });
 
 typeFilter.addEventListener("change", function(){
     editingIndex = null;
+    editingEntryKey = null;
+    pendingLogsRefresh = false;
     renderLogs();
 });
 
@@ -2414,7 +2475,7 @@ renderLogs();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+        navigator.serviceWorker.register("service-worker.js?v=20260711editfix1").catch(()=>{});
     });
 }
 </script>

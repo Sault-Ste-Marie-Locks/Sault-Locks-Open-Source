@@ -796,7 +796,7 @@ body.settings-compact .settings-summary{
                 </div>
 
                 <div class="toggle-row">
-                    <button class="toggle-btn" id="time12Btn" type="button">12 Hour</button>
+                    <button class="toggle-btn" id="time12Btn" type="button" disabled title="Lock logs use military time">12 Hour</button>
                     <button class="toggle-btn" id="time24Btn" type="button">24 Hour</button>
                 </div>
             </div>
@@ -910,7 +910,7 @@ body.settings-compact .settings-summary{
 
 <div class="toast" id="settingsToast">Saved</div>
 
-<script src="assets/app.js?v=20260707pairpage2"></script>
+<script src="assets/app.js?v=20260711returntimepoll1"></script>
 
 <script>
 const SETTINGS_STORAGE_KEY = "ssmCanalDashboard.settings.v2";
@@ -931,7 +931,7 @@ const LOG_KEYS_TO_CLEAR = [
 
 const DEFAULT_SETTINGS = {
     theme:"dark",
-    timeFormat:"12",
+    timeFormat:"24",
     accent:"blue",
     compact:false,
     defaultCanal:"Sault Canada Locks",
@@ -977,7 +977,7 @@ function readSettings(){
 
     return Object.assign({}, DEFAULT_SETTINGS, saved, {
         theme:legacyTheme === "light" ? "light" : "dark",
-        timeFormat:legacyTime === "24" ? "24" : "12",
+        timeFormat:"24",
         accent:["blue", "purple", "green"].includes(legacyAccent) ? legacyAccent : DEFAULT_SETTINGS.accent,
         compact:saved.compact === true || saved.compact === "true",
         confirmBeforeSave:saved.confirmBeforeSave !== false && saved.confirmBeforeSave !== "false",
@@ -992,7 +992,7 @@ function saveSettings(message){
     /* Write the clicked values first, then let the shared app helper normalize.
        This prevents old legacy keys like appTheme/theme from overriding the
        button the user just clicked. */
-    const next = Object.assign({}, DEFAULT_SETTINGS, settings);
+    const next = Object.assign({}, DEFAULT_SETTINGS, settings, {timeFormat:"24"});
 
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(next));
     localStorage.setItem("appTheme", next.theme);
@@ -1122,15 +1122,7 @@ function pad(n){
 }
 
 function formatPreviewTime(date){
-    if(settings.timeFormat === "24"){
-        return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-    }
-
-    return date.toLocaleTimeString([], {
-        hour:"2-digit",
-        minute:"2-digit",
-        hour12:true
-    });
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function updatePreviewTime(){
@@ -1236,8 +1228,8 @@ document.getElementById("lightBtn").addEventListener("click", function(){
 });
 
 document.getElementById("time12Btn").addEventListener("click", function(){
-    settings.timeFormat = "12";
-    saveSettings("12 hour time enabled");
+    settings.timeFormat = "24";
+    saveSettings("Military time is required for lock logs");
 });
 
 document.getElementById("time24Btn").addEventListener("click", function(){

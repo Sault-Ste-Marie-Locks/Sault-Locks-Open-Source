@@ -1,3 +1,4 @@
+process.env.TZ = process.env.TZ || 'America/Toronto';
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -18,19 +19,15 @@ try {
   }
 }
 
-const DASHBOARD_PORT = Number(process.env.PORT || 6117);
+const DASHBOARD_PORT = Number(process.env.SERVER_PORT || process.env.PORT || 6117);
 const PUBLIC_HOST = process.env.PUBLIC_HOST || '';
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || '';
 const root = __dirname;
-// In the packaged Electron app, root can live inside resources/app or app.asar.
-// Never write SQLite/database files into the packaged app folder. Use Electron's writable userData folder instead.
-const storageRoot = process.env.LOCK_RELEASE_USER_DATA || root;
-const dbDir = process.env.LOCK_RELEASE_DB_DIR || path.join(storageRoot, 'database');
+const dbDir = path.join(root, 'database');
 const dbFile = path.join(dbDir, 'soo-locks.db');
-const dataDir = process.env.LOCK_RELEASE_DATA_DIR || path.join(storageRoot, 'data');
-const bundledDataDir = path.join(root, 'data');
+const dataDir = path.join(root, 'data');
 const jsonDataFile = path.join(root, 'data-backup', 'dashboard-data-before-sqlite.json');
-const jsonFallbackFile = fs.existsSync(path.join(dataDir, 'dashboard-data.json')) ? path.join(dataDir, 'dashboard-data.json') : path.join(bundledDataDir, 'dashboard-data.json');
+const jsonFallbackFile = path.join(dataDir, 'dashboard-data.json');
 const mime = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'application/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.ico':'image/x-icon','.webmanifest':'application/manifest+json'};
 
 fs.mkdirSync(dbDir, {recursive:true});
@@ -100,9 +97,25 @@ function safeJsonParse(v, fallback){ try { return JSON.parse(v); } catch { retur
 function readBody(req){ return new Promise(resolve=>{ let b=''; req.on('data',c=>{ b+=c; if(b.length>5e6) req.destroy(); }); req.on('end',()=>resolve(safeJsonParse(b || '{}', {}))); }); }
 function sendJson(res,obj,status=200){ res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Allow-Methods':'GET,POST,OPTIONS'}); res.end(JSON.stringify(obj)); }
 function hash(s){ return crypto.createHash('sha1').update(String(s)).digest('hex'); }
-function rowJson(row){ return row ? safeJsonParse(row.json, null) : null; }
+function rowJson(row){
+  if(!row) return null;
+  const record=safeJsonParse(row.json, null);
+  if(!record || typeof record!=="object") return record;
+  const militaryTime=normalizeTime24(record.time||record.entryTime||record.reverseTime, String(record.time||""));
+  return {...record,time:militaryTime,entryTime:militaryTime,reverseTime:record.reverseTime?militaryTime:record.reverseTime};
+}
 function rowsJson(rows){ return (rows||[]).map(rowJson).filter(Boolean); }
 function todayISO(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+function normalizeTime24(value, fallback=''){
+  const text=String(value ?? '').trim();
+  if(!text) return fallback;
+  let m=text.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*([ap])\.?m\.?$/i);
+  if(m){ let h=Number(m[1]); const min=Number(m[2]||0); if(h>=1&&h<=12&&min>=0&&min<60){ if(m[3].toLowerCase()==='p'&&h!==12)h+=12; if(m[3].toLowerCase()==='a'&&h===12)h=0; return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`; } }
+  m=text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?/);
+  if(m){ const h=Number(m[1]), min=Number(m[2]); if(h>=0&&h<24&&min>=0&&min<60) return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`; }
+  const d=new Date(text); if(!Number.isNaN(d.getTime())) return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  return fallback || text;
+}
 function escLike(v){ return '%' + String(v || '').replace(/[\\%_]/g, m => '\\' + m).toLowerCase() + '%'; }
 function cleanLimit(v, fallback=750, max=5000){ const n=Number(v); return Number.isFinite(n) ? Math.max(1, Math.min(max, Math.floor(n))) : fallback; }
 function kvDefault(key){ if(key==='entryPresets') return {RB:[],TB:[],Gov:[],Com:[],K:[]}; if(key==='deletedPresets') return []; if(key==='deletedEntryMarks') return []; if(key==='phoneServer') return {running:false,startedAt:null}; return []; }
@@ -111,8 +124,8 @@ function setKV(key, value){ stmt.kvSet.run(key, JSON.stringify(value)); }
 function addPhoneEvent(type, detail){ const events=Array.isArray(getKV('phoneEvents')) ? getKV('phoneEvents') : []; events.unshift({type, detail, at:new Date().toLocaleString()}); setKV('phoneEvents', events.slice(0,100)); }
 function recKey(r){ if(r?.mobileId) return 'mobile:'+r.mobileId; if(r?.oldId) return 'old:'+r.oldId; if(r?.id) return 'id:'+r.id; return 'key:'+hash([r?.date||'', r?.time||'', r?.canal||'', String(r?.vessel||'').toUpperCase(), r?.type||'', r?.direction||''].join('|')); }
 function regKey(r){ const raw=[r?.canal||'', String(r?.vessel||'').toUpperCase(), r?.vesselReg||''].map(x=>String(x).trim()).join('|'); return hash(raw === '||' ? JSON.stringify(r) : raw); }
-function recordParams(r){ const id=recKey(r); return {record_id:id,date:String(r.date||'').slice(0,10),time:String(r.time||''),canal:String(r.canal||''),vessel:String(r.vessel||'').toUpperCase(),type:String(r.type||''),direction:String(r.direction||''),destination:String(r.destination||''),home_port:String(r.homePort||''),mobile_id:String(r.mobileId||''),old_id:String(r.oldId||''),json:JSON.stringify({...r, dashboardId:id}),updated_at:String(r.updatedAt||r.createdAt||new Date().toISOString())}; }
-function saveRecord(r){ const params=recordParams(r); stmt.upsertRecord.run(params); return {...r, dashboardId:params.record_id}; }
+function recordParams(r){ const id=recKey(r); const militaryTime=normalizeTime24(r.time||r.entryTime||r.reverseTime,String(r.time||'')); const normalized={...r,time:militaryTime,entryTime:militaryTime,reverseTime:r.reverseTime?militaryTime:r.reverseTime}; return {record_id:id,date:String(r.date||'').slice(0,10),time:militaryTime,canal:String(r.canal||''),vessel:String(r.vessel||'').toUpperCase(),type:String(r.type||''),direction:String(r.direction||''),destination:String(r.destination||''),home_port:String(r.homePort||''),mobile_id:String(r.mobileId||''),old_id:String(r.oldId||''),json:JSON.stringify({...normalized, dashboardId:id}),updated_at:String(r.updatedAt||r.createdAt||new Date().toISOString())}; }
+function saveRecord(r){ const params=recordParams(r); stmt.upsertRecord.run(params); return safeJsonParse(params.json, {...r, dashboardId:params.record_id}); }
 function saveRegistry(r){ stmt.upsertRegistry.run({registry_id:regKey(r),canal:String(r.canal||''),vessel:String(r.vessel||'').toUpperCase(),owner:String(r.owner||''),type:String(r.type||r.vesselType||''),json:JSON.stringify(r)}); }
 function compactIdValue(value){ return String(value ?? '').replace(/\s+/g,' ').trim(); }
 function stripRecordPrefix(value){ return compactIdValue(value).replace(/^(mobile:|old:|id:|key:)/i,''); }
@@ -265,9 +278,9 @@ function findLinkedPhone(token){ return (getKV('phones')||[]).find(p=>p && p.tok
 function savePhones(phones){ setKV('phones', phones || []); }
 function headerDeviceName(req){ const ua=String(req.headers['user-agent']||''); const platform=/iPhone/i.test(ua)?'iPhone':/iPad/i.test(ua)?'iPad':/Android/i.test(ua)?'Android':/Windows/i.test(ua)?'Windows':/Macintosh/i.test(ua)?'Mac':'Phone'; const browser=/CriOS|Chrome/i.test(ua)?'Chrome':/FxiOS|Firefox/i.test(ua)?'Firefox':/EdgiOS|EdgA|Edge/i.test(ua)?'Edge':/Safari/i.test(ua)?'Safari':'Browser'; return `${platform} ${browser}`; }
 function cleanDeviceName(name, req){ const raw=String(name||'').trim(); if(!raw || /^phone\s*\d+$/i.test(raw) || /^iphone\s*\d+$/i.test(raw)) return headerDeviceName(req); return raw.slice(0,80); }
-function typeCode(t){ const raw=String(t||'').trim(); const s=raw.toLowerCase(); if(s.includes('reversal')) return 'LR'; if(s.includes('test')) return 'LT'; if(s==='k'||s.includes('kayak')) return 'K'; if(s.includes('tour')) return 'TB'; if(s.includes('government')) return 'Gov'; if(s.includes('commercial')) return 'Com'; if(s.includes('recreational')) return 'RB'; return raw||'Mobile'; }
-function normalizeMobileEntry(e, phone){ const code=typeCode(e.type||e.entryType||e.formType||'Mobile Entry'); const isReverse=code==='LR'; const isTest=code==='LT'; const vessel=e.vessel||e.vesselName||(isReverse?'Lock Reversal':isTest?'Lock Test':'Mobile Entry'); const n=Number(e.passengers ?? e.pass ?? 0); const mobileId=String(e.mobileId || e.id || e.createdAt || `${Date.now()}_${Math.random().toString(36).slice(2)}`); const completed=e.completed===true || String(e.status||'').toLowerCase()==='completed'; return {date:String(e.date||todayISO()).slice(0,10),canal:e.canal||e.canalReg||'Sault Canada Locks',vessel,vesselReg:e.vesselReg||e.registration||e.reg||'',type:code,direction:e.direction||e.dir||e.reverseDir||'',reverse:isReverse?'Yes':(e.reverse||''),time:e.time||e.entryTime||e.reverseTime||new Date().toTimeString().slice(0,5),passengers:Number.isFinite(n)?n:0,destination:e.destination||e.dest||'',homePort:e.homePort||'',notes:e.notes||e.reason||e.reverseReason||'',kayakCount:e.kayakCount||e.numberOfKayaks||e.kayaks||'',numberOfKayaks:e.numberOfKayaks||e.kayakCount||e.kayaks||'',mobileId,sourcePhone:phone?.name||'Mobile App',sourcePhoneToken:phone?.token||phone?.id||'',createdAt:e.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),status:completed?'Completed':(e.status||'Pending'),completed}; }
-function dashboardToMobileLog(r){ const stableId=recKey(r); return {id:stableId,dashboardId:stableId,mobileId:r.mobileId||'',fromDashboard:true,entryType:r.type||'Entry',formType:r.type||'Entry',type:r.type||'Entry',vessel:r.vessel||'',vesselName:r.vessel||'',reg:r.vesselReg||r.registration||r.reg||'',registration:r.vesselReg||r.registration||r.reg||'',canal:r.canal||'Sault Canada Locks',dir:r.direction||r.dir||'',direction:r.direction||r.dir||'',pass:String(r.passengers??r.pass??0),passengers:String(r.passengers??r.pass??0),dest:r.destination||r.dest||'',destination:r.destination||r.dest||'',homePort:r.homePort||'',time:r.time||r.entryTime||r.reverseTime||'',entryTime:r.time||r.entryTime||r.reverseTime||'',reverseTime:r.reverseTime||r.time||'',date:r.date||'',reason:r.reason||r.notes||'',reverseReason:r.reverseReason||r.reason||r.notes||'',notes:r.notes||'',kayakCount:r.kayakCount||r.numberOfKayaks||'',numberOfKayaks:r.numberOfKayaks||r.kayakCount||'',status:r.status||(r.completed?'Completed':'Pending'),completed:!!r.completed,createdAt:r.createdAt||new Date().toISOString(),syncedAt:new Date().toISOString()}; }
+function typeCode(t){ const raw=String(t||'').trim(); const s=raw.toLowerCase(); if(s.includes('reversal')) return 'LR'; if(s.includes('test')) return 'LT'; if(s==='k'||s.includes('kayak')) return 'K'; if(s.includes('tour')) return 'TB'; if(s.includes('government')) return 'Gov'; if(s.includes('commercial')) return 'Com'; if(s.includes('returning') || s.includes('returned') || s==='return' || s==='ret') return 'Returning Boat'; if(s.includes('recreational')) return 'RB'; return raw||'Mobile'; }
+function normalizeMobileEntry(e, phone){ const code=typeCode(e.type||e.entryType||e.formType||'Mobile Entry'); const isReverse=code==='LR'; const isTest=code==='LT'; const vessel=e.vessel||e.vesselName||(isReverse?'Lock Reversal':isTest?'Lock Test':'Mobile Entry'); const n=Number(e.passengers ?? e.pass ?? 0); const mobileId=String(e.mobileId || e.id || e.createdAt || `${Date.now()}_${Math.random().toString(36).slice(2)}`); const completed=e.completed===true || String(e.status||'').toLowerCase()==='completed'; return {date:String(e.date||todayISO()).slice(0,10),canal:e.canal||e.canalReg||'Sault Canada Locks',vessel,vesselReg:e.vesselReg||e.registration||e.reg||'',type:code,direction:e.direction||e.dir||e.reverseDir||'',reverse:isReverse?'Yes':(e.reverse||''),time:normalizeTime24(e.time||e.entryTime||e.reverseTime,new Date().toTimeString().slice(0,5)),passengers:Number.isFinite(n)?n:0,destination:e.destination||e.dest||'',homePort:e.homePort||'',notes:e.notes||e.reason||e.reverseReason||'',kayakCount:e.kayakCount||e.numberOfKayaks||e.kayaks||'',numberOfKayaks:e.numberOfKayaks||e.kayakCount||e.kayaks||'',mobileId,sourcePhone:phone?.name||'Mobile App',sourcePhoneToken:phone?.token||phone?.id||'',createdAt:e.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),status:completed?'Completed':(e.status||'Pending'),completed}; }
+function dashboardToMobileLog(r){ const stableId=recKey(r); return {id:stableId,dashboardId:stableId,mobileId:r.mobileId||'',fromDashboard:true,entryType:r.type||'Entry',formType:r.type||'Entry',type:r.type||'Entry',vessel:r.vessel||'',vesselName:r.vessel||'',reg:r.vesselReg||r.registration||r.reg||'',registration:r.vesselReg||r.registration||r.reg||'',canal:r.canal||'Sault Canada Locks',dir:r.direction||r.dir||'',direction:r.direction||r.dir||'',pass:String(r.passengers??r.pass??0),passengers:String(r.passengers??r.pass??0),dest:r.destination||r.dest||'',destination:r.destination||r.dest||'',homePort:r.homePort||'',time:normalizeTime24(r.time||r.entryTime||r.reverseTime,''),entryTime:normalizeTime24(r.time||r.entryTime||r.reverseTime,''),reverseTime:normalizeTime24(r.reverseTime||r.time||''),date:r.date||'',reason:r.reason||r.notes||'',reverseReason:r.reverseReason||r.reason||r.notes||'',notes:r.notes||'',kayakCount:r.kayakCount||r.numberOfKayaks||'',numberOfKayaks:r.numberOfKayaks||r.kayakCount||'',status:r.status||(r.completed?'Completed':'Pending'),completed:!!r.completed,createdAt:r.createdAt||new Date().toISOString(),syncedAt:new Date().toISOString()}; }
 function updateTrafficFromMobile(existing, incoming, phone){ const rec=normalizeMobileEntry(incoming||{}, phone||{}); const merged={...(existing||{}), ...rec}; if(existing?.id) merged.id=existing.id; if(existing?.oldId) merged.oldId=existing.oldId; if(existing?.mobileId || rec.mobileId) merged.mobileId=existing?.mobileId || rec.mobileId; merged.updatedAt=new Date().toISOString(); return merged; }
 function presetTextKey(value){ return String(value||'').replace(/\s+/g,' ').trim().toUpperCase(); }
 function normalizePresetType(type){ const raw=String(type||'').replace(/\s+/g,' ').trim(); const lower=raw.toLowerCase(); if(raw==='G'||lower==='gov'||lower==='government'||lower==='government boat') return 'Gov'; if(raw==='C'||lower==='com'||lower==='commercial'||lower==='commercial boat') return 'Com'; if(raw==='K'||lower==='k'||lower==='kayak'||lower==='kayak entry') return 'K'; if(raw==='RB'||lower==='rb'||lower==='recreational'||lower==='recreational boat') return 'RB'; if(raw==='TB'||lower==='tb'||lower==='tour'||lower==='tour boat') return 'TB'; return ['RB','TB','Gov','Com','K'].includes(raw)?raw:''; }
@@ -330,6 +343,7 @@ const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url, `http://${req.headers.host||'localhost'}`);
   const pathname=url.pathname;
   try{
+    if(pathname==='/health' && req.method==='GET') return sendJson(res,{ok:true,service:'soo-locks-dashboard',port:DASHBOARD_PORT,time:new Date().toISOString()});
     if(pathname==='/api/phone-server/status' && req.method==='GET') return sendJson(res,status(req));
     if(pathname==='/api/phone-server/start' && (req.method==='POST'||req.method==='GET')){ const ps={running:true,startedAt:new Date().toISOString()}; setKV('phoneServer', ps); addPhoneEvent('phone-server-start','Phone system started'); return sendJson(res,status(req)); }
     if(pathname==='/api/phone-server/stop' && (req.method==='POST'||req.method==='GET')){ setKV('phoneServer',{running:false,startedAt:null}); setKV('pairs', []); addPhoneEvent('phone-server-stop','Phone system stopped'); return sendJson(res,status(req)); }
@@ -350,6 +364,10 @@ const server=http.createServer(async(req,res)=>{
       const b=await readBody(req);
       if(b.deletedPreset) markPresetDeleted(b.deletedPreset.type, b.deletedPreset.name);
       if(b.deletedPresets) mergeDeletedPresetMarks(b.deletedPresets);
+      if(b.restoredPreset) clearPresetDeleteMark(b.restoredPreset.type, b.restoredPreset.name);
+      if(Array.isArray(b.restoredPresets)){
+        b.restoredPresets.forEach(p=>clearPresetDeleteMark(p&&p.type, p&&(p.name||p.vessel)));
+      }
       const incoming = b.entryPresets || b.presets || {};
       const replaceMode = b.replace === true || b.action === 'replace' || b.mode === 'replace';
       const base = replaceMode ? {RB:[],TB:[],Gov:[],Com:[],K:[]} : getKV('entryPresets');
@@ -414,7 +432,22 @@ const server=http.createServer(async(req,res)=>{
 
 server.listen(DASHBOARD_PORT, '0.0.0.0', ()=>{
   const count=db.prepare('SELECT COUNT(*) AS c FROM records').get().c;
-  console.log(`Soo Locks Dashboard running: http://localhost:${DASHBOARD_PORT}`);
+  console.log(`Soo Locks Dashboard running on 0.0.0.0:${DASHBOARD_PORT}`);
   console.log(`SQLite database: ${dbFile}`);
   console.log(`Records loaded: ${count}`);
+  console.log(`Timezone: ${process.env.TZ}`);
 });
+
+let shuttingDown=false;
+function shutdown(signal){
+  if(shuttingDown) return;
+  shuttingDown=true;
+  console.log(`${signal} received; closing Soo Locks Dashboard...`);
+  server.close(()=>{
+    try{ if(db && typeof db.close==='function') db.close(); }catch(err){ console.error('Database close error:', err); }
+    process.exit(0);
+  });
+  setTimeout(()=>process.exit(1), 10000).unref();
+}
+process.on('SIGTERM', ()=>shutdown('SIGTERM'));
+process.on('SIGINT', ()=>shutdown('SIGINT'));

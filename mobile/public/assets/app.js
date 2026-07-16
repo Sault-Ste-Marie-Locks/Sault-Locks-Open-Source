@@ -629,7 +629,8 @@ function getAppTheme(){
 }
 
 function getTimeFormat(){
-    return getAppSettings().timeFormat;
+    // Operations logging is standardized to military time everywhere.
+    return "24";
 }
 
 function getDefaultCanal(){
@@ -896,13 +897,40 @@ window.applySavedTheme = applySavedTheme;
 window.getAppTheme = getAppTheme;
 window.getTimeFormat = getTimeFormat;
 
+function normalizeMilitaryTime(value, fallback = ""){
+    const text = String(value ?? "").trim();
+    if(!text) return fallback;
+
+    let match = text.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*([ap])\.?m\.?$/i);
+    if(match){
+        let hour = Number(match[1]);
+        const minute = Number(match[2] || 0);
+        if(hour >= 1 && hour <= 12 && minute >= 0 && minute < 60){
+            if(match[3].toLowerCase() === "p" && hour !== 12) hour += 12;
+            if(match[3].toLowerCase() === "a" && hour === 12) hour = 0;
+            return `${pad(hour)}:${pad(minute)}`;
+        }
+    }
+
+    match = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?/);
+    if(match){
+        const hour = Number(match[1]);
+        const minute = Number(match[2]);
+        if(hour >= 0 && hour < 24 && minute >= 0 && minute < 60){
+            return `${pad(hour)}:${pad(minute)}`;
+        }
+    }
+
+    const parsed = new Date(text);
+    if(!Number.isNaN(parsed.getTime())) return `${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+    return fallback || text;
+}
+
+window.normalizeMilitaryTime = normalizeMilitaryTime;
+
 function formatTime(date = new Date(), includeSeconds = false){
-    return date.toLocaleTimeString([], {
-        hour:"2-digit",
-        minute:"2-digit",
-        second:includeSeconds ? "2-digit" : undefined,
-        hour12:getTimeFormat() === "12"
-    });
+    const base = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return includeSeconds ? `${base}:${pad(date.getSeconds())}` : base;
 }
 
 function formatDate(date = new Date()){
@@ -2010,7 +2038,11 @@ function mobileRegistryTypeToPresetGroup(value){
     if(raw === "Gov" || raw === "G" || text.includes("government") || text.includes("police") || text.includes("coast guard") || text.includes("border")) return "Gov";
     if(raw === "Com" || raw === "C" || text.includes("commercial")) return "Com";
     if(raw === "K" || text.includes("kayak")) return "K";
-    return "TB";
+
+    // Unknown registry rows must not be treated as Tour Boat presets. Doing so
+    // pollutes the Tour list and can replace a dashboard preset with an
+    // unrelated or stale registration number.
+    return "";
 }
 
 function mobileNormalizePreset(raw, forcedType){
@@ -2041,8 +2073,11 @@ function mobileNormalizePresetGroups(input, registry){
     const out = {RB:[], TB:[], Gov:[], Com:[], K:[]};
     const add = (type, item) => {
         const group = out[type] ? type : mobileRegistryTypeToPresetGroup(type);
+        if(!group || !out[group]) return;
+
         const preset = mobileNormalizePreset(item, group);
-        if(!preset || !out[group]) return;
+        if(!preset) return;
+
         const key = preset.name.toLowerCase();
         const existingIndex = out[group].findIndex(p => String(p.name || "").toLowerCase() === key);
         if(existingIndex >= 0){
@@ -2052,6 +2087,14 @@ function mobileNormalizePresetGroups(input, registry){
         }
     };
 
+    // Registry data is imported historical reference data and may contain
+    // duplicate vessel names with old registration numbers. Load it first only
+    // as a fallback. Dashboard-managed entry presets are loaded second so the
+    // exact values currently configured in Management always win.
+    if(Array.isArray(registry)){
+        registry.forEach(item => add(mobileRegistryTypeToPresetGroup(item && (item.type || item.vesselType)), item));
+    }
+
     if(input && typeof input === "object"){
         if(Array.isArray(input)){
             input.forEach(item => add(mobileRegistryTypeToPresetGroup(item && (item.type || item.vesselType)), item));
@@ -2060,10 +2103,6 @@ function mobileNormalizePresetGroups(input, registry){
                 if(Array.isArray(list)) list.forEach(item => add(type, item));
             });
         }
-    }
-
-    if(Array.isArray(registry)){
-        registry.forEach(item => add(mobileRegistryTypeToPresetGroup(item && (item.type || item.vesselType)), item));
     }
 
     MOBILE_PRESET_GROUPS.forEach(type => {
@@ -2196,15 +2235,24 @@ function mobileRebuildVesselPresetInput(type){
         other.textContent = "Other";
         vessel.appendChild(other);
 
-        if(current && list.some(p => String(p.name || "") === current)){
-            vessel.value = current;
-        }else if(current && current !== "Other"){
+        const currentKey = current.toLowerCase();
+        const matchedPreset = currentKey
+            ? list.find(p => String(p.name || "").trim().toLowerCase() === currentKey)
+            : null;
+
+        if(matchedPreset){
+            // Preserve the selected vessel even when the dashboard stores the
+            // same name with different capitalization (for example Nokomis vs
+            // NOKOMIS). Use the option's exact value so its synced registration
+            // and home-port data remain attached.
+            vessel.value = String(matchedPreset.name || "");
+        }else if(current && current.toLowerCase() !== "other"){
             vessel.value = "Other";
             if(manualInput){
                 manualInput.value = manualText || current;
                 manualInput.style.display = "block";
             }
-        }else if(current === "Other"){
+        }else if(current.toLowerCase() === "other"){
             vessel.value = "Other";
         }else{
             vessel.value = "";
@@ -2226,6 +2274,11 @@ function mobileRebuildVesselPresetInput(type){
 
 function mobileApplyDashboardPresets(type){
     const inferredType = type || (document.body && document.body.dataset && document.body.dataset.entryType) || document.title || location.pathname;
+    const returnContext = `${inferredType || ""} ${location.pathname || ""} ${document.title || ""}`.toLowerCase();
+    // Returning Boat has a purpose-built list of unmatched entries. Never replace
+    // it with the full Recreational preset list when dashboard presets sync.
+    if(returnContext.includes("returning-boat") || returnContext.includes("returning boat")) return;
+
     const vessel = document.getElementById("vessel");
     if(!vessel) return;
 
@@ -2272,9 +2325,34 @@ function isSameEntryDay(entry){
     return values.some(value => String(value || "").includes(today));
 }
 
+function mobileReturnType(entry){
+    return String(entry && (entry.entryType || entry.formType || entry.type || "") || "").trim().toLowerCase();
+}
+
+function isReturningEntry(entry){
+    const type = mobileReturnType(entry);
+    return type === "return" || type === "ret" || type.includes("returning") || type.includes("returned");
+}
+
 function isRecreationalEntry(entry){
-    const type = String(entry.entryType || entry.formType || entry.type || "").toLowerCase();
-    return type.includes("recreational") || type.includes("returning");
+    const type = mobileReturnType(entry);
+    return !isReturningEntry(entry) && (type === "rb" || type === "rec" || type.includes("recreational"));
+}
+
+function mobileReturnBoatKey(entry){
+    const name = String(entry && (entry.vesselName || entry.vessel || entry.boatName || "") || "").trim().toLowerCase();
+    let reg = String(entry && (entry.registration || entry.reg || entry.vesselReg || "") || "").trim().toLowerCase();
+    if(/^n\/?a$/i.test(reg)) reg = "";
+    return name ? `${name}|${reg || "no-reg"}` : "";
+}
+
+function mobileReturnSortValue(entry){
+    const date = String(entry && (entry.date || entry.entryDate || currentDate()) || currentDate()).slice(0, 10);
+    const time = normalizeMilitaryTime(entry && (entry.time || entry.entryTime || entry.reverseTime || ""), "00:00");
+    const parsed = Date.parse(`${date}T${time}:00`);
+    if(Number.isFinite(parsed)) return parsed;
+    const created = Date.parse(entry && (entry.createdAt || entry.timestamp || ""));
+    return Number.isFinite(created) ? created : 0;
 }
 
 function getReturnBoatLabel(entry){
@@ -2285,17 +2363,32 @@ function getReturnBoatLabel(entry){
 }
 
 function getTodaysRecreationalReturns(){
-    const seen = new Set();
-    return getLogs()
-        .filter(entry => isRecreationalEntry(entry) && isSameEntryDay(entry))
-        .filter(entry => {
-            const name = String(entry.vesselName || entry.vessel || "").trim().toLowerCase();
-            const reg = String(entry.registration || entry.reg || "").trim().toLowerCase();
-            const key = `${name}|${reg}`;
-            if(!name || seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
+    const openByBoat = new Map();
+    const entries = getLogs()
+        .filter(entry => isSameEntryDay(entry) && (isRecreationalEntry(entry) || isReturningEntry(entry)))
+        .sort((a, b) => mobileReturnSortValue(a) - mobileReturnSortValue(b));
+
+    entries.forEach(entry => {
+        const key = mobileReturnBoatKey(entry);
+        if(!key) return;
+
+        if(isReturningEntry(entry)){
+            const waiting = openByBoat.get(key) || [];
+            // A return closes one outstanding recreational movement for this boat.
+            if(waiting.length) waiting.shift();
+            if(waiting.length) openByBoat.set(key, waiting);
+            else openByBoat.delete(key);
+            return;
+        }
+
+        const waiting = openByBoat.get(key) || [];
+        waiting.push(entry);
+        openByBoat.set(key, waiting);
+    });
+
+    return [...openByBoat.values()]
+        .flat()
+        .sort((a, b) => mobileReturnSortValue(b) - mobileReturnSortValue(a));
 }
 
 function fillRecreationalReturn(entry){
@@ -2488,8 +2581,8 @@ function setupNormalForm(type){
                 dest:destValue,
                 destination:destValue,
                 homePort:homePortValue,
-                time:getFieldValue("entryTime") || formatTime(new Date()),
-                entryTime:getFieldValue("entryTime") || formatTime(new Date()),
+                time:normalizeMilitaryTime(getFieldValue("entryTime"), formatTime(new Date())),
+                entryTime:normalizeMilitaryTime(getFieldValue("entryTime"), formatTime(new Date())),
                 date:currentDate(),
                 notes:getFieldValue("notes") || "-",
                 status:"Pending",
@@ -2531,7 +2624,7 @@ function setupReversalForm(type = "Lock Reversal"){
 
             const reverseReason = getFieldValue("reverseReason");
             const notes = getFieldValue("notes");
-            const time = getFieldValue("reverseTime") || getFieldValue("entryTime") || formatTime(new Date());
+            const time = normalizeMilitaryTime(getFieldValue("reverseTime") || getFieldValue("entryTime"), formatTime(new Date()));
             const logs = getLogs();
 
             const entryId = "mobile_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);

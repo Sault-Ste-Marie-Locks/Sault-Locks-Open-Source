@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sault-locks-mobile-20260707-kayak-type-fix';
+const CACHE_NAME = "sault-locks-mobile-20260711-return-time-poll-1";
 const APP_SHELL = [
   '/mobile/offline.html',
   '/mobile/pair.html',

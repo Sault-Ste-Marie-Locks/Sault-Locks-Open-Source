@@ -38,6 +38,9 @@ jobs:
             "node_modules",
             "dist",
             "update-payload",
+            "database",
+            "data",
+            "data-backup",
             "*.zip",
             "*.exe",
             "*.log"
@@ -63,4 +66,4 @@ jobs:
             gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes
           }
 
-          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V17 applies updates directly, delta-copies changed files, writes markers, then auto-opens using Electron relaunch with a cmd fallback."
+          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V18 includes the Pterodactyl app-file fixes and excludes database/data folders from updates so user data is not overwritten."
