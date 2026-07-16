@@ -737,38 +737,32 @@ async function installSourceModeUpdate(zipPath, latestVersion, tempDir) {
 
 async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
   const extractDir = path.join(tempDir, 'packaged_extracted_check');
-  updateProgress('Checking update package', 82, 'Verifying the update package before restarting...');
+  updateProgress('Checking update package', 82, 'Verifying the update package...');
   await expandZip(zipPath, extractDir);
 
   const srcApp = findSourceApp(extractDir);
   appendLog('Packaged update app folder found: ' + srcApp);
   if (!srcApp) return false;
 
-  // V15 fix: use this same EXE as an external updater helper instead of hidden PowerShell.
-  // On some PCs PowerShell starts but never applies the update, leaving version 0.0.0 and causing
-  // the same update prompt again. The EXE helper survives this app closing, delta-copies only
-  // changed files, writes both version markers, updates package.json, then relaunches Lock Release.
-  const installDir = path.dirname(process.execPath);
-  const exePath = process.execPath;
-  const helperConfigPath = path.join(tempDir, 'lock-release-update-helper-config.json');
-  fs.writeFileSync(helperConfigPath, JSON.stringify({
-    srcApp,
-    appRoot: appRoot(),
-    userDataDir: app.getPath('userData'),
-    installDir,
-    exePath,
-    parentPid: process.pid,
-    latestVersion: String(latestVersion || '')
-  }, null, 2), 'utf8');
+  // V16 fix: apply the update directly before quitting.
+  // The external helper was not reliably running on some PCs, so the files/markers stayed at 0.0.0.
+  // Since this app uses an unpacked resources/app folder, HTML/CSS/JS/package files can be copied
+  // while Electron is still running. We delta-copy only changed files, write both version markers,
+  // then use a tiny relaunch helper only for reopening the EXE after quit.
+  updateProgress('Applying update', 90, 'Copying only changed app files...');
+  const stats = copySourceUpdate(srcApp, appRoot());
 
-  appendLog(`Starting V15 EXE updater helper. installDir=${installDir}; appRoot=${appRoot()}; helperConfig=${helperConfigPath}; latest=${latestVersion}`);
-  updateProgress('Installing update', 95, 'Lock Release will close now. A separate helper will finish the update and reopen it.');
+  updateProgress('Writing version', 96, 'Saving installed version so this update is not offered again...');
+  safeVersionWrite(latestVersion);
+  appendLog(`V16 direct update applied. latest=${latestVersion}; copied=${stats && stats.copied}; skipped=${stats && stats.skipped}; appRoot=${appRoot()}`);
+
+  updateProgress('Update complete', 100, 'Lock Release was updated. Restarting now...', 'done');
   await wait(900);
-  const child = spawn(process.execPath, ['--lock-release-update-helper', helperConfigPath], { detached: true, stdio: 'ignore', windowsHide: false });
-  child.unref();
-  setTimeout(() => app.exit(0), 500);
+  relaunchPackagedAppAfterExit();
+  setTimeout(() => app.quit(), 600);
   return true;
 }
+
 
 async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
   const tempDir = path.join(os.tmpdir(), `LockReleaseUpdate_${Date.now()}`);
