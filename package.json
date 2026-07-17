@@ -1,7 +1,7 @@
 {
   "name": "lock-release-desktop",
   "version": "0.0.0",
-  "description": "Lock Release desktop app with tray background controls, local date/time logging, and V23 GitHub JSON import repair",
+  "description": "Lock Release real desktop app with V24 visible JSON import repair",
   "main": "main.js",
   "private": true,
   "author": "Lock Release",
