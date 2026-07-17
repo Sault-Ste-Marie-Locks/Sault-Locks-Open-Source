@@ -4,8 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Sault Canada Locks Tracker - Today Entries</title>
-<script src="assets/theme-boot.js?v=20260711editfix1"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260711editfix1"/>
+<script src="assets/theme-boot.js?v=20260717editfix25"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260717editfix25"/>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6C5CE7">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1302,6 +1302,31 @@ html.theme-dark body.logs-page .delete-confirm-icon{
     }
 }
 
+
+.mobile-editing-active .log-tools,
+.mobile-editing-active .page-head{
+    position:relative;
+    z-index:1;
+}
+
+.sticky-edit-actions{
+    position:sticky;
+    top:8px;
+    z-index:20;
+    margin:10px 0 14px;
+    padding:10px;
+    background:var(--card-bg, #ffffff);
+    border:1px solid var(--border-color, rgba(148, 163, 184, 0.25));
+    border-radius:14px;
+    box-shadow:0 10px 26px rgba(15, 23, 42, 0.12);
+}
+
+html.theme-dark body.logs-page .sticky-edit-actions{
+    background:#111827 !important;
+    border-color:rgba(148, 163, 184, 0.24) !important;
+    box-shadow:0 14px 34px rgba(0, 0, 0, 0.35) !important;
+}
+
 </style>
 </head>
 
@@ -1444,7 +1469,7 @@ html.theme-dark body.logs-page .delete-confirm-icon{
     <h1>‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ </h1>
 
 
-<script src="assets/app.js?v=20260711returntimepoll1"></script>
+<script src="assets/app.js?v=20260717editfix25"></script>
 
 <script>
 const POSSIBLE_KEYS = [
@@ -1466,8 +1491,22 @@ const displaySelect = document.getElementById("displaySelect");
 const typeFilter = document.getElementById("typeFilter");
 let editingIndex = null;
 let editingEntryKey = null;
+let editingEntryFingerprint = null;
 let pendingLogsRefresh = false;
 let pendingDeleteIndex = null;
+
+function setMobileEditActive(active){
+    window.__ssmMobileEditModeActive = !!active;
+    document.body.classList.toggle("mobile-editing-active", !!active);
+}
+
+function resetMobileEditState(){
+    editingIndex = null;
+    editingEntryKey = null;
+    editingEntryFingerprint = null;
+    pendingLogsRefresh = false;
+    setMobileEditActive(false);
+}
 
 sortSelect.value = localStorage.getItem("entriesSort") || "newest";
 
@@ -1625,39 +1664,94 @@ function getEntryTime(entry){
 
 // Keep edit mode attached to the same entry even if a background sync
 // replaces or reorders the local log array while the form is open.
-function getEntryStableKey(entry, index = -1){
-    if(!entry || typeof entry !== "object"){
-        return `missing:${index}`;
-    }
+function stripEntryPrefixLocal(value){
+    return String(value ?? "").trim().replace(/^(mobile:|old:|id:|key:)/i, "");
+}
 
-    const directKey = entry.id ||
-        entry.entryId ||
-        entry.clientId ||
-        entry.uuid ||
-        entry.localId ||
-        entry.createdAt ||
-        entry.savedAt ||
-        entry.timestamp ||
-        entry.timeStamp;
-
-    if(directKey){
-        return `entry:${String(directKey)}`;
-    }
-
+function getEntryFingerprintLocal(entry){
+    if(!entry || typeof entry !== "object") return "";
     return [
+        getEntryDate(entry) || "",
+        getEntryTime(entry) || "",
+        String(getEntryTitle(entry) || "").replace(/\s+/g, " ").trim().toUpperCase(),
+        getEntryType(entry) || "",
+        getDirection(entry) || ""
+    ].join("|");
+}
+
+function getEntryKeyCandidates(entry, index = -1){
+    if(!entry || typeof entry !== "object"){
+        return [`missing:${index}`];
+    }
+
+    const values = [
+        entry.dashboardId,
+        entry.recordId,
+        entry.record_id,
+        entry.id,
+        entry.entryId,
+        entry.clientId,
+        entry.uuid,
+        entry.localId,
+        entry.mobileId,
+        entry.mobile_id,
+        entry.oldId,
+        entry.old_id,
+        entry.createdAt,
+        entry.savedAt,
+        entry.timestamp,
+        entry.timeStamp
+    ];
+
+    const candidates = [];
+    values.forEach(value => {
+        const raw = String(value ?? "").trim();
+        if(!raw) return;
+        [raw, stripEntryPrefixLocal(raw)].forEach(item => {
+            item = String(item || "").trim();
+            if(!item) return;
+            [
+                `entry:${item}`,
+                item,
+                `mobile:${item}`,
+                `id:${item}`,
+                `old:${item}`,
+                `key:${item}`
+            ].forEach(candidate => {
+                if(candidate && !candidates.includes(candidate)) candidates.push(candidate);
+            });
+        });
+    });
+
+    const fp = getEntryFingerprintLocal(entry);
+    if(fp){
+        candidates.push(`fp:${fp}`);
+    }
+
+    candidates.push([
         "fallback",
         getEntryType(entry),
         getEntryTitle(entry),
         entry.date || entry.entryDate || "",
         getEntryTime(entry),
         index
-    ].join("|");
+    ].join("|"));
+
+    return candidates;
+}
+
+function getEntryStableKey(entry, index = -1){
+    return getEntryKeyCandidates(entry, index)[0] || `missing:${index}`;
 }
 
 function resolveEditingIndex(logs, fallbackIndex){
-    if(editingEntryKey){
+    const wanted = new Set();
+    if(editingEntryKey) wanted.add(editingEntryKey);
+    if(editingEntryFingerprint) wanted.add(`fp:${editingEntryFingerprint}`);
+
+    if(wanted.size){
         const matchedIndex = logs.findIndex((entry, index) => {
-            return getEntryStableKey(entry, index) === editingEntryKey;
+            return getEntryKeyCandidates(entry, index).some(candidate => wanted.has(candidate));
         });
 
         if(matchedIndex !== -1){
@@ -2060,6 +2154,22 @@ function renderEditCard(entry, index){
             </div>
 </div>
 
+        <div class="entry-buttons edit-actions sticky-edit-actions">
+            <button 
+                class="save-edit-btn" 
+                type="button" 
+                onclick="saveEdit(${index})">
+                Save
+            </button>
+
+            <button 
+                class="cancel-edit-btn" 
+                type="button" 
+                onclick="cancelEdit()">
+                Cancel
+            </button>
+        </div>
+
         <div class="edit-form">
             <label>Entry Type</label>
             <input id="edit_entryType_${index}" value="${escapeHTMLLocal(getEntryType(entry))}">
@@ -2137,14 +2247,21 @@ function startEdit(index){
 
     editingIndex = index;
     editingEntryKey = getEntryStableKey(logs[index], index);
+    editingEntryFingerprint = getEntryFingerprintLocal(logs[index]);
     pendingLogsRefresh = false;
+    setMobileEditActive(true);
     renderLogs();
+
+    requestAnimationFrame(() => {
+        const card = logList.querySelector(".entry-card .edit-form")?.closest(".entry-card");
+        if(card && card.scrollIntoView){
+            card.scrollIntoView({block:"start", behavior:"smooth"});
+        }
+    });
 }
 
 function cancelEdit(){
-    editingIndex = null;
-    editingEntryKey = null;
-    pendingLogsRefresh = false;
+    resetMobileEditState();
     renderLogs();
 }
 
@@ -2202,30 +2319,37 @@ window.addEventListener("ssm-mobile-logs-synced", function(){
     renderLogs();
 });
 
+function editFieldValue(name, index, targetIndex){
+    const input = document.getElementById(`edit_${name}_${index}`) ||
+        document.getElementById(`edit_${name}_${targetIndex}`);
+    return input ? String(input.value || "").trim() : "";
+}
+
 async function saveEdit(index){
     const logs = getLogsLocal();
     const targetIndex = resolveEditingIndex(logs, index);
 
     if(targetIndex === -1 || !logs[targetIndex]){
+        alert("This entry could not be found after syncing. Close and reopen Logs, then try editing again.");
         return;
     }
 
     const oldEntry = logs[targetIndex];
 
-    const entryType = document.getElementById(`edit_entryType_${index}`).value.trim();
-    const vessel = document.getElementById(`edit_vessel_${index}`).value.trim();
-    const date = document.getElementById(`edit_date_${index}`).value.trim();
-    const time = document.getElementById(`edit_time_${index}`).value.trim();
-    const canal = document.getElementById(`edit_canal_${index}`).value.trim();
-    const direction = document.getElementById(`edit_direction_${index}`).value.trim();
-    const registration = document.getElementById(`edit_registration_${index}`).value.trim();
-    const passengers = document.getElementById(`edit_passengers_${index}`).value.trim();
-    const destination = document.getElementById(`edit_destination_${index}`).value.trim();
-    const homePort = document.getElementById(`edit_homePort_${index}`).value.trim();
-    const addedBy = document.getElementById(`edit_user_${index}`).value.trim();
-    const deviceLabel = document.getElementById(`edit_device_${index}`).value.trim();
-    const reason = document.getElementById(`edit_reason_${index}`).value.trim();
-    const notes = document.getElementById(`edit_notes_${index}`).value.trim();
+    const entryType = editFieldValue("entryType", index, targetIndex);
+    const vessel = editFieldValue("vessel", index, targetIndex);
+    const date = editFieldValue("date", index, targetIndex);
+    const time = editFieldValue("time", index, targetIndex);
+    const canal = editFieldValue("canal", index, targetIndex);
+    const direction = editFieldValue("direction", index, targetIndex);
+    const registration = editFieldValue("registration", index, targetIndex);
+    const passengers = editFieldValue("passengers", index, targetIndex);
+    const destination = editFieldValue("destination", index, targetIndex);
+    const homePort = editFieldValue("homePort", index, targetIndex);
+    const addedBy = editFieldValue("user", index, targetIndex);
+    const deviceLabel = editFieldValue("device", index, targetIndex);
+    const reason = editFieldValue("reason", index, targetIndex);
+    const notes = editFieldValue("notes", index, targetIndex);
 
     logs[targetIndex] = {
         ...oldEntry,
@@ -2285,9 +2409,7 @@ async function saveEdit(index){
     saveLogsLocal(logs);
     syncEditedLogToDashboard(logs[targetIndex]);
 
-    editingIndex = null;
-    editingEntryKey = null;
-    pendingLogsRefresh = false;
+    resetMobileEditState();
     renderLogs();
 }
 
@@ -2386,9 +2508,7 @@ async function deleteLog(index){
     saveLogsLocalOnly(logs);
 
     if(editingIndex === index){
-        editingIndex = null;
-        editingEntryKey = null;
-        pendingLogsRefresh = false;
+        resetMobileEditState();
     }else if(editingIndex !== null && editingIndex > index){
         editingIndex -= 1;
     }
@@ -2426,39 +2546,29 @@ function clearFilters(){
     localStorage.setItem("entriesDisplay", displaySelect.value);
     localStorage.removeItem("entriesDateFilter");
 
-    editingIndex = null;
-    editingEntryKey = null;
-    pendingLogsRefresh = false;
+    resetMobileEditState();
     renderLogs();
 }
 
 searchInput.addEventListener("input", function(){
-    editingIndex = null;
-    editingEntryKey = null;
-    pendingLogsRefresh = false;
+    resetMobileEditState();
     renderLogs();
 });
 
 sortSelect.addEventListener("change", function(){
     localStorage.setItem("entriesSort", sortSelect.value);
-    editingIndex = null;
-    editingEntryKey = null;
-    pendingLogsRefresh = false;
+    resetMobileEditState();
     renderLogs();
 });
 
 displaySelect.addEventListener("change", function(){
     localStorage.setItem("entriesDisplay", displaySelect.value);
-    editingIndex = null;
-    editingEntryKey = null;
-    pendingLogsRefresh = false;
+    resetMobileEditState();
     renderLogs();
 });
 
 typeFilter.addEventListener("change", function(){
-    editingIndex = null;
-    editingEntryKey = null;
-    pendingLogsRefresh = false;
+    resetMobileEditState();
     renderLogs();
 });
 
@@ -2475,7 +2585,7 @@ renderLogs();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("service-worker.js?v=20260711editfix1").catch(()=>{});
+        navigator.serviceWorker.register("service-worker.js?v=20260717editfix25").catch(()=>{});
     });
 }
 </script>

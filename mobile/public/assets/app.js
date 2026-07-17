@@ -1291,23 +1291,36 @@ async function mobileGetPhoneStatus(){
     }
 }
 
+function mobileRecordIdLooksPrefixed(value){
+    return /^(mobile:|old:|id:|key:)/i.test(String(value || "").trim());
+}
+
 function mobileEntryKey(log){
     if(!log || typeof log !== "object") return "";
-    const mobileId = String(log.mobileId || log.mobile_id || "").trim();
-    if(mobileId) return "mobile:" + mobileId.replace(/^mobile:/i, "");
 
-    const id = String(log.dashboardId || log.id || "").trim();
+    const dashboardId = String(log.dashboardId || log.recordId || log.record_id || "").trim();
+    if(dashboardId){
+        if(mobileRecordIdLooksPrefixed(dashboardId)) return dashboardId;
+        return "id:" + dashboardId;
+    }
+
+    const mobileId = String(log.mobileId || log.mobile_id || "").trim();
+    if(mobileId){
+        if(mobileRecordIdLooksPrefixed(mobileId)) return mobileId;
+        return "mobile:" + mobileId;
+    }
+
+    const id = String(log.id || "").trim();
     if(id){
-        if(/^mobile:/i.test(id)) return id;
-        if(/^old:/i.test(id)) return id;
-        if(/^id:/i.test(id)) return id;
-        return "mobile:" + id;
+        if(mobileRecordIdLooksPrefixed(id)) return id;
+        return "id:" + id;
     }
 
     return [
+        "fp",
         log.date || "",
         log.time || log.entryTime || log.reverseTime || "",
-        String(log.vessel || log.vesselName || "").toUpperCase(),
+        String(log.vessel || log.vesselName || "").replace(/\s+/g, " ").trim().toUpperCase(),
         log.type || log.entryType || log.formType || "",
         log.direction || log.dir || log.reverseDir || ""
     ].join("|");
@@ -1315,12 +1328,32 @@ function mobileEntryKey(log){
 
 function mobileNormalizeForServer(log){
     const copy = Object.assign({}, log || {});
-    let id = String(copy.mobileId || copy.id || "").trim();
-    if(/^mobile:/i.test(id)) id = id.replace(/^mobile:/i, "");
-    if(!id) id = "mobile_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+    const dashboardId = String(copy.dashboardId || copy.recordId || copy.record_id || "").trim();
+    const rawId = String(copy.id || "").trim();
+    const rawMobileId = String(copy.mobileId || copy.mobile_id || "").trim();
 
-    copy.id = copy.id || id;
-    copy.mobileId = copy.mobileId || id;
+    if(dashboardId){
+        copy.dashboardId = dashboardId;
+    }else if(mobileRecordIdLooksPrefixed(rawId)){
+        copy.dashboardId = rawId;
+    }
+
+    let mobileId = rawMobileId;
+    if(/^mobile:/i.test(mobileId)) mobileId = mobileId.replace(/^mobile:/i, "");
+
+    // Do not turn dashboard record ids like id:..., key:..., or old:...
+    // into mobileId values. That creates a new duplicate row instead of
+    // updating the entry being edited.
+    if(!mobileId && rawId && !mobileRecordIdLooksPrefixed(rawId)){
+        mobileId = rawId;
+    }
+
+    if(!mobileId && !copy.dashboardId){
+        mobileId = "mobile_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+    }
+
+    if(!copy.id) copy.id = copy.dashboardId || mobileId;
+    if(mobileId) copy.mobileId = mobileId;
     copy.date = String(copy.date || mobileTodayKey()).slice(0, 10);
     copy.time = copy.time || copy.entryTime || copy.reverseTime || formatTime(new Date());
     copy.entryTime = copy.entryTime || copy.time;
@@ -1427,12 +1460,19 @@ function mobileMergeServerLogs(serverLogs, options){
     try{ setLogs(merged); }
     finally{ window.__ssmMobileSyncSuppress = false; }
 
-    try{ renderLogs(); }catch(e){}
-    try{ updateHome(); }catch(e){}
+    const editActive = !!window.__ssmMobileEditModeActive || !!document.body?.classList?.contains("mobile-editing-active");
+
+    // When the Logs page editor is open, do not rebuild the page from a
+    // background phone sync. Rebuilding while the user scrolls or types is what
+    // made edit mode close before Save could be pressed.
+    if(!editActive){
+        try{ renderLogs(); }catch(e){}
+        try{ updateHome(); }catch(e){}
+    }
 
     try{
         window.dispatchEvent(new CustomEvent("ssm-mobile-logs-synced", {
-            detail:{replaceDates:Array.from(replaceDates)}
+            detail:{replaceDates:Array.from(replaceDates), editActive}
         }));
     }catch(e){}
 }

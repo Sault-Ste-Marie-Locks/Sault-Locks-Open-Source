@@ -1,7 +1,7 @@
 {
   "name": "lock-release-desktop",
   "version": "0.0.0",
-  "description": "Lock Release real desktop app with V24 visible JSON import repair",
+  "description": "Lock Release desktop app with V25 mobile edit mode repair",
   "main": "main.js",
   "private": true,
   "author": "Lock Release",
