@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+
+  <title>Report an Issue | Sault Canal Panel</title>
+
+  <script>
+    try {
+      const darkMode =
+        localStorage.getItem("ssmCanalDashboard.darkMode") === "true";
+
+      if (darkMode) {
+        document.documentElement.classList.add("app-dark");
+      }
+    } catch (error) {
+      console.warn("Unable to load theme settings.", error);
+    }
+  </script>
+
+  <link rel="stylesheet" href="assets/style.css" />
+
+  <style>
+    .support-page {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+
+    .support-header {
+      margin-bottom: 24px;
+    }
+
+    .support-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      margin-bottom: 14px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      color: var(--accent, #2563eb);
+      background: color-mix(
+        in srgb,
+        var(--accent, #2563eb) 12%,
+        transparent
+      );
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .support-header h1 {
+      margin: 0;
+      color: var(--text-primary, #172033);
+      font-size: clamp(2rem, 5vw, 2.7rem);
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+    }
+
+    .support-header p {
+      max-width: 580px;
+      margin: 12px 0 0;
+      color: var(--text-muted, #667085);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .support-card {
+      overflow: hidden;
+      background: var(--bg-card, #ffffff);
+      border: 1px solid var(--border-color, #e3e8ef);
+      border-radius: 18px;
+      box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.04),
+        0 12px 36px rgba(15, 23, 42, 0.07);
+    }
+
+    .support-card-header {
+      padding: 22px 26px;
+      border-bottom: 1px solid var(--border-color, #e3e8ef);
+    }
+
+    .support-card-header h2 {
+      margin: 0;
+      color: var(--text-primary, #172033);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .support-card-header p {
+      margin: 5px 0 0;
+      color: var(--text-muted, #667085);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .support-form {
+      padding: 26px;
+    }
+
+    .support-fields {
+      display: grid;
+      gap: 22px;
+    }
+
+    .support-field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .support-field label {
+      color: var(--text-primary, #172033);
+      font-size: 0.9rem;
+      font-weight: 650;
+    }
+
+    .required {
+      color: var(--danger, #dc2626);
+    }
+
+    .support-field input,
+    .support-field select,
+    .support-field textarea {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0;
+      color: var(--text-primary, #172033);
+      background: var(--input-bg, #ffffff);
+      border: 1px solid var(--input-border, #cfd6df);
+      border-radius: 10px;
+      outline: none;
+      font: inherit;
+      transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        background 160ms ease;
+    }
+
+    .support-field input,
+    .support-field select {
+      min-height: 48px;
+      padding: 0 14px;
+    }
+
+    .support-field textarea {
+      min-height: 170px;
+      padding: 13px 14px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .support-field input::placeholder,
+    .support-field textarea::placeholder {
+      color: var(--placeholder, #98a2b3);
+    }
+
+    .support-field input:hover,
+    .support-field select:hover,
+    .support-field textarea:hover {
+      border-color: var(--input-hover-border, #98a2b3);
+    }
+
+    .support-field input:focus,
+    .support-field select:focus,
+    .support-field textarea:focus {
+      border-color: var(--accent, #2563eb);
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--accent, #2563eb) 18%,
+          transparent
+        );
+    }
+
+    .support-hint {
+      margin: 0;
+      color: var(--text-muted, #667085);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .support-status {
+      display: none;
+      margin-top: 22px;
+      padding: 13px 14px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .support-status.visible {
+      display: block;
+    }
+
+    .support-status.success {
+      color: #166534;
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .support-status.error {
+      color: #991b1b;
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+
+    .support-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-top: 26px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border-color, #e3e8ef);
+    }
+
+    .support-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 650;
+      text-decoration: none;
+      cursor: pointer;
+      transition:
+        transform 140ms ease,
+        background 140ms ease,
+        border-color 140ms ease,
+        opacity 140ms ease;
+    }
+
+    .support-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .support-button:active {
+      transform: translateY(0);
+    }
+
+    .support-button.secondary {
+      color: var(--text-primary, #172033);
+      background: var(--button-secondary-bg, #ffffff);
+      border-color: var(--border-color, #d8dee7);
+    }
+
+    .support-button.secondary:hover {
+      background: var(--button-secondary-hover, #f5f7fa);
+    }
+
+    .support-button.primary {
+      color: #ffffff;
+      background: var(--accent, #2563eb);
+      border-color: var(--accent, #2563eb);
+      box-shadow:
+        0 4px 12px
+        color-mix(
+          in srgb,
+          var(--accent, #2563eb) 24%,
+          transparent
+        );
+    }
+
+    .support-button.primary:hover {
+      filter: brightness(0.96);
+    }
+
+    .support-button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .app-dark .support-card {
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.18),
+        0 18px 46px rgba(0, 0, 0, 0.24);
+    }
+
+    .app-dark .support-status.success {
+      color: #bbf7d0;
+      background: rgba(22, 101, 52, 0.2);
+      border-color: rgba(74, 222, 128, 0.32);
+    }
+
+    .app-dark .support-status.error {
+      color: #fecaca;
+      background: rgba(153, 27, 27, 0.2);
+      border-color: rgba(248, 113, 113, 0.3);
+    }
+
+    @media (max-width: 640px) {
+      .support-page {
+        padding: 24px 14px 36px;
+      }
+
+      .support-header {
+        margin-bottom: 20px;
+      }
+
+      .support-card {
+        border-radius: 14px;
+      }
+
+      .support-card-header {
+        padding: 18px;
+      }
+
+      .support-form {
+        padding: 18px;
+      }
+
+      .support-fields {
+        gap: 19px;
+      }
+
+      .support-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+      }
+
+      .support-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell easy-only">
+    <main class="main">
+      <section class="section active">
+        <div class="support-page">
+
+          <header class="support-header">
+            <div class="support-eyebrow">Support</div>
+
+            <h1>Report an issue</h1>
+
+            <p>
+              Found a problem or have an improvement in mind? Send the details
+              below so it can be reviewed.
+            </p>
+          </header>
+
+          <div class="support-card">
+            <div class="support-card-header">
+              <h2>Issue details</h2>
+              <p>Fields marked with an asterisk are required.</p>
+            </div>
+
+            <form id="bugReportForm" class="support-form">
+              <div class="support-fields">
+
+                <div class="support-field">
+                  <label for="issueType">
+                    Issue type <span class="required">*</span>
+                  </label>
+
+                  <select
+                    id="issueType"
+                    name="issueType"
+                    required
+                  >
+                    <option value="" selected disabled>
+                      Choose an issue type
+                    </option>
+                    <option value="bug">System bug</option>
+                    <option value="feature">Feature request</option>
+                    <option value="ui">UI or design issue</option>
+                    <option value="performance">Performance issue</option>
+                    <option value="data">Incorrect or missing data</option>
+                    <option value="sync">Syncing issue</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div class="support-field">
+                  <label for="issueSummary">
+                    Summary <span class="required">*</span>
+                  </label>
+
+                  <input
+                    id="issueSummary"
+                    name="summary"
+                    type="text"
+                    maxlength="120"
+                    placeholder="Example: Returning boats remain in the dropdown"
+                    required
+                  />
+
+                  <p class="support-hint">
+                    Use a brief sentence that clearly describes the problem.
+                  </p>
+                </div>
+
+                <div class="support-field">
+                  <label for="issueDescription">
+                    Description <span class="required">*</span>
+                  </label>
+
+                  <textarea
+                    id="issueDescription"
+                    name="description"
+                    placeholder="Explain what happened, what you expected, and how the issue can be reproduced."
+                    required
+                  ></textarea>
+
+                  <p class="support-hint">
+                    Include the affected page, device, entry type, and any error
+                    messages when possible.
+                  </p>
+                </div>
+
+              </div>
+
+              <div
+                id="issueStatus"
+                class="support-status"
+                role="status"
+                aria-live="polite"
+              ></div>
+
+              <div class="support-actions">
+                <a
+                  href="https://www.google.com/"
+                  class="support-button secondary"
+                >
+                  Cancel
+                </a>
+
+                <button
+                  id="submitReportButton"
+                  type="submit"
+                  class="support-button primary"
+                >
+                  Submit report
+                </button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="assets/app.js?v=20260711returntimepoll1"></script>
+
+  <script>
+    const reportForm = document.getElementById("bugReportForm");
+    const submitButton = document.getElementById("submitReportButton");
+    const statusBox = document.getElementById("issueStatus");
+
+    function showStatus(message, type) {
+      statusBox.textContent = message;
+      statusBox.className = `support-status visible ${type}`;
+    }
+
+    function clearStatus() {
+      statusBox.textContent = "";
+      statusBox.className = "support-status";
+    }
+
+    reportForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearStatus();
+
+      if (!reportForm.checkValidity()) {
+        reportForm.reportValidity();
+        return;
+      }
+
+      const report = Object.fromEntries(
+        new FormData(reportForm).entries()
+      );
+
+      submitButton.disabled = true;
+      submitButton.textContent = "Submitting...";
+
+      try {
+        /*
+        const response = await fetch("/api/issues", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(report)
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to submit report.");
+        }
+        */
+
+        console.log("Issue report:", report);
+
+        showStatus(
+          "Your issue report was submitted successfully.",
+          "success"
+        );
+
+        reportForm.reset();
+      } catch (error) {
+        console.error("Issue report error:", error);
+
+        showStatus(
+          "The report could not be submitted. Please try again.",
+          "error"
+        );
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit report";
+      }
+    });
+  </script>
+</body>
+</html>

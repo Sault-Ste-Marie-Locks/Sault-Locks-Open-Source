@@ -13,13 +13,18 @@ const APP_NAME = 'Lock Release';
 let mainWindow = null;
 let serverStarted = false;
 let booting = false;
-let updateCheckStarted = false;
+let updateCheckInProgress = false;
+let updatePollTimer = null;
+let lastPromptedUpdateVersion = '';
+let lastPromptedUpdateAt = 0;
 let updateWindow = null;
 let tray = null;
 let isQuitting = false;
 let phoneServerRunning = false;
 let lastPhoneServerUrl = '';
 const PHONE_LINK_URL = `http://127.0.0.1:${APP_PORT}/phone-link.html`;
+const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const UPDATE_PROMPT_REMINDER_MS = 30 * 60 * 1000;
 
 function appRoot() { return __dirname; }
 function logDir() { const dir = path.join(app.getPath('userData'), 'logs'); fs.mkdirSync(dir, { recursive: true }); return dir; }
@@ -538,6 +543,8 @@ function updateTrayMenu() {
     { label: 'Stop Phone Server', enabled: phoneServerRunning, click: () => setPhoneServerFromTray(false) },
     { label: 'Refresh Phone Server Status', click: () => refreshPhoneServerState() },
     { type: 'separator' },
+    { label: 'Check for Updates Now', click: () => checkForUpdatesOnStartup({ force: true, source: 'tray' }).catch(err => appendLog('Tray update check failed: ' + (err && err.stack || err))) },
+    { type: 'separator' },
     { label: 'Quit Lock Release', click: () => quitFromTray() }
   ]);
   tray.setContextMenu(menu);
@@ -575,7 +582,7 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false);
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.webContents.once('did-finish-load', () => {
-    setTimeout(() => checkForUpdatesOnStartup().catch(err => appendLog('UPDATE CHECK ERROR: ' + (err && err.stack || err))), 1200);
+    setTimeout(() => checkForUpdatesOnStartup({ source: 'startup' }).catch(err => appendLog('UPDATE CHECK ERROR: ' + (err && err.stack || err))), 1200);
   });
   mainWindow.loadURL(APP_URL);
   mainWindow.on('close', event => {
@@ -600,6 +607,7 @@ async function boot() {
     createTray();
     refreshPhoneServerState().catch(err => appendLog('Initial tray phone status failed: ' + (err && err.stack || err)));
     createWindow();
+    startBackgroundUpdatePolling();
   } catch (err) {
     appendLog('BOOT ERROR: ' + (err && err.stack || err));
     dialog.showErrorBox('Lock Release could not start', String(err && err.message || err));
@@ -609,61 +617,54 @@ async function boot() {
   }
 }
 
-async function checkForUpdatesOnStartup() {
-  if (updateCheckStarted) return;
-  updateCheckStarted = true;
-  const config = updateConfig();
-  if (!config.checkOnStartup) { appendLog('Updater disabled by update-config.json. Skipping startup update check.'); return; }
-  const repo = String(config.githubRepo || '').trim();
-  if (!repo || repo.includes('PUT-YOUR') || !repo.includes('/')) {
-    appendLog('Updater skipped: update-config.json has no GitHub repo yet.');
-    return;
-  }
-  if (config.privateRepo && !getGitHubToken(config)) {
-    const helpPath = writeTokenHelp(config);
-    appendLog('Updater skipped: private repo is enabled but no GitHub token is set. Help: ' + helpPath);
-    const choice = dialog.showMessageBoxSync(mainWindow, {
-      type: 'info',
-      title: 'Private GitHub updates need a token',
-      message: 'Lock Release is connected to a private GitHub repo.',
-      detail: `Private repo: ${repo}\n\nTo check for updates, add a GitHub token once. I created instructions here:\n${helpPath}`,
-      buttons: ['Open Instructions Folder', 'Later'],
-      defaultId: 0,
-      cancelId: 1
-    });
-    if (choice === 0) shell.openPath(path.dirname(helpPath));
-    return;
-  }
-  const api = `https://api.github.com/repos/${repo}/releases/latest`;
-  appendLog('Checking for updates: ' + api);
-  let release;
-  try { release = await getJson(api, githubHeaders(config)); }
-  catch (err) {
-    appendLog('Update check failed: ' + (err && err.stack || err));
-    if (config.privateRepo && (err.statusCode === 401 || err.statusCode === 403 || err.statusCode === 404)) {
-      const helpPath = writeTokenHelp(config);
-      dialog.showMessageBoxSync(mainWindow, {
-        type: 'warning',
-        title: 'Could not check private GitHub updates',
-        message: 'Lock Release could not access the private GitHub release.',
-        detail: `GitHub returned ${err.statusCode || 'an error'}. The token may be missing, expired, or missing repo access.\n\nRepo: ${repo}\nInstructions: ${helpPath}`,
-        buttons: ['OK']
-      });
-    }
-    return;
-  }
-  if (!config.allowPrerelease && release.prerelease) return;
-  const latestVersion = normalizeVersion(release.tag_name || release.name || '0.0.0');
-  const installedVersion = normalizeVersion(currentVersion());
-  appendLog(`Installed version: ${installedVersion}; latest release: ${latestVersion}; appRoot=${appRoot()}`);
-  if (compareVersions(latestVersion, installedVersion) <= 0) return;
 
-  const assets = Array.isArray(release.assets) ? release.assets : [];
-  let asset = assets.find(a => a && a.name === config.assetName);
-  if (!asset) asset = assets.find(a => a && /Lock[_\s-]*Release.*Windows.*\.zip$/i.test(a.name || ''));
-  if (!asset) asset = assets.find(a => a && /\.zip$/i.test(a.name || ''));
+function startBackgroundUpdatePolling() {
+  if (updatePollTimer) return;
+  appendLog(`Background update polling enabled. Interval=${Math.round(UPDATE_CHECK_INTERVAL_MS / 1000)}s`);
+  updatePollTimer = setInterval(() => {
+    checkForUpdatesOnStartup({ source: 'background' }).catch(err => appendLog('Background update check failed: ' + (err && err.stack || err)));
+  }, UPDATE_CHECK_INTERVAL_MS);
+  try { if (updatePollTimer.unref) updatePollTimer.unref(); } catch (_) {}
+}
+function shouldShowUpdatePrompt(latestVersion, force) {
+  if (force) return true;
+  const now = Date.now();
+  if (lastPromptedUpdateVersion === latestVersion && (now - lastPromptedUpdateAt) < UPDATE_PROMPT_REMINDER_MS) {
+    appendLog(`Update ${latestVersion} already prompted recently. Skipping duplicate prompt.`);
+    return false;
+  }
+  lastPromptedUpdateVersion = latestVersion;
+  lastPromptedUpdateAt = now;
+  return true;
+}
+function bringAppForwardForUpdatePrompt() {
+  try {
+    if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (!mainWindow.isVisible()) mainWindow.show();
+      mainWindow.focus();
+    }
+  } catch (err) {
+    appendLog('Could not bring app forward for update prompt: ' + (err && err.stack || err));
+  }
+  try { updateTrayMenu(); } catch (_) {}
+}
+function showUpdateAvailablePrompt(latestVersion, installedVersion, release, repo, asset, config, force) {
+  if (!shouldShowUpdatePrompt(latestVersion, force)) return 1;
+  const wasHidden = mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible();
+  if (wasHidden && tray && tray.displayBalloon) {
+    try {
+      tray.displayBalloon({
+        title: 'Lock Release update available',
+        content: `Version ${latestVersion} is ready to install.`,
+        iconType: 'info'
+      });
+    } catch (_) {}
+  }
+  bringAppForwardForUpdatePrompt();
   if (!asset || (!asset.browser_download_url && !asset.url)) {
-    const result = dialog.showMessageBoxSync(mainWindow, {
+    const result = dialog.showMessageBoxSync(mainWindow || undefined, {
       type: 'info',
       title: 'Lock Release update available',
       message: `Lock Release ${latestVersion} is available.`,
@@ -673,10 +674,9 @@ async function checkForUpdatesOnStartup() {
       cancelId: 1
     });
     if (result === 0) shell.openExternal(release.html_url || `https://github.com/${repo}/releases/latest`);
-    return;
+    return 1;
   }
-
-  const result = dialog.showMessageBoxSync(mainWindow, {
+  return dialog.showMessageBoxSync(mainWindow || undefined, {
     type: 'info',
     title: 'Lock Release update available',
     message: `Lock Release ${latestVersion} is available.`,
@@ -685,10 +685,90 @@ async function checkForUpdatesOnStartup() {
     defaultId: 0,
     cancelId: 1
   });
-  if (result === 2) { shell.openExternal(release.html_url || `https://github.com/${repo}/releases/latest`); return; }
-  if (result !== 0) return;
-  const downloadUrl = (config.privateRepo && asset.url) ? asset.url : asset.browser_download_url;
-  await downloadAndInstallUpdate(downloadUrl, latestVersion, config);
+}
+
+async function checkForUpdatesOnStartup(options = {}) {
+  const force = !!options.force;
+  const source = options.source || 'startup';
+  if (updateCheckInProgress) {
+    appendLog(`Update check skipped because another check is already running. source=${source}`);
+    return;
+  }
+  updateCheckInProgress = true;
+  try {
+    const config = updateConfig();
+    if (!force && !config.checkOnStartup) { appendLog('Updater disabled by update-config.json. Skipping update check.'); return; }
+    const repo = String(config.githubRepo || '').trim();
+    if (!repo || repo.includes('PUT-YOUR') || !repo.includes('/')) {
+      appendLog('Updater skipped: update-config.json has no GitHub repo yet.');
+      return;
+    }
+    if (config.privateRepo && !getGitHubToken(config)) {
+      const helpPath = writeTokenHelp(config);
+      appendLog('Updater skipped: private repo is enabled but no GitHub token is set. Help: ' + helpPath);
+      if (force) {
+        const choice = dialog.showMessageBoxSync(mainWindow || undefined, {
+          type: 'info',
+          title: 'Private GitHub updates need a token',
+          message: 'Lock Release is connected to a private GitHub repo.',
+          detail: `Private repo: ${repo}\n\nTo check for updates, add a GitHub token once. I created instructions here:\n${helpPath}`,
+          buttons: ['Open Instructions Folder', 'Later'],
+          defaultId: 0,
+          cancelId: 1
+        });
+        if (choice === 0) shell.openPath(path.dirname(helpPath));
+      }
+      return;
+    }
+    const api = `https://api.github.com/repos/${repo}/releases/latest`;
+    appendLog(`Checking for updates: ${api}; source=${source}; force=${force}`);
+    let release;
+    try { release = await getJson(api, githubHeaders(config)); }
+    catch (err) {
+      appendLog('Update check failed: ' + (err && err.stack || err));
+      if (force && config.privateRepo && (err.statusCode === 401 || err.statusCode === 403 || err.statusCode === 404)) {
+        const helpPath = writeTokenHelp(config);
+        dialog.showMessageBoxSync(mainWindow || undefined, {
+          type: 'warning',
+          title: 'Could not check private GitHub updates',
+          message: 'Lock Release could not access the private GitHub release.',
+          detail: `GitHub returned ${err.statusCode || 'an error'}. The token may be missing, expired, or missing repo access.\n\nRepo: ${repo}\nInstructions: ${helpPath}`,
+          buttons: ['OK']
+        });
+      }
+      return;
+    }
+    if (!config.allowPrerelease && release.prerelease) return;
+    const latestVersion = normalizeVersion(release.tag_name || release.name || '0.0.0');
+    const installedVersion = normalizeVersion(currentVersion());
+    appendLog(`Installed version: ${installedVersion}; latest release: ${latestVersion}; appRoot=${appRoot()}; source=${source}`);
+    if (compareVersions(latestVersion, installedVersion) <= 0) {
+      if (force) {
+        dialog.showMessageBoxSync(mainWindow || undefined, {
+          type: 'info',
+          title: 'Lock Release is up to date',
+          message: `Lock Release is already on version ${installedVersion}.`,
+          buttons: ['OK']
+        });
+      }
+      return;
+    }
+
+    const assets = Array.isArray(release.assets) ? release.assets : [];
+    let asset = assets.find(a => a && a.name === config.assetName);
+    if (!asset) asset = assets.find(a => a && /Lock[_\s-]*Release.*Windows.*\.zip$/i.test(a.name || ''));
+    if (!asset) asset = assets.find(a => a && /\.zip$/i.test(a.name || ''));
+
+    const result = showUpdateAvailablePrompt(latestVersion, installedVersion, release, repo, asset, config, force);
+    if (result === 2) { shell.openExternal(release.html_url || `https://github.com/${repo}/releases/latest`); return; }
+    if (result !== 0) return;
+    if (!asset || (!asset.browser_download_url && !asset.url)) return;
+
+    const downloadUrl = (config.privateRepo && asset.url) ? asset.url : asset.browser_download_url;
+    await downloadAndInstallUpdate(downloadUrl, latestVersion, config);
+  } finally {
+    updateCheckInProgress = false;
+  }
 }
 
 function runProcess(file, args, options = {}) {

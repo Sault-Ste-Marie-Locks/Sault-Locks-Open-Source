@@ -1,7 +1,7 @@
 {
   "name": "lock-release-desktop",
   "version": "0.0.0",
-  "description": "Lock Release desktop app with tray/background controls and DB-safe updates",
+  "description": "Lock Release desktop app with tray background controls, DB-safe updates, and background update prompts",
   "main": "main.js",
   "private": true,
   "author": "Lock Release",
