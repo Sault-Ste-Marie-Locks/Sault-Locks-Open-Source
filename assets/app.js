@@ -1,6 +1,14 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const todayISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+function localDateKey(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+const todayISO = () => localDateKey(new Date());
 const nowTime = () => new Date().toTimeString().slice(0,5);
 function normalizeTime24(value, fallback=''){
   const text=String(value ?? '').trim();
@@ -1585,7 +1593,7 @@ const mobileLogsKey = 'saultLocksLogs';
 const entryTypeNameMap = {RB:'Recreational Boat',TB:'Tour Boat',Gov:'Government Boat',Com:'Commercial Boat',K:'Kayak',LR:'Lock Reversal',LT:'Lock Test'};
 function dashSafeParse(value,fallback){try{return JSON.parse(value) ?? fallback;}catch(e){return fallback;}}
 function dashPad(v){return String(v).padStart(2,'0');}
-function dashCurrentDate(){return new Date().toISOString().slice(0,10);}
+function dashCurrentDate(){return todayISO();}
 function dashCurrentTime(){const n=new Date();return `${dashPad(n.getHours())}:${dashPad(n.getMinutes())}`;}
 function dashDisplayTime(){return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});}
 function dashField(id){return document.getElementById(id);}
@@ -1640,7 +1648,7 @@ function dashboardMissingFields(kind){
 }
 function showDashboardMissing(missing){const popup=dashField('missingPopup'), list=dashField('missingList'); if(!popup||!list) return; list.innerHTML=missing.map(x=>`<div>• ${x.name}</div>`).join(''); popup.classList.add('active');}
 function hideDashboardMissing(){dashField('missingPopup')?.classList.remove('active');}
-function mirrorToMobileLogs(entry){const logs=dashSafeParse(localStorage.getItem(mobileLogsKey),[]); if(Array.isArray(logs)){logs.unshift(entry); const today=todayISO(); const small=logs.filter(log=>String(log.date||log.createdAt||'').slice(0,10)===today).slice(0,200); safeLocalSet(mobileLogsKey,JSON.stringify(small));}}
+function mirrorToMobileLogs(entry){const logs=dashSafeParse(localStorage.getItem(mobileLogsKey),[]); if(Array.isArray(logs)){logs.unshift(entry); const today=todayISO(); const small=logs.filter(log=>String(log.date||'').slice(0,10)===today || (!log.date && localDateKey(log.createdAt||'')===today)).slice(0,200); safeLocalSet(mobileLogsKey,JSON.stringify(small));}}
 async function saveDashboardMobileEntry(kind, options={}){
   const shouldRedirect = options.redirect !== false;
   const name=entryTypeNameMap[kind]||kind;

@@ -1081,9 +1081,7 @@ let mobileSyncTimer = null;
 let mobileLastStatus = "";
 
 function mobileTodayKey(){
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 10);
+    return localDateKey(new Date());
 }
 
 function mobileCleanBase(value){
@@ -1347,21 +1345,15 @@ function mobileNormalizeForServer(log){
 function mobileLogDateKey(log){
     if(!log || typeof log !== "object") return "";
 
-    const raw = String(
-        log.date ||
-        log.entryDate ||
-        log.createdAt ||
-        log.updatedAt ||
-        log.syncedAt ||
-        ""
-    ).trim();
+    const explicitDate = String(log.date || log.entryDate || "").trim();
+    if(/^\d{4}-\d{2}-\d{2}/.test(explicitDate)) return explicitDate.slice(0, 10);
 
-    if(/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+    const raw = String(log.createdAt || log.updatedAt || log.syncedAt || "").trim();
+    if(!raw) return "";
 
     const parsed = new Date(raw);
-    if(Number.isNaN(parsed.getTime())) return "";
-    parsed.setMinutes(parsed.getMinutes() - parsed.getTimezoneOffset());
-    return parsed.toISOString().slice(0, 10);
+    if(Number.isNaN(parsed.getTime())) return /^\d{4}-\d{2}-\d{2}/.test(raw) ? raw.slice(0, 10) : "";
+    return localDateKey(parsed);
 }
 
 function mobileIsPendingLocalLog(log){
@@ -1679,13 +1671,20 @@ function pad(value){
     return String(value).padStart(2, "0");
 }
 
+function localDateKey(date = new Date()){
+    const d = date instanceof Date ? date : new Date(date);
+    if(Number.isNaN(d.getTime())) return "";
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+window.localDateKey = localDateKey;
+
 function currentTime(){
     const now = new Date();
     return `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }
 
 function currentDate(){
-    return new Date().toISOString().split("T")[0];
+    return localDateKey(new Date());
 }
 
 function escapeHtml(value){

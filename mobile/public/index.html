@@ -962,8 +962,27 @@ body.light .return-clear{
         });
     }
 
+    function padDatePart(value) {
+        return String(value).padStart(2, "0");
+    }
+
+    function localDateKey(date = new Date()) {
+        const d = date instanceof Date ? date : new Date(date);
+        if (Number.isNaN(d.getTime())) return "";
+        return `${d.getFullYear()}-${padDatePart(d.getMonth() + 1)}-${padDatePart(d.getDate())}`;
+    }
+
+    function entryLocalDate(value) {
+        const text = String(value || "").trim();
+        if (!text) return "";
+        if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+        const parsed = new Date(text);
+        if (!Number.isNaN(parsed.getTime())) return localDateKey(parsed);
+        return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : "";
+    }
+
     function isToday(entry) {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = localDateKey(new Date());
         const values = [
             entry.date,
             entry.createdAt,
@@ -975,7 +994,7 @@ body.light .return-clear{
             entry.submittedAt
         ];
 
-        return values.some(value => String(value || "").includes(today));
+        return values.some(value => entryLocalDate(value) === today);
     }
 
     function updateClock() {
