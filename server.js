@@ -281,6 +281,56 @@ function getRange(start,end,limit=5000){ return rowsJson(db.prepare('SELECT json
 function nextMonth(ym){ const [y,m]=String(ym||todayISO().slice(0,7)).split('-').map(Number); const d=new Date(y || new Date().getFullYear(), (m || 1), 1); return localDateKey(d); }
 function bootstrapTraffic(){ const today=getDay(todayISO(), 300); const recent=rowsJson(db.prepare('SELECT json FROM records ORDER BY date DESC, time DESC LIMIT 250').all()); const map=new Map(); [...today,...recent].forEach(r=>map.set(recKey(r), r)); return [...map.values()].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||''))); }
 function dataShape(traffic){ return {traffic, registry:allRegistry(), phones:getKV('phones'), pairs:getKV('pairs'), phoneEvents:getKV('phoneEvents'), countries:getKV('countries'), states:getKV('states'), entryPresets:applyPresetDeletes(getKV('entryPresets')), deletedPresets:getKV('deletedPresets'), phoneServer:getKV('phoneServer')}; }
+
+// GITHUB_V23_JSON_IMPORT_REPAIR: import packaged JSON migrations into the local AppData DB.
+// This is for GitHub desktop updates only. Live databases stay in AppData and are never shipped in updates.
+const startupJsonImportDirs = [
+  path.join(root, 'imports'),
+  path.join(root, 'migrations', 'imports')
+];
+function recordsFromImportPayload(payload) {
+  if (Array.isArray(payload)) return { date: '', records: payload, registry: [] };
+  return {
+    date: payload?.date || '',
+    records: Array.isArray(payload?.records) ? payload.records : (Array.isArray(payload?.traffic) ? payload.traffic : []),
+    registry: Array.isArray(payload?.registry) ? payload.registry : []
+  };
+}
+function importJsonFileOnce(file) {
+  const raw = fs.readFileSync(file, 'utf8');
+  const key = 'jsonImport:' + path.basename(file) + ':' + hash(raw);
+  if (stmt.kvGet.get(key)) return { skipped: true, file, reason: 'already imported' };
+  const payload = safeJsonParse(raw, null);
+  if (!payload) return { skipped: true, file, reason: 'invalid JSON' };
+  const parsed = recordsFromImportPayload(payload);
+  if (!parsed.records.length && !parsed.registry.length) return { skipped: true, file, reason: 'no records' };
+  const date = normalizeDateKey(parsed.date || parsed.records[0]?.date, todayISO());
+  const before = db.prepare('SELECT COUNT(*) AS c FROM records WHERE date=?').get(date).c;
+  runTx(() => {
+    parsed.records.forEach(saveRecord);
+    parsed.registry.forEach(saveRegistry);
+    stmt.kvSet.run(key, JSON.stringify({ file: path.basename(file), date, records: parsed.records.length, registry: parsed.registry.length, importedAt: new Date().toISOString() }));
+  });
+  const after = db.prepare('SELECT COUNT(*) AS c FROM records WHERE date=?').get(date).c;
+  return { skipped: false, file, date, before, after, records: parsed.records.length, registry: parsed.registry.length };
+}
+function runStartupJsonImports() {
+  for (const dir of startupJsonImportDirs) {
+    try {
+      if (!fs.existsSync(dir)) continue;
+      const files = fs.readdirSync(dir).filter(name => name.toLowerCase().endsWith('.json')).sort();
+      for (const name of files) {
+        const result = importJsonFileOnce(path.join(dir, name));
+        if (result.skipped) console.log(`JSON import skipped: ${name} (${result.reason})`);
+        else console.log(`JSON import applied: ${name}; ${result.date} records ${result.before} -> ${result.after}; source records ${result.records}`);
+      }
+    } catch (err) {
+      console.error('Startup JSON import failed:', dir, err && err.message || err);
+    }
+  }
+}
+runStartupJsonImports();
+
 function importJsonIfDbEmpty(){
   const count=db.prepare('SELECT COUNT(*) AS c FROM records').get().c;
   if(count>0) return;

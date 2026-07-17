@@ -66,4 +66,4 @@ jobs:
             gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes
           }
 
-          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V22 fixes local date/time logging so desktop and mobile entries do not shift into the next UTC day."
+          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "Automatic Lock Release desktop source update. V23 fixes GitHub JSON import migrations so packaged JSON records auto-merge into the local AppData DB without wiping data."
