@@ -379,8 +379,8 @@ body.light .continue-btn{
                 placeholder="Example: 03:45 PM or 15:45">
         </div>
 
-        <label>Reason</label>
-        <textarea id="reverseReason" placeholder="Reason for lock test"></textarea>
+        <label>Reason <span class="field-note-inline">(optional)</span></label>
+        <textarea id="reverseReason" placeholder="Optional reason for lock test"></textarea>
 
         <label>Notes</label>
         <textarea id="notes" placeholder="Notes"></textarea>
@@ -466,10 +466,6 @@ function getMissingFields(){
         {
             name:"Lock Test Time",
             value:document.getElementById("reverseTime").value.trim()
-        },
-        {
-            name:"Reason",
-            value:document.getElementById("reverseReason").value.trim()
         }
     ];
 

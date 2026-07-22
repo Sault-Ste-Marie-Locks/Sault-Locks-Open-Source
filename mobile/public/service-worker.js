@@ -1,4 +1,4 @@
-const CACHE_NAME = "sault-locks-mobile-20260717-edit-mode-fix-v25";
+const CACHE_NAME = "sault-locks-mobile-20260722-optional-reason-v26";
 const APP_SHELL = [
   '/mobile/offline.html',
   '/mobile/pair.html',

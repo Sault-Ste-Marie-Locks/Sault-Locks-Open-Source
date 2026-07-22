@@ -1,7 +1,7 @@
 {
   "name": "lock-release-desktop",
   "version": "0.0.0",
-  "description": "Lock Release desktop app with V25 mobile edit mode repair",
+  "description": "Lock Release desktop app with V26 optional lock reason fix",
   "main": "main.js",
   "private": true,
   "author": "Lock Release",

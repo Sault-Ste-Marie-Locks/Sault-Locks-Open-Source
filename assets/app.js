@@ -1629,7 +1629,7 @@ function dashboardSystemFormHTML(kind){
     <div class="field"><label>Canal</label><input id="canal" value="Sault Canada Locks" readonly></div>
     <div class="field"><label>Direction</label><select id="reverseDir" class="placeholder"><option value="">Select Direction</option>${dirOptions}</select></div>
     <div class="field"><label>${label} Time</label><input id="reverseTime" type="time" value="${dashCurrentTime()}"></div>
-    <div class="field full"><label>Reason</label><textarea id="reverseReason" placeholder="Reason"></textarea></div>
+    <div class="field full"><label>Reason <span class="muted-label">(optional)</span></label><textarea id="reverseReason" placeholder="Optional reason"></textarea></div>
     <div class="field full"><label>Notes</label><textarea id="notes" placeholder="Notes"></textarea></div>
   </div>`;
 }
@@ -1640,7 +1640,7 @@ function setupDashboardManualDropdown(selectId,inputId){
 }
 function getDashboardRealValue(selectId,manualId){const field=dashField(selectId), manual=dashField(manualId); if(!field) return ''; if(field.tagName!=='SELECT') return field.value.trim(); const opt=field.options[field.selectedIndex]; return opt&&opt.dataset.manual==='true'&&manual ? (manual.value.trim()||'Other') : field.value.trim();}
 function dashboardMissingFields(kind){
-  if(kind==='LR'||kind==='LT') return [{name:'Direction',value:dashValue('reverseDir')},{name:'Time',value:dashValue('reverseTime')},{name:'Reason',value:dashValue('reverseReason')}].filter(x=>!x.value);
+  if(kind==='LR'||kind==='LT') return [{name:'Direction',value:dashValue('reverseDir')},{name:'Time',value:dashValue('reverseTime')}].filter(x=>!x.value);
   const fields = [{name:kind==='K'?'Name / Company':'Vessel Name',value:getDashboardRealValue('vessel','vesselManual')},{name:'Registration',value:dashValue('reg')},{name:'Direction',value:getDashboardRealValue('dir','dirManual')},{name:'Passenger Count',value:dashValue('pass')}];
   if(kind==='K') fields.push({name:'Number of Kayaks',value:dashValue('kayakCount')});
   fields.push({name:'Destination',value:getDashboardRealValue('dest','destManual')},{name:'Home Port',value:getDashboardRealValue('homePort','homePortManual')},{name:'Time',value:dashValue('entryTime')});
