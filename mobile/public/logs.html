@@ -4,8 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Sault Canada Locks Tracker - Today Entries</title>
-<script src="assets/theme-boot.js?v=20260717editfix25"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260717editfix25"/>
+<script src="assets/theme-boot.js?v=20260724timesort1"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260724timesort1"/>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6C5CE7">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1379,8 +1379,10 @@ html.theme-dark body.logs-page .sticky-edit-actions{
                 <label class="select-block">
                     <span>Sort</span>
                     <select id="sortSelect">
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
+                        <option value="newest">Newest Entry First</option>
+                        <option value="oldest">Oldest Entry First</option>
+                        <option value="timeLatest">Time: Latest First</option>
+                        <option value="timeEarliest">Time: Earliest First</option>
                         <option value="type">Type A-Z</option>
                         <option value="vessel">Vessel A-Z</option>
                     </select>
@@ -1469,7 +1471,7 @@ html.theme-dark body.logs-page .sticky-edit-actions{
     <h1>‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ </h1>
 
 
-<script src="assets/app.js?v=20260717editfix25"></script>
+<script src="assets/app.js?v=20260724timesort1"></script>
 
 <script>
 const POSSIBLE_KEYS = [
@@ -1785,7 +1787,103 @@ function getComparableDate(entry){
         if(!Number.isNaN(date.getTime())) return date;
     }
 
-    return new Date();
+    return new Date(0);
+}
+
+// Converts saved entry times into minutes after midnight so the list can
+// sort correctly even when entries mix 12-hour and 24-hour time formats.
+function getEntryTimeMinutes(entry){
+    const rawValue = String(getEntryTime(entry) || "").trim();
+
+    if(!rawValue){
+        return null;
+    }
+
+    // Accept full ISO timestamps if one was stored in the time field.
+    if(rawValue.includes("T")){
+        const parsedDate = new Date(rawValue);
+
+        if(!Number.isNaN(parsedDate.getTime())){
+            return (parsedDate.getHours() * 60) + parsedDate.getMinutes();
+        }
+    }
+
+    let value = rawValue
+        .toUpperCase()
+        .replace(/\./g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const meridiemMatch = value.match(/\b(AM|PM)\b/);
+    const meridiem = meridiemMatch ? meridiemMatch[1] : "";
+    value = value.replace(/\b(AM|PM)\b/g, "").trim();
+
+    let hour = null;
+    let minute = 0;
+
+    const separated = value.match(/^(\d{1,2})\s*[:]\s*(\d{1,2})(?::\d{1,2})?$/);
+
+    if(separated){
+        hour = Number(separated[1]);
+        minute = Number(separated[2]);
+    }else if(/^\d{3,4}$/.test(value)){
+        const padded = value.padStart(4, "0");
+        hour = Number(padded.slice(0, 2));
+        minute = Number(padded.slice(2));
+    }else if(/^\d{1,2}$/.test(value)){
+        hour = Number(value);
+    }else{
+        return null;
+    }
+
+    if(!Number.isInteger(hour) || !Number.isInteger(minute) || minute < 0 || minute > 59){
+        return null;
+    }
+
+    if(meridiem){
+        if(hour < 1 || hour > 12){
+            return null;
+        }
+
+        if(hour === 12){
+            hour = 0;
+        }
+
+        if(meridiem === "PM"){
+            hour += 12;
+        }
+    }else if(hour < 0 || hour > 23){
+        return null;
+    }
+
+    return (hour * 60) + minute;
+}
+
+function compareEntriesByTime(a, b, latestFirst){
+    const aMinutes = getEntryTimeMinutes(a.entry);
+    const bMinutes = getEntryTimeMinutes(b.entry);
+
+    // Entries without a usable time always remain at the bottom.
+    if(aMinutes === null && bMinutes === null){
+        return a.index - b.index;
+    }
+
+    if(aMinutes === null){
+        return 1;
+    }
+
+    if(bMinutes === null){
+        return -1;
+    }
+
+    if(aMinutes !== bMinutes){
+        return latestFirst
+            ? bMinutes - aMinutes
+            : aMinutes - bMinutes;
+    }
+
+    // Keep matching times stable and predictable.
+    return a.index - b.index;
 }
 
 function getDirection(entry){
@@ -2004,6 +2102,14 @@ function getFilteredSortedLogs(){
     items.sort((a, b) => {
         if(sort === "oldest"){
             return getComparableDate(a.entry) - getComparableDate(b.entry);
+        }
+
+        if(sort === "timeLatest"){
+            return compareEntriesByTime(a, b, true);
+        }
+
+        if(sort === "timeEarliest"){
+            return compareEntriesByTime(a, b, false);
         }
 
         if(sort === "type"){
@@ -2585,7 +2691,7 @@ renderLogs();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("service-worker.js?v=20260717editfix25").catch(()=>{});
+        navigator.serviceWorker.register("service-worker.js?v=20260724timesort1").catch(()=>{});
     });
 }
 </script>

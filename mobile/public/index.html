@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Sault Canada Locks Tracker</title>
-<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
+<script src="assets/theme-boot.js?v=20260724clockfix2"></script>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#7C3AED">
@@ -694,6 +694,24 @@ body.light .return-clear{
   border-color:rgba(var(--accent-rgb,52,141,188), .34) !important;
 }
 
+
+/* Keep app.js compatibility targets invisible.
+   This must override .mini-stat span { display:block; }. */
+.legacy-clock-target,
+.legacy-clock-target[hidden],
+#date.legacy-clock-target,
+#time.legacy-clock-target{
+    display:none !important;
+    visibility:hidden !important;
+    width:0 !important;
+    height:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    position:absolute !important;
+    pointer-events:none !important;
+}
+
 </style>
 </head>
 
@@ -730,7 +748,8 @@ body.light .return-clear{
             
         </div>
 
-        <div class="stat-number" id="total">0</div>
+        <div class="stat-number" id="todayTotal">0</div>
+        <span id="total" hidden aria-hidden="true"></span>
         <div class="stat-subtitle">Current lock activity</div>
 
         <div class="stat-row">
@@ -745,7 +764,7 @@ body.light .return-clear{
                 </div>
                 <div>
                     <strong>Date</strong>
-                    <span id="date">--</span>
+                    <span id="todayDate">--</span><span id="date" class="legacy-clock-target" hidden aria-hidden="true"></span>
                 </div>
             </div>
 
@@ -758,7 +777,7 @@ body.light .return-clear{
                 </div>
                 <div>
                     <strong>Time</strong>
-                    <span id="time">--:--</span>
+                    <span id="todayTime">--:--</span><span id="time" class="legacy-clock-target" hidden aria-hidden="true"></span>
                 </div>
             </div>
         </div>
@@ -855,174 +874,339 @@ body.light .return-clear{
     </a>
 </nav>
 
-<script src="assets/app.js?v=20260711returntimepoll1"></script>
+<script src="assets/app.js?v=20260724clockfix2"></script>
 
 <script>
 (function () {
     "use strict";
 
-    function pad(n) {
-        return String(n).padStart(2, "0");
+    const LOG_STORAGE_KEYS = [
+        "saultLocksLogs",
+        "saultLocksTrackerLogs",
+        "lockLogs",
+        "saultLogs",
+        "savedEntries"
+    ];
+
+    function pad(value) {
+        return String(value).padStart(2, "0");
     }
 
-    function normalizeKey(key) {
-        return String(key || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    function safeParse(value, fallback) {
+        try {
+            const parsed = JSON.parse(value);
+            return parsed === null || parsed === undefined ? fallback : parsed;
+        } catch (error) {
+            return fallback;
+        }
     }
 
-    function hasAnyKey(obj, names) {
-        if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
-        const keys = Object.keys(obj).map(normalizeKey);
-        return names.some(name => keys.includes(normalizeKey(name)));
+    function isDraftPayload(value) {
+        return Boolean(
+            value &&
+            typeof value === "object" &&
+            !Array.isArray(value) &&
+            value.data &&
+            value.savedAt &&
+            String(value.type || "").trim()
+        );
     }
 
-    function looksLikeEntry(obj) {
-        if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
-
-        const hasIdentity = hasAnyKey(obj, [
-            "id", "uuid", "type", "entryType", "recordType", "boatType", "category",
-            "vessel", "vesselName", "boat", "boatName", "name", "registry",
-            "direction", "canal", "homeport", "lock", "reason", "notes"
-        ]);
-
-        const hasDateOrTime = hasAnyKey(obj, [
-            "date", "time", "lockTime", "entryTime", "createdAt", "timestamp",
-            "dateTime", "datetime", "savedAt", "updatedAt", "submittedAt"
-        ]);
-
-        return hasIdentity && hasDateOrTime;
-    }
-
-    function deepCollectEntries(value, found = [], depth = 0) {
-        if (!value || typeof value !== "object" || depth > 8) return found;
-
-        if (Array.isArray(value)) {
-            value.forEach(item => deepCollectEntries(item, found, depth + 1));
-            return found;
+    function isRealEntry(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+            return false;
         }
 
-        if (looksLikeEntry(value)) found.push(value);
-        Object.values(value).forEach(child => deepCollectEntries(child, found, depth + 1));
-        return found;
+        if (isDraftPayload(value)) {
+            return false;
+        }
+
+        const typeText = String(
+            value.entryType ||
+            value.formType ||
+            value.type ||
+            value.category ||
+            ""
+        ).toLowerCase();
+
+        if (typeText.includes("draft")) {
+            return false;
+        }
+
+        return Boolean(
+            value.createdAt ||
+            value.savedAt ||
+            value.timestamp ||
+            value.timeStamp ||
+            value.date ||
+            value.entryDate ||
+            value.id ||
+            value.entryId ||
+            value.recordId ||
+            value.dashboardId ||
+            value.vessel ||
+            value.vesselName ||
+            value.reverseTime ||
+            value.entryTime ||
+            value.time ||
+            value.reason ||
+            value.reverseReason
+        );
     }
 
-    function getEntriesFromLocalStorage() {
-        const entries = [];
-        const preferredKeys = [
-            "ssmCanalDashboard.v1",
-            "ssmCanalDashboard.logs",
-            "ssmCanalDashboard.entries",
-            "ssmCanalDashboard.records",
-            "saultLocks.logs",
-            "saultLocks.entries",
-            "logs",
-            "entries",
-            "records"
+    function cleanLogArray(value) {
+        return Array.isArray(value) ? value.filter(isRealEntry) : [];
+    }
+
+    function readPrimaryLogs() {
+        // This is the same primary array used by the Today Entries page.
+        const primary = cleanLogArray(
+            safeParse(localStorage.getItem("saultLocksLogs"), [])
+        );
+
+        if (primary.length || localStorage.getItem("saultLocksLogs") !== null) {
+            return primary;
+        }
+
+        // Only use an older dedicated log key when the primary key does not
+        // exist yet. Never merge every key together because that double-counts
+        // synced records and accidentally includes presets or registry entries.
+        for (const key of LOG_STORAGE_KEYS) {
+            if (key === "saultLocksLogs") continue;
+
+            const logs = cleanLogArray(
+                safeParse(localStorage.getItem(key), [])
+            );
+
+            if (logs.length) {
+                return logs;
+            }
+        }
+
+        return [];
+    }
+
+    function localDateKey(value = new Date()) {
+        const date = value instanceof Date ? value : new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return "";
+        }
+
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    function parseDateOnlyText(text) {
+        const match = String(text || "").trim().match(
+            /^(\d{4})-(\d{2})-(\d{2})$/
+        );
+
+        if (!match) {
+            return "";
+        }
+
+        return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+
+    function parseSlashDateText(text) {
+        const value = String(text || "").trim();
+        const match = value.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+
+        if (!match) {
+            return "";
+        }
+
+        // The app is used in Canada and its older saved display dates are
+        // commonly month/day/year. Validate it before accepting the value.
+        const month = Number(match[1]);
+        const day = Number(match[2]);
+        const year = Number(match[3]);
+
+        if (
+            month < 1 || month > 12 ||
+            day < 1 || day > 31 ||
+            year < 2000
+        ) {
+            return "";
+        }
+
+        return `${year}-${pad(month)}-${pad(day)}`;
+    }
+
+    function entryDateKey(entry) {
+        const values = [
+            entry.date,
+            entry.entryDate,
+            entry.createdAt,
+            entry.savedAt,
+            entry.timestamp,
+            entry.timeStamp,
+            entry.dateTime,
+            entry.datetime,
+            entry.submittedAt
         ];
 
-        const keys = [];
-        preferredKeys.forEach(key => {
-            try {
-                if (localStorage.getItem(key) !== null) keys.push(key);
-            } catch (e) {}
-        });
+        for (const value of values) {
+            if (!value) continue;
 
-        try {
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && !keys.includes(key)) keys.push(key);
+            const text = String(value).trim();
+
+            if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+                return text.slice(0, 10);
             }
-        } catch (e) {}
 
-        keys.forEach(key => {
-            try {
-                const raw = localStorage.getItem(key);
-                if (!raw || raw.length < 2) return;
-                const parsed = JSON.parse(raw);
-                entries.push(...deepCollectEntries(parsed));
-            } catch (e) {}
-        });
+            const dateOnly = parseDateOnlyText(text);
+            if (dateOnly) return dateOnly;
 
-        return entries;
+            const slashDate = parseSlashDateText(text);
+            if (slashDate) return slashDate;
+
+            const parsed = new Date(text);
+            if (!Number.isNaN(parsed.getTime())) {
+                return localDateKey(parsed);
+            }
+        }
+
+        return "";
+    }
+
+    function isToday(entry) {
+        const key = entryDateKey(entry);
+
+        // Do not count undated legacy records as today's activity. This was
+        // one of the causes of the inflated number on the home page.
+        return Boolean(key) && key === localDateKey(new Date());
+    }
+
+    function getStableEntryKey(entry, index) {
+        const directId = [
+            entry.dashboardId,
+            entry.recordId,
+            entry.record_id,
+            entry.id,
+            entry.entryId,
+            entry.clientId,
+            entry.uuid,
+            entry.localId,
+            entry.mobileId,
+            entry.mobile_id
+        ].find(value => String(value || "").trim());
+
+        if (directId) {
+            return `id:${String(directId).trim()}`;
+        }
+
+        return [
+            "entry",
+            entryDateKey(entry),
+            entry.time || entry.entryTime || entry.reverseTime || "",
+            entry.vessel || entry.vesselName || entry.name || entry.title || "",
+            entry.entryType || entry.formType || entry.type || "",
+            entry.direction || entry.dir || entry.reverseDir || "",
+            index
+        ].join("|").toLowerCase();
     }
 
     function dedupeEntries(entries) {
         const seen = new Set();
 
-        return entries.filter(entry => {
-            const id = entry.id || entry.uuid || [
-                entry.date || entry.createdAt || entry.timestamp || entry.dateTime || "",
-                entry.time || entry.lockTime || entry.entryTime || "",
-                entry.vesselName || entry.vessel || entry.boatName || entry.name || "",
-                entry.type || entry.entryType || entry.recordType || entry.boatType || ""
-            ].join("|");
+        return entries.filter((entry, index) => {
+            const key = getStableEntryKey(entry, index);
 
-            if (seen.has(id)) return false;
-            seen.add(id);
+            if (seen.has(key)) {
+                return false;
+            }
+
+            seen.add(key);
             return true;
         });
     }
 
-    function padDatePart(value) {
-        return String(value).padStart(2, "0");
-    }
-
-    function localDateKey(date = new Date()) {
-        const d = date instanceof Date ? date : new Date(date);
-        if (Number.isNaN(d.getTime())) return "";
-        return `${d.getFullYear()}-${padDatePart(d.getMonth() + 1)}-${padDatePart(d.getDate())}`;
-    }
-
-    function entryLocalDate(value) {
-        const text = String(value || "").trim();
-        if (!text) return "";
-        if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-        const parsed = new Date(text);
-        if (!Number.isNaN(parsed.getTime())) return localDateKey(parsed);
-        return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : "";
-    }
-
-    function isToday(entry) {
-        const today = localDateKey(new Date());
-        const values = [
-            entry.date,
-            entry.createdAt,
-            entry.timestamp,
-            entry.dateTime,
-            entry.datetime,
-            entry.savedAt,
-            entry.updatedAt,
-            entry.submittedAt
-        ];
-
-        return values.some(value => entryLocalDate(value) === today);
-    }
-
     function updateClock() {
         const now = new Date();
-        const dateText = now.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        const dateText = now.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric"
+        });
         const timeText = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-        const date = document.getElementById("date");
-        const time = document.getElementById("time");
+        const date = document.getElementById("todayDate");
+        const time = document.getElementById("todayTime");
 
-        if (date) date.textContent = dateText;
-        if (time) time.textContent = timeText;
+        if (date && date.textContent !== dateText) {
+            date.textContent = dateText;
+        }
+
+        if (time && time.textContent !== timeText) {
+            time.textContent = timeText;
+        }
     }
 
     function updateTotal() {
-        const total = document.getElementById("total");
+        const total = document.getElementById("todayTotal");
         if (!total) return;
 
-        const entries = dedupeEntries(getEntriesFromLocalStorage());
-        const todayEntries = entries.filter(isToday);
-        total.textContent = todayEntries.length || 0;
+        const logs = dedupeEntries(readPrimaryLogs());
+        const nextValue = String(logs.filter(isToday).length);
+
+        // Avoid replacing the text node when the displayed count is unchanged.
+        if (total.textContent !== nextValue) {
+            total.textContent = nextValue;
+        }
     }
 
     updateClock();
     updateTotal();
 
-    setInterval(updateClock, 1000);
-    window.addEventListener("storage", updateTotal);
+    let clockTimer = null;
+
+    function scheduleClockUpdate(){
+        if(clockTimer){
+            clearTimeout(clockTimer);
+        }
+
+        const now = new Date();
+        const millisecondsUntilNextMinute =
+            ((60 - now.getSeconds()) * 1000) - now.getMilliseconds() + 25;
+
+        clockTimer = setTimeout(function(){
+            updateClock();
+            scheduleClockUpdate();
+        }, Math.max(250, millisecondsUntilNextMinute));
+    }
+
+    scheduleClockUpdate();
+
+    let totalRefreshTimer = null;
+
+    function scheduleTotalRefresh() {
+        if (totalRefreshTimer) {
+            clearTimeout(totalRefreshTimer);
+        }
+
+        // Sync can fire several events together. Collapse them into one read.
+        totalRefreshTimer = setTimeout(function () {
+            totalRefreshTimer = null;
+            updateTotal();
+        }, 200);
+    }
+
+    window.addEventListener("storage", scheduleTotalRefresh);
+    window.addEventListener("ssm-mobile-logs-synced", scheduleTotalRefresh);
+
+    window.addEventListener("pageshow", function () {
+        updateClock();
+        scheduleClockUpdate();
+        scheduleTotalRefresh();
+    });
+
+    document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) {
+            updateClock();
+            scheduleClockUpdate();
+            scheduleTotalRefresh();
+        }
+    });
 })();
 </script>
 
