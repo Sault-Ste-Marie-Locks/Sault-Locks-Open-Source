@@ -350,10 +350,24 @@ body.light .popup-box{
     margin-bottom:8px;
 }
 
-.rb-preset-combo input{
+.rb-preset-combo > input[type="text"]{
     width:100%;
     padding-right:52px !important;
     margin-bottom:0 !important;
+}
+
+.rb-preset-value,
+#vesselManual{
+    position:absolute !important;
+    width:1px !important;
+    height:1px !important;
+    padding:0 !important;
+    margin:0 !important;
+    border:0 !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+    overflow:hidden !important;
+    clip-path:inset(50%) !important;
 }
 
 .rb-preset-toggle{
@@ -510,11 +524,23 @@ body.light .continue-btn{
 
         <label>Vessel Preset / Vessel Name</label>
         <div class="rb-preset-combo" id="rbPresetCombo">
-            <input 
-                id="vessel" 
-                type="text" 
+            <input
+                id="vesselSearch"
+                type="text"
                 autocomplete="off"
+                autocapitalize="words"
+                spellcheck="false"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded="false"
+                aria-controls="rbPresetMenu"
                 placeholder="Search presets or type vessel name">
+
+            <!-- Keep a real select for compatibility with older assets/app.js versions. -->
+            <select id="vessel" class="rb-preset-value" tabindex="-1" aria-hidden="true">
+                <option value="">Select Vessel</option>
+            </select>
+            <input id="vesselManual" type="hidden" value="">
 
             <button 
                 class="rb-preset-toggle" 
@@ -602,7 +628,30 @@ body.light .continue-btn{
     </div>
 </div>
 
-<script src="assets/app.js?v=20260711returntimepoll1"></script>
+<script>
+// This must exist before app.js loads. Older builds expect #vessel to be a select.
+window.getRealSelectValue = function(selectId, manualId){
+    const field = document.getElementById(selectId);
+    const manual = document.getElementById(manualId) ||
+        (selectId === "vessel" ? document.getElementById("vesselManual") : null);
+
+    if(!field) return "";
+
+    if(field.tagName !== "SELECT"){
+        return String(field.value || "").trim();
+    }
+
+    const selectedOption = field.options[field.selectedIndex];
+    const selectedValue = String(field.value || "").trim();
+
+    if(selectedOption && selectedOption.dataset.manual === "true"){
+        return String((manual && manual.value) || selectedValue || "").trim();
+    }
+
+    return selectedValue;
+};
+</script>
+<script src="assets/app.js?v=20260724presetfix1"></script>
 
 <script>
 function getTimeSetting(){
@@ -702,7 +751,9 @@ form.addEventListener("submit", function(e){
     }
 
     if(window.shouldConfirmBeforeSave && !window.shouldConfirmBeforeSave()){
-        return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
     }
 
     const missing = getMissingFields();
@@ -724,6 +775,9 @@ continueSubmit.addEventListener("click", function(){
     allowBypassSubmit = true;
     hideMissingPopup();
     form.requestSubmit();
+    queueMicrotask(() => {
+        allowBypassSubmit = false;
+    });
 });
 
 popup.addEventListener("click", function(e){
@@ -733,30 +787,10 @@ popup.addEventListener("click", function(e){
 });
 
 
-// Safe value reader for this page. Some older app.js versions expected #vessel to be a <select>,
-// but this page uses a searchable text input so manual vessel names still save correctly.
-window.getRealSelectValue = function(selectId, manualId){
-    const field = document.getElementById(selectId);
-    const manual = document.getElementById(manualId);
-
-    if(!field) return "";
-
-    if(field.tagName !== "SELECT"){
-        return String(field.value || "").trim();
-    }
-
-    const selectedOption = field.options[field.selectedIndex];
-
-    if(selectedOption && selectedOption.dataset.manual === "true" && manual){
-        return String(manual.value || "").trim() || "Other";
-    }
-
-    return String(field.value || "").trim();
-};
-
-
 function initRecreationalBoatPresetDropdown(){
-    const input = document.getElementById("vessel");
+    const input = document.getElementById("vesselSearch");
+    const valueSelect = document.getElementById("vessel");
+    const manualValue = document.getElementById("vesselManual");
     const reg = document.getElementById("reg");
     const homePort = document.getElementById("homePort");
     const dest = document.getElementById("dest");
@@ -765,39 +799,44 @@ function initRecreationalBoatPresetDropdown(){
     const menu = document.getElementById("rbPresetMenu");
     const hint = document.getElementById("rbPresetHint");
 
-    if(!input || !combo || !toggle || !menu) return;
-    if(input.dataset.pageRbPresetReady === "true") return;
-
-    input.dataset.pageRbPresetReady = "true";
-    input.dataset.rbPresetReady = "true";
-    input.removeAttribute("list");
-    input.setAttribute("autocomplete", "off");
+    if(!input || !valueSelect || !manualValue || !combo || !toggle || !menu) return;
+    if(combo.dataset.ready === "true") return;
+    combo.dataset.ready = "true";
 
     let activeIndex = -1;
     let cachedPresets = [];
-
-    function safeParse(value, fallback){
-        try{
-            const parsed = JSON.parse(value);
-            return parsed === undefined || parsed === null ? fallback : parsed;
-        }catch(e){
-            return fallback;
-        }
-    }
+    let visiblePresets = [];
+    let selectedPresetKey = "";
 
     function clean(value){
         return String(value === undefined || value === null ? "" : value).trim();
     }
 
-    function escapeHtml(value){
-        return clean(value).replace(/[&<>"]/g, function(ch){
-            return {
-                "&":"&amp;",
-                "<":"&lt;",
-                ">":"&gt;",
-                "\"":"&quot;"
-            }[ch];
-        });
+    function safeParse(value, fallback){
+        if(!value) return fallback;
+        try{
+            const parsed = JSON.parse(value);
+            return parsed === undefined || parsed === null ? fallback : parsed;
+        }catch(error){
+            console.warn("Preset data could not be parsed:", error);
+            return fallback;
+        }
+    }
+
+    // Avoid parsing a giant history database just to open a dropdown.
+    function readStorageJson(key, fallback, maxLength){
+        try{
+            const raw = localStorage.getItem(key);
+            if(!raw) return fallback;
+            if(maxLength && raw.length > maxLength){
+                console.warn(`Skipped oversized preset source: ${key}`);
+                return fallback;
+            }
+            return safeParse(raw, fallback);
+        }catch(error){
+            console.warn(`Could not read preset source: ${key}`, error);
+            return fallback;
+        }
     }
 
     function getPresetHomePort(preset){
@@ -810,113 +849,135 @@ function initRecreationalBoatPresetDropdown(){
         );
     }
 
-    function normalizePreset(item, source){
+    function normalizePreset(item, fallbackName){
         if(typeof item === "string"){
-            return {
-                name:clean(item),
-                reg:"",
-                homePort:"",
-                owner:"",
-                source:source || "Preset"
-            };
+            const name = clean(item);
+            return name ? { name, reg:"", homePort:"", destination:"", owner:"" } : null;
         }
 
         if(!item || typeof item !== "object") return null;
 
-        const name = clean(item.name || item.vessel || item.vesselName || item.boatName || item.owner);
+        const name = clean(
+            item.name ||
+            item.vessel ||
+            item.vesselName ||
+            item.boatName ||
+            fallbackName
+        );
         if(!name) return null;
 
         return {
-            name:name,
-            reg:clean(item.registration || item.reg || item.vesselReg || item.vesselRegistration || item.canalReg || item.canal),
+            name,
+            reg:clean(
+                item.registration ||
+                item.reg ||
+                item.vesselReg ||
+                item.vesselRegistration ||
+                item.registrationNumber
+            ),
             homePort:getPresetHomePort(item),
             destination:clean(item.destination || item.dest),
-            owner:clean(item.owner),
-            source:source || "Preset"
+            owner:clean(item.owner)
         };
     }
 
-    function addList(target, list, source){
-        if(!Array.isArray(list)) return;
-        list.forEach(item => {
-            const preset = normalizePreset(item, source);
-            if(preset) target.push(preset);
-        });
+    function appendPresetSource(target, source){
+        if(Array.isArray(source)){
+            source.forEach(item => {
+                const preset = normalizePreset(item, "");
+                if(preset) target.push(preset);
+            });
+            return;
+        }
+
+        if(source && typeof source === "object"){
+            Object.entries(source).forEach(([name, item]) => {
+                const preset = typeof item === "object"
+                    ? normalizePreset(item, name)
+                    : normalizePreset({ name, registration:item }, name);
+                if(preset) target.push(preset);
+            });
+        }
     }
 
-    function addObjectMap(target, obj, source){
-        if(!obj || typeof obj !== "object" || Array.isArray(obj)) return;
-        Object.entries(obj).forEach(([name, value]) => {
-            if(value && typeof value === "object"){
-                target.push(normalizePreset({ name, ...value }, source));
-            }else{
-                target.push(normalizePreset({ name, reg:value }, source));
-            }
-        });
+    function readPresetsFromSelect(){
+        return Array.from(valueSelect.options).map(option => {
+            if(!clean(option.value) || option.dataset.manual === "true") return null;
+            return normalizePreset({
+                name:clean(option.dataset.name || option.textContent || option.value),
+                registration:option.dataset.registration || option.dataset.reg,
+                homePort:option.dataset.homePort || option.dataset.homeport,
+                destination:option.dataset.destination || option.dataset.dest,
+                owner:option.dataset.owner
+            }, clean(option.value));
+        }).filter(Boolean);
     }
 
-    function readLocalPresetGroups(){
-        const groups = [];
+    function readLocalPresetSources(){
+        const sources = [];
 
         try{
             if(typeof getVesselPresets === "function"){
-                groups.push(getVesselPresets("RB"));
+                sources.push(getVesselPresets("RB"));
             }
-        }catch(e){}
+        }catch(error){
+            console.warn("getVesselPresets failed:", error);
+        }
 
         try{
-            if(typeof vesselPresetGroups !== "undefined" && vesselPresetGroups && Array.isArray(vesselPresetGroups.RB)){
-                groups.push(vesselPresetGroups.RB);
+            if(typeof vesselPresetGroups !== "undefined" && vesselPresetGroups){
+                sources.push(vesselPresetGroups.RB);
             }
-        }catch(e){}
+        }catch(error){
+            console.warn("vesselPresetGroups could not be read:", error);
+        }
 
-        const byType = safeParse(localStorage.getItem("ssmCanalDashboard.entryPresets.byType"), null);
-        if(byType && Array.isArray(byType.RB)) groups.push(byType.RB);
+        const byType = readStorageJson("ssmCanalDashboard.entryPresets.byType", null, 1500000);
+        if(byType) sources.push(byType.RB || byType.recreational || byType["Recreational Boat"]);
 
-        const oldPresets = safeParse(localStorage.getItem("ssmCanalDashboard.entryPresets"), null);
+        const oldPresets = readStorageJson("ssmCanalDashboard.entryPresets", null, 1500000);
         if(oldPresets){
-            if(Array.isArray(oldPresets.RB)) groups.push(oldPresets.RB);
-            else if(!Array.isArray(oldPresets)) groups.push(Object.entries(oldPresets).map(([name, reg]) => ({ name, reg })));
+            sources.push(oldPresets.RB || oldPresets.recreational || oldPresets["Recreational Boat"] || oldPresets);
         }
 
-        const dashboard = safeParse(localStorage.getItem("ssmCanalDashboard.v1"), null);
+        // Legacy fallback only. Parse once, and skip it when the dashboard state is huge.
+        const dashboard = readStorageJson("ssmCanalDashboard.v1", null, 1500000);
         if(dashboard){
-            if(dashboard.entryPresets && Array.isArray(dashboard.entryPresets.RB)) groups.push(dashboard.entryPresets.RB);
-            const registryRB = Array.isArray(dashboard.registry) ? dashboard.registry.filter(item => clean(item.type).toLowerCase() === "rb" || clean(item.vesselType).toLowerCase() === "rb") : [];
-            groups.push(registryRB);
+            if(dashboard.entryPresets){
+                sources.push(
+                    dashboard.entryPresets.RB ||
+                    dashboard.entryPresets.recreational ||
+                    dashboard.entryPresets["Recreational Boat"]
+                );
+            }
+
+            if(Array.isArray(dashboard.registry)){
+                sources.push(dashboard.registry.filter(item => {
+                    const type = clean(item.type || item.vesselType || item.entryType).toLowerCase();
+                    return type === "rb" || type.includes("recreational");
+                }));
+            }
         }
 
-        return groups;
-    }
-
-    function readLogPresets(){
-        const logs = [];
-        const keys = ["saultLocksLogs", "ssmCanalDashboard.logs", "ssmCanalDashboard.mobileLogs"];
-
-        keys.forEach(key => {
-            const value = safeParse(localStorage.getItem(key), []);
-            if(Array.isArray(value)) logs.push(...value);
-        });
-
-        const dashboard = safeParse(localStorage.getItem("ssmCanalDashboard.v1"), null);
-        if(dashboard && Array.isArray(dashboard.traffic)) logs.push(...dashboard.traffic);
-
-        return logs.filter(entry => {
-            const type = clean(entry.entryType || entry.formType || entry.type).toLowerCase();
-            return type.includes("recreational") || type === "rb" || type.includes("returning");
-        });
+        sources.push(readPresetsFromSelect());
+        return sources;
     }
 
     function uniquePresets(list){
         const map = new Map();
 
         list.forEach(preset => {
-            if(!preset || !preset.name) return;
-            const key = (preset.name + "|" + preset.reg).toLowerCase();
-            const current = map.get(key) || {};
+            if(!preset || !clean(preset.name)) return;
+            const key = clean(preset.name).toLowerCase();
+            const current = map.get(key);
+
+            if(!current){
+                map.set(key, { ...preset });
+                return;
+            }
+
             map.set(key, {
-                ...current,
-                ...preset,
+                name:current.name || preset.name,
                 reg:current.reg || preset.reg,
                 homePort:current.homePort || preset.homePort,
                 destination:current.destination || preset.destination,
@@ -924,74 +985,110 @@ function initRecreationalBoatPresetDropdown(){
             });
         });
 
-        return Array.from(map.values()).sort((a,b) => a.name.localeCompare(b.name));
-    }
-
-    function readPresets(){
-        const output = [];
-        readLocalPresetGroups().forEach(group => addList(output, group, "Dashboard preset"));
-        addList(output, readLogPresets(), "Recent boat");
-
-        return uniquePresets(output);
+        return Array.from(map.values()).sort((a, b) =>
+            a.name.localeCompare(b.name, undefined, { sensitivity:"base" })
+        );
     }
 
     function refreshPresets(){
-        cachedPresets = readPresets();
+        const output = [];
+        readLocalPresetSources().forEach(source => appendPresetSource(output, source));
+        cachedPresets = uniquePresets(output);
 
         if(hint){
             hint.textContent = cachedPresets.length
-                ? `${cachedPresets.length} recreational preset${cachedPresets.length === 1 ? "" : "s"} available. Search by vessel, registration, owner, or home port.`
-                : "No recreational presets found yet. You can still type the vessel name manually.";
+                ? `${cachedPresets.length} recreational preset${cachedPresets.length === 1 ? "" : "s"} available.`
+                : "No recreational presets found. You can still type a vessel name manually.";
         }
-    }
-
-    async function pullFreshPresets(){
-        try{
-            const response = await fetch("/api/presets", { cache:"no-store" });
-            if(!response.ok) return;
-            const payload = await response.json();
-            if(payload && payload.entryPresets){
-                localStorage.setItem("ssmCanalDashboard.entryPresets.byType", JSON.stringify(payload.entryPresets));
-                refreshPresets();
-                if(menu.classList.contains("open")) renderMenu();
-            }
-        }catch(e){}
     }
 
     function filteredPresets(){
         const query = clean(input.value).toLowerCase();
+        if(!query) return cachedPresets.slice(0, 100);
 
-        if(!query) return cachedPresets.slice(0, 120);
-
-        return cachedPresets.filter(preset => {
-            const text = [
-                preset.name,
-                preset.reg,
-                preset.owner,
-                preset.homePort,
-                preset.destination
-            ].join(" ").toLowerCase();
-
-            return text.includes(query);
-        }).slice(0, 120);
+        return cachedPresets.filter(preset => [
+            preset.name,
+            preset.reg,
+            preset.owner,
+            preset.homePort,
+            preset.destination
+        ].join(" ").toLowerCase().includes(query)).slice(0, 100);
     }
 
-    function setFieldValue(field, value, force){
+    function ensureSelectOption(preset, isManual){
+        const name = clean(preset && preset.name);
+        if(!name) return null;
+
+        const key = name.toLowerCase();
+        let option;
+
+        if(isManual){
+            option = valueSelect.querySelector('option[data-page-manual="true"]');
+        }else{
+            option = Array.from(valueSelect.options).find(item =>
+                item.dataset.pageManual !== "true" &&
+                clean(item.dataset.presetKey || item.value).toLowerCase() === key
+            );
+        }
+
+        if(!option){
+            option = document.createElement("option");
+            valueSelect.appendChild(option);
+        }
+
+        option.value = name;
+        option.textContent = name;
+        option.dataset.presetKey = key;
+        option.dataset.manual = isManual ? "true" : "false";
+        option.dataset.pageManual = isManual ? "true" : "false";
+        option.dataset.registration = clean(preset.reg);
+        option.dataset.homePort = clean(preset.homePort);
+        option.dataset.destination = clean(preset.destination);
+        option.dataset.owner = clean(preset.owner);
+        return option;
+    }
+
+    function dispatchValueEvents(field){
+        field.dispatchEvent(new Event("input", { bubbles:true }));
+        field.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    function syncManualValue(){
+        const name = clean(input.value);
+        manualValue.value = name;
+        selectedPresetKey = "";
+
+        if(!name){
+            valueSelect.value = "";
+            dispatchValueEvents(valueSelect);
+            return;
+        }
+
+        const option = ensureSelectOption({ name }, true);
+        valueSelect.value = option.value;
+        dispatchValueEvents(valueSelect);
+    }
+
+    function setFieldValue(field, value, overwrite){
         if(!field) return;
         const next = clean(value);
         if(!next) return;
-        if(force !== true && clean(field.value)) return;
+        if(!overwrite && clean(field.value)) return;
 
         field.value = next;
-        field.dispatchEvent(new Event("input", { bubbles:true }));
-        field.dispatchEvent(new Event("change", { bubbles:true }));
+        dispatchValueEvents(field);
     }
 
     function selectPreset(preset){
         if(!preset) return;
 
+        selectedPresetKey = clean(preset.name).toLowerCase();
         input.value = preset.name;
-        input.dispatchEvent(new Event("input", { bubbles:true }));
+        manualValue.value = preset.name;
+
+        const option = ensureSelectOption(preset, false);
+        valueSelect.value = option.value;
+        dispatchValueEvents(valueSelect);
 
         setFieldValue(reg, preset.reg, true);
         setFieldValue(homePort, preset.homePort, true);
@@ -999,60 +1096,63 @@ function initRecreationalBoatPresetDropdown(){
 
         input.dispatchEvent(new Event("change", { bubbles:true }));
         closeMenu();
-
-        setTimeout(() => {
-            input.focus();
-            try{
-                input.setSelectionRange(input.value.length, input.value.length);
-            }catch(e){}
-        }, 0);
     }
 
     function renderMenu(){
-        refreshPresets();
-
-        const items = filteredPresets();
-        menu.innerHTML = "";
+        visiblePresets = filteredPresets();
         activeIndex = -1;
+        menu.replaceChildren();
 
-        if(!items.length){
-            menu.innerHTML = `<div class="rb-preset-empty">No matching presets. Keep typing to enter a new boat manually.</div>`;
+        if(!visiblePresets.length){
+            const empty = document.createElement("div");
+            empty.className = "rb-preset-empty";
+            empty.textContent = "No matching presets. Keep typing to enter the vessel manually.";
+            menu.appendChild(empty);
             return;
         }
 
-        items.forEach((preset, index) => {
+        const fragment = document.createDocumentFragment();
+
+        visiblePresets.forEach((preset, index) => {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "rb-preset-option";
             button.dataset.index = String(index);
             button.setAttribute("role", "option");
 
-            const meta = [
+            const title = document.createElement("strong");
+            title.textContent = preset.name;
+
+            const meta = document.createElement("span");
+            meta.textContent = [
                 preset.reg || "No registration",
                 preset.homePort,
                 preset.owner
             ].filter(Boolean).join(" • ");
 
-            button.innerHTML = `<strong>${escapeHtml(preset.name)}</strong><span>${escapeHtml(meta)}</span>`;
-
-            button.addEventListener("mousedown", function(e){
-                e.preventDefault();
-                selectPreset(preset);
-            });
-
-            menu.appendChild(button);
+            button.append(title, meta);
+            button.addEventListener("click", () => selectPreset(preset));
+            fragment.appendChild(button);
         });
+
+        menu.appendChild(fragment);
     }
 
     function openMenu(){
+        if(menu.classList.contains("open")){
+            renderMenu();
+            return;
+        }
         renderMenu();
         menu.classList.add("open");
         input.setAttribute("aria-expanded", "true");
+        toggle.setAttribute("aria-expanded", "true");
     }
 
     function closeMenu(){
         menu.classList.remove("open");
         input.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-expanded", "false");
         activeIndex = -1;
     }
 
@@ -1060,64 +1160,119 @@ function initRecreationalBoatPresetDropdown(){
         const buttons = Array.from(menu.querySelectorAll(".rb-preset-option"));
         buttons.forEach(button => button.classList.remove("active"));
 
-        if(buttons[activeIndex]){
-            buttons[activeIndex].classList.add("active");
-            buttons[activeIndex].scrollIntoView({ block:"nearest" });
+        const activeButton = buttons[activeIndex];
+        if(activeButton){
+            activeButton.classList.add("active");
+            activeButton.scrollIntoView({ block:"nearest" });
         }
     }
 
-    input.setAttribute("aria-expanded", "false");
-    input.setAttribute("aria-controls", "rbPresetMenu");
+    async function pullFreshPresets(){
+        if(location.protocol === "file:") return;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+
+        try{
+            const response = await fetch("/api/presets", {
+                cache:"no-store",
+                signal:controller.signal,
+                headers:{ "Accept":"application/json" }
+            });
+            if(!response.ok) return;
+
+            const payload = await response.json();
+            const entryPresets = payload && (
+                payload.entryPresets ||
+                payload.presetsByType ||
+                (payload.data && payload.data.entryPresets)
+            );
+
+            if(entryPresets && typeof entryPresets === "object"){
+                localStorage.setItem(
+                    "ssmCanalDashboard.entryPresets.byType",
+                    JSON.stringify(entryPresets)
+                );
+                refreshPresets();
+                if(menu.classList.contains("open")) renderMenu();
+            }
+        }catch(error){
+            if(error && error.name !== "AbortError"){
+                console.warn("Fresh presets could not be loaded:", error);
+            }
+        }finally{
+            clearTimeout(timeout);
+        }
+    }
 
     input.addEventListener("focus", openMenu);
-    input.addEventListener("input", openMenu);
+    input.addEventListener("input", function(){
+        const currentKey = clean(input.value).toLowerCase();
+        if(currentKey !== selectedPresetKey) syncManualValue();
+        openMenu();
+    });
 
+    toggle.setAttribute("aria-expanded", "false");
     toggle.addEventListener("click", function(){
         if(menu.classList.contains("open")){
             closeMenu();
-        }else{
+            return;
+        }
+
+        openMenu();
+        try{
+            input.focus({ preventScroll:true });
+        }catch(error){
             input.focus();
+        }
+    });
+
+    input.addEventListener("keydown", function(event){
+        if(event.key === "Escape"){
+            closeMenu();
+            return;
+        }
+
+        if(!menu.classList.contains("open") && (event.key === "ArrowDown" || event.key === "ArrowUp")){
             openMenu();
         }
-    });
-
-    input.addEventListener("keydown", function(e){
-        if(!menu.classList.contains("open")) return;
 
         const buttons = Array.from(menu.querySelectorAll(".rb-preset-option"));
+        if(!buttons.length) return;
 
-        if(e.key === "ArrowDown"){
-            e.preventDefault();
+        if(event.key === "ArrowDown"){
+            event.preventDefault();
             activeIndex = Math.min(activeIndex + 1, buttons.length - 1);
             updateActive();
-        }
-
-        if(e.key === "ArrowUp"){
-            e.preventDefault();
-            activeIndex = Math.max(activeIndex - 1, 0);
+        }else if(event.key === "ArrowUp"){
+            event.preventDefault();
+            activeIndex = activeIndex <= 0 ? buttons.length - 1 : activeIndex - 1;
             updateActive();
-        }
-
-        if(e.key === "Enter" && activeIndex >= 0){
-            e.preventDefault();
-            const items = filteredPresets();
-            if(items[activeIndex]) selectPreset(items[activeIndex]);
-        }
-
-        if(e.key === "Escape"){
-            closeMenu();
+        }else if(event.key === "Enter" && activeIndex >= 0){
+            event.preventDefault();
+            selectPreset(visiblePresets[activeIndex]);
         }
     });
 
-    document.addEventListener("mousedown", function(e){
-        if(!combo.contains(e.target)) closeMenu();
+    document.addEventListener("pointerdown", function(event){
+        if(!combo.contains(event.target)) closeMenu();
+    }, { passive:true });
+
+    window.addEventListener("storage", function(event){
+        if(event.key && event.key.includes("entryPresets")){
+            refreshPresets();
+            if(menu.classList.contains("open")) renderMenu();
+        }
     });
 
     refreshPresets();
+    syncManualValue();
     pullFreshPresets();
 }
 
-setupNormalForm("Recreational Boat");
+if(typeof setupNormalForm === "function"){
+    setupNormalForm("Recreational Boat");
+}
 initRecreationalBoatPresetDropdown();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
