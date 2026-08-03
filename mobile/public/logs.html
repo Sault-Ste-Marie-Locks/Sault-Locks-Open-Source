@@ -4,8 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Sault Canada Locks Tracker - Today Entries</title>
-<script src="assets/theme-boot.js?v=20260724timesort1"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260724timesort1"/>
+<script src="assets/theme-boot.js?v=20260803androidscroll1"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260803androidscroll1"/>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6C5CE7">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1327,6 +1327,81 @@ html.theme-dark body.logs-page .sticky-edit-actions{
     box-shadow:0 14px 34px rgba(0, 0, 0, 0.35) !important;
 }
 
+
+/* ANDROID / TOUCH SCROLL FIX - 2026-08-03 */
+html{
+    min-height:100%;
+    overflow-y:auto !important;
+    overscroll-behavior-y:auto;
+    scroll-behavior:auto !important;
+}
+
+body.logs-page{
+    min-height:100%;
+    overflow-y:auto !important;
+    touch-action:pan-y;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:auto;
+}
+
+body.logs-page .page,
+body.logs-page .entries-wrap,
+body.logs-page #logList{
+    touch-action:pan-y;
+}
+
+body.logs-page button,
+body.logs-page input,
+body.logs-page select,
+body.logs-page textarea,
+body.logs-page a{
+    touch-action:manipulation;
+}
+
+body.logs-page .entry-card{
+    scroll-margin-top:14px;
+}
+
+/* Lock the page without losing its current Android scroll position. */
+body.delete-confirm-lock{
+    position:fixed !important;
+    left:0 !important;
+    right:0 !important;
+    width:100% !important;
+    overflow:hidden !important;
+}
+
+.delete-confirm-modal{
+    max-height:calc(100dvh - 44px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+}
+
+@media (hover:none), (pointer:coarse){
+    /* Sticky controls and large layered shadows are expensive while Android scrolls. */
+    .sticky-edit-actions{
+        position:static !important;
+        top:auto !important;
+    }
+
+    body.logs-page .stat-card,
+    body.logs-page .controls-card,
+    body.logs-page .entry-card,
+    body.logs-page .empty-box,
+    html.theme-dark body.logs-page .stat-card,
+    html.theme-dark body.logs-page .controls-card,
+    html.theme-dark body.logs-page .entry-card,
+    html.theme-dark body.logs-page .empty-box{
+        box-shadow:0 5px 16px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.025) !important;
+    }
+
+    .delete-confirm-backdrop{
+        backdrop-filter:none !important;
+        -webkit-backdrop-filter:none !important;
+    }
+}
+
 </style>
 </head>
 
@@ -1468,10 +1543,8 @@ html.theme-dark body.logs-page .sticky-edit-actions{
     </div>
 </div>
     
-    <h1>‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ </h1>
 
-
-<script src="assets/app.js?v=20260724timesort1"></script>
+<script src="assets/app.js?v=20260803androidscroll1"></script>
 
 <script>
 const POSSIBLE_KEYS = [
@@ -1496,6 +1569,11 @@ let editingEntryKey = null;
 let editingEntryFingerprint = null;
 let pendingLogsRefresh = false;
 let pendingDeleteIndex = null;
+let pageScrollLockedAt = 0;
+let touchPointerActive = false;
+let pageScrollActive = false;
+let pageScrollIdleTimer = null;
+let queuedLogsRender = false;
 
 function setMobileEditActive(active){
     window.__ssmMobileEditModeActive = !!active;
@@ -2126,7 +2204,76 @@ function getFilteredSortedLogs(){
     return items;
 }
 
-function renderLogs(){
+function getPageScrollTop(){
+    return Math.max(
+        0,
+        window.scrollY ||
+        window.pageYOffset ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0
+    );
+}
+
+function restorePageScroll(top){
+    const wantedTop = Math.max(0, Number(top) || 0);
+
+    requestAnimationFrame(() => {
+        const maxTop = Math.max(
+            0,
+            document.documentElement.scrollHeight - window.innerHeight
+        );
+
+        window.scrollTo(0, Math.min(wantedTop, maxTop));
+    });
+}
+
+function isUserActivelyScrolling(){
+    return touchPointerActive || pageScrollActive;
+}
+
+function flushQueuedLogsRender(){
+    if(!queuedLogsRender || isUserActivelyScrolling() || editingIndex !== null){
+        return;
+    }
+
+    queuedLogsRender = false;
+    renderLogs({preserveScroll:true});
+}
+
+function queueLogsRenderAfterScroll(){
+    queuedLogsRender = true;
+
+    clearTimeout(pageScrollIdleTimer);
+    pageScrollIdleTimer = setTimeout(() => {
+        pageScrollActive = false;
+        flushQueuedLogsRender();
+    }, 180);
+}
+
+function lockPageScrollForModal(){
+    if(document.body.classList.contains("delete-confirm-lock")){
+        return;
+    }
+
+    pageScrollLockedAt = getPageScrollTop();
+    document.body.style.top = `-${pageScrollLockedAt}px`;
+    document.body.classList.add("delete-confirm-lock");
+}
+
+function unlockPageScrollForModal(){
+    if(!document.body.classList.contains("delete-confirm-lock")){
+        return;
+    }
+
+    document.body.classList.remove("delete-confirm-lock");
+    document.body.style.top = "";
+    restorePageScroll(pageScrollLockedAt);
+}
+
+function renderLogs(options = {}){
+    const preserveScroll = options.preserveScroll !== false;
+    const scrollBeforeRender = preserveScroll ? getPageScrollTop() : 0;
     const todayLogs = getTodayLogsLocal();
 
     updateTypeFilterOptions(todayLogs);
@@ -2147,6 +2294,10 @@ function renderLogs(){
                 No entries for today match this view.
             </div>
         `;
+
+        if(preserveScroll){
+            restorePageScroll(scrollBeforeRender);
+        }
         return;
     }
 
@@ -2157,6 +2308,10 @@ function renderLogs(){
             renderViewCard(item.entry, item.index);
         }
     });
+
+    if(preserveScroll){
+        restorePageScroll(scrollBeforeRender);
+    }
 }
 
 function renderGroupedLogs(items){
@@ -2356,12 +2511,12 @@ function startEdit(index){
     editingEntryFingerprint = getEntryFingerprintLocal(logs[index]);
     pendingLogsRefresh = false;
     setMobileEditActive(true);
-    renderLogs();
+    renderLogs({preserveScroll:false});
 
     requestAnimationFrame(() => {
         const card = logList.querySelector(".entry-card .edit-form")?.closest(".entry-card");
         if(card && card.scrollIntoView){
-            card.scrollIntoView({block:"start", behavior:"smooth"});
+            card.scrollIntoView({block:"start", behavior:"auto"});
         }
     });
 }
@@ -2413,16 +2568,21 @@ function syncDeletedLogToDashboard(entry){
 }
 
 window.addEventListener("ssm-mobile-logs-synced", function(){
-    // Background syncs can fire while the user is scrolling through the edit form.
-    // Never close or rebuild an active editor; apply the refreshed view after
-    // Save or Cancel instead.
+    // Never rebuild the list during an edit or while Android momentum scrolling
+    // is active. Replacing the DOM mid-swipe makes the page feel stuck or jumpy.
     if(editingIndex !== null){
         pendingLogsRefresh = true;
         return;
     }
 
     pendingLogsRefresh = false;
-    renderLogs();
+
+    if(isUserActivelyScrolling()){
+        queueLogsRenderAfterScroll();
+        return;
+    }
+
+    renderLogs({preserveScroll:true});
 });
 
 function editFieldValue(name, index, targetIndex){
@@ -2554,8 +2714,8 @@ function openDeleteConfirm(index){
     }
 
     if(backdrop){
+        lockPageScrollForModal();
         backdrop.classList.add("show");
-        document.body.classList.add("delete-confirm-lock");
     }
 }
 
@@ -2574,7 +2734,7 @@ function closeDeleteConfirm(){
         button.textContent = "Delete";
     }
 
-    document.body.classList.remove("delete-confirm-lock");
+    unlockPageScrollForModal();
 }
 
 function handleDeleteBackdropClick(event){
@@ -2681,6 +2841,33 @@ typeFilter.addEventListener("change", function(){
 
 
 
+document.addEventListener("touchstart", function(){
+    touchPointerActive = true;
+}, {passive:true});
+
+document.addEventListener("touchend", function(){
+    touchPointerActive = false;
+    clearTimeout(pageScrollIdleTimer);
+    pageScrollIdleTimer = setTimeout(() => {
+        pageScrollActive = false;
+        flushQueuedLogsRender();
+    }, 180);
+}, {passive:true});
+
+document.addEventListener("touchcancel", function(){
+    touchPointerActive = false;
+    flushQueuedLogsRender();
+}, {passive:true});
+
+window.addEventListener("scroll", function(){
+    pageScrollActive = true;
+    clearTimeout(pageScrollIdleTimer);
+    pageScrollIdleTimer = setTimeout(() => {
+        pageScrollActive = false;
+        flushQueuedLogsRender();
+    }, 180);
+}, {passive:true});
+
 document.addEventListener("keydown", function(event){
     if(event.key === "Escape"){
         closeDeleteConfirm();
@@ -2691,7 +2878,7 @@ renderLogs();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("service-worker.js?v=20260724timesort1").catch(()=>{});
+        navigator.serviceWorker.register("service-worker.js?v=20260803androidscroll1").catch(()=>{});
     });
 }
 </script>
