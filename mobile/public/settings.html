@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"/>
 <title>Settings - Sault Locks Ship Tracker</title>
-<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
+<script src="assets/theme-boot.js?v=20260803androidscroll2"></script>
+<link rel="stylesheet" href="assets/style.css?v=20260803androidscroll2"/>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
@@ -699,6 +699,102 @@ body.settings-compact .settings-summary{
         grid-template-columns:1fr;
     }
 }
+
+/* ANDROID DOCUMENT SCROLL FIX - 2026-08-03
+   The shared .page layout can apply a fixed viewport and overflow:hidden.
+   Keep this Settings screen in normal document flow so Chrome/WebView owns
+   the vertical scroll instead of a nested container. */
+html{
+    width:100% !important;
+    min-height:100% !important;
+    height:auto !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    overscroll-behavior-y:auto !important;
+    scroll-behavior:auto !important;
+    -webkit-text-size-adjust:100%;
+}
+
+body{
+    width:100% !important;
+    min-height:100% !important;
+    height:auto !important;
+    max-height:none !important;
+    margin:0 !important;
+    position:static !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    overscroll-behavior-y:auto !important;
+    touch-action:pan-y pinch-zoom !important;
+    -webkit-overflow-scrolling:touch;
+}
+
+body > .page.settings-page{
+    width:100% !important;
+    min-height:100svh !important;
+    height:auto !important;
+    max-height:none !important;
+    position:relative !important;
+    inset:auto !important;
+    overflow:visible !important;
+    overscroll-behavior:auto !important;
+    touch-action:pan-y pinch-zoom !important;
+    contain:none !important;
+}
+
+.settings-shell,
+.settings-section,
+.setting-card,
+.settings-summary{
+    overflow:visible !important;
+    touch-action:pan-y pinch-zoom;
+}
+
+button,
+a,
+input,
+select,
+textarea{
+    touch-action:manipulation;
+}
+
+/* Keep the reset overlay from becoming a second full-page scroll surface. */
+.popup-overlay{
+    overscroll-behavior:contain;
+    touch-action:pan-y;
+}
+
+.popup-box{
+    max-height:calc(100dvh - 36px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+}
+
+/* Android Chrome/WebView performs much better without several live blur
+   layers and large shadows moving during every swipe. */
+@media (hover:none) and (pointer:coarse){
+    .settings-app-header .header-btn,
+    .popup-overlay{
+        backdrop-filter:none !important;
+        -webkit-backdrop-filter:none !important;
+    }
+
+    .setting-card,
+    .summary-card,
+    .settings-app-header .header-btn{
+        box-shadow:none !important;
+    }
+
+    .toggle-btn,
+    .switch,
+    .action-btn,
+    .setting-link{
+        -webkit-user-select:none;
+        user-select:none;
+    }
+}
+
 </style>
 </head>
 
@@ -910,7 +1006,7 @@ body.settings-compact .settings-summary{
 
 <div class="toast" id="settingsToast">Saved</div>
 
-<script src="assets/app.js?v=20260711returntimepoll1"></script>
+<script src="assets/app.js?v=20260803androidscroll2"></script>
 
 <script>
 const SETTINGS_STORAGE_KEY = "ssmCanalDashboard.settings.v2";
