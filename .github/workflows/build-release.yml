@@ -21,40 +21,35 @@ jobs:
           "BUILD_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
 
           $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
           $pkg.version = $version
           [System.IO.File]::WriteAllText((Resolve-Path package.json), ($pkg | ConvertTo-Json -Depth 50), $utf8NoBom)
           [System.IO.File]::WriteAllText((Join-Path $PWD ".lock-release-version"), $version, $utf8NoBom)
 
-      - name: Create source update ZIP
+      - name: Install build dependencies
+        shell: pwsh
+        run: npm ci
+
+      - name: Build full Windows app
         shell: pwsh
         run: |
-          Remove-Item update-payload -Recurse -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Path "update-payload\resources\app" -Force | Out-Null
+          npm run build-win
 
-          $exclude = @(
-            ".git",
-            "node_modules",
-            "dist",
-            "update-payload",
-            "database",
-            "data",
-            "data-backup",
-            "*.zip",
-            "*.exe",
-            "*.log"
-          )
-
-          Get-ChildItem -Force | Where-Object {
-            $name = $_.Name
-            -not ($exclude | Where-Object { $name -like $_ })
-          } | ForEach-Object {
-            Copy-Item $_.FullName -Destination "update-payload\resources\app" -Recurse -Force
+          $packageDir = Join-Path $PWD "dist\Lock Release-win32-x64"
+          if (-not (Test-Path (Join-Path $packageDir "Lock Release.exe"))) {
+            throw "Packaged Lock Release.exe was not created."
           }
 
-          # The app now delta-copies on install, so unchanged files inside this ZIP are not rewritten locally.
-          Compress-Archive -Path "update-payload\*" -DestinationPath "Lock_Release_Windows.zip" -Force
+          $appDir = Join-Path $packageDir "resources\app"
+          if (-not (Test-Path (Join-Path $appDir "package.json"))) {
+            throw "Packaged resources/app source was not created."
+          }
+
+          foreach ($name in @("database","data","data-backup","dist","update-payload",".git",".github")) {
+            Remove-Item (Join-Path $appDir $name) -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
+          Compress-Archive -Path (Join-Path $packageDir "*") -DestinationPath "Lock_Release_Windows.zip" -Force
 
       - name: Publish release to public updates repo
         shell: pwsh
@@ -63,7 +58,10 @@ jobs:
         run: |
           gh release view "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates *> $null
           if ($LASTEXITCODE -eq 0) {
-            gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes
+            gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes --cleanup-tag
           }
 
-          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --title "Lock Release v$env:BUILD_VERSION" --notes "V25 fixes mobile Logs edit mode, background sync editor closing, and duplicate edit updates."
+          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" `
+            --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates `
+            --title "Lock Release v$env:BUILD_VERSION" `
+            --notes "Emergency updater recovery. Restores the proven auto-update engine while keeping the rebuilt Locks Tracker application and supports automatic recovery from v1.0.64-v1.0.66."
