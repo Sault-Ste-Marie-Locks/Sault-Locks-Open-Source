@@ -175,14 +175,17 @@ jobs:
           hdiutil create \
             -volname "Lock Release" \
             -srcfolder dmg-root \
+            -fs HFS+ \
             -ov \
             -format UDRW \
             "$RW_DMG"
 
           ATTACH_OUTPUT="$(hdiutil attach -readwrite -noverify -noautoopen "$RW_DMG")"
-          DEVICE="$(printf '%s\n' "$ATTACH_OUTPUT" | awk '/Apple_HFS/ {print $1; exit}')"
-          MOUNT_POINT="/Volumes/Lock Release"
+          printf '%s\n' "$ATTACH_OUTPUT"
+          DEVICE="$(printf '%s\n' "$ATTACH_OUTPUT" | awk '/^\/dev\// {print $1; exit}')"
+          MOUNT_POINT="$(printf '%s\n' "$ATTACH_OUTPUT" | sed -n 's#^.*\(/Volumes/.*\)$#\1#p' | tail -1)"
           test -n "$DEVICE"
+          test -n "$MOUNT_POINT"
           test -d "$MOUNT_POINT"
 
           cp assets/lock-release.icns "$MOUNT_POINT/.VolumeIcon.icns"
