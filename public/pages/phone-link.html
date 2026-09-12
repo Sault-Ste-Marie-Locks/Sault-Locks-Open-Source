@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phone Link</title>
+<script>try{if(localStorage.getItem('ssmCanalDashboard.darkMode')==='true')document.documentElement.classList.add('app-dark')}catch(e){}</script>
+<link rel="stylesheet" href="/assets/style.css?v=20260911headerfit1" />
+<style id="phone-link-clean-v3">
+.phone-link-page .page-intro{display:none!important}
+.phone-link-page #phoneLink{max-width:1180px;margin:18px auto 28px}
+.phone-page-head{margin:0 0 14px}.phone-page-head h1{margin:0;font-size:26px;line-height:1.1}.phone-page-head p{margin:5px 0 0;color:var(--text-soft);font-size:12.5px}
+.phone-top-strip{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.phone-box,.phone-devices-clean{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.phone-box{padding:14px 15px}.phone-box-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}.phone-box-head h2,.devices-head h2{margin:0;font-size:15px}.phone-box-head p,.devices-head p{margin:3px 0 0;color:var(--text-soft);font-size:11.5px}
+.server-status-chip{display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:var(--surface-alt);font-size:11px;white-space:nowrap}.server-status-chip .server-dot{width:7px;height:7px;margin:0}
+.phone-server-info{margin:0 0 9px;color:var(--text-soft);font-size:12px;line-height:1.4}.phone-link-page .server-url{margin:0 0 10px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface-alt);font-size:11px;word-break:break-all}
+.phone-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.phone-actions .btn{min-height:32px;padding:6px 11px!important;font-size:12px}
+.pair-inline{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}.pair-code.compact{margin:2px 0 8px!important;padding:0!important;min-height:0!important;border:0!important;background:transparent!important;font-size:28px!important;font-weight:800!important;letter-spacing:.2em!important;text-align:left!important}.pair-meta.compact{margin:0 0 10px!important;font-size:11.5px!important;color:var(--text-soft)!important}
+.phone-link-page .qr-box{width:112px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#fff}.phone-link-page .qr-box img{display:block;width:98px;height:98px;margin:auto}.phone-link-page .qr-box small{display:none}
+.phone-devices-clean{overflow:hidden}.devices-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}.phone-trust-pill{font-size:10.5px!important;padding:5px 8px!important}.devices-note{padding:8px 14px;color:var(--text-soft);font-size:11.5px;border-bottom:1px solid var(--line)}
+.phone-link-page .phone-table-wrap{border:0!important;border-radius:0!important}.phone-link-page #phoneTable{table-layout:auto}.phone-link-page #phoneTable th{background:var(--surface-alt);font-size:10px;text-transform:uppercase;letter-spacing:.035em}.phone-link-page #phoneTable th,.phone-link-page #phoneTable td{padding:8px 9px;vertical-align:middle}.phone-link-page #phoneTable td:first-child{min-width:210px}.phone-link-page #phoneTable .phone-device-meta{font-size:10.5px;color:var(--text-soft);white-space:normal}.phone-link-page #phoneTable .phone-trust-note{font-size:10px;line-height:1.25;margin-top:3px;color:var(--text-soft)}
+.phone-link-page .phone-activity{border-top:1px solid var(--line);padding:0 14px}.phone-link-page .phone-activity summary{padding:10px 0;font-size:11.5px;font-weight:700}.phone-link-page .phone-event-log{margin:0 0 10px}.phone-link-page .btn:disabled{opacity:.45}.phone-link-page .main{padding-bottom:20px!important}
+.phone-link-page #phoneTable th:nth-child(1){width:34%}.phone-link-page #phoneTable th:nth-child(2){width:10%}.phone-link-page #phoneTable th:nth-child(3){width:22%}.phone-link-page #phoneTable th:nth-child(4){width:25%}.phone-link-page #phoneTable th:last-child{width:1%}.phone-device-cell strong{display:block;font-size:13px}.phone-device-meta{display:flex!important;align-items:center;gap:6px!important;margin-top:4px!important;flex-wrap:wrap}.phone-device-meta span{opacity:.45}.phone-pairing-cell small,.phone-activity-cell small{display:block;margin-top:4px;color:var(--text-soft);font-size:10px;line-height:1.25}.phone-activity-cell strong{display:block;font-size:11.5px;white-space:nowrap}.phone-row-actions{text-align:right;white-space:nowrap}.phone-pairing-cell .btn,.phone-row-actions .btn{min-height:30px!important;padding:5px 9px!important;font-size:11px!important}
+.phone-pair-box .phone-box-head{margin-bottom:0;padding-bottom:10px;border-bottom:1px solid var(--line)}.pair-head-actions{margin-left:auto}.pair-clean-body{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:12px}.pair-code-panel{min-width:0;flex:1}.pair-code-label{display:block;margin-bottom:6px;color:var(--text-soft);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.pair-code.compact{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:150px!important;min-height:42px!important;margin:0 0 7px!important;padding:8px 12px!important;border:1px dashed var(--line)!important;border-radius:8px!important;background:var(--surface-alt)!important;font-size:21px!important;line-height:1!important;letter-spacing:.18em!important;text-align:center!important}.pair-meta.compact{margin:0!important;font-size:11px!important}.phone-whitelist-card,.phone-linked-card{margin-top:12px}.phone-whitelist-card .devices-head{background:color-mix(in srgb,var(--success) 5%,var(--surface))}.phone-empty-row{padding:14px!important;text-align:center!important;color:var(--text-soft)!important;font-size:11.5px!important}.phone-link-page #whitelistTable,.phone-link-page #phoneTable{width:100%;table-layout:auto}.phone-link-page #whitelistTable th,.phone-link-page #whitelistTable td{padding:8px 9px;vertical-align:middle}.phone-link-page #whitelistTable th{background:var(--surface-alt);font-size:10px;text-transform:uppercase;letter-spacing:.035em}.phone-link-page #whitelistTable th:nth-child(1),.phone-link-page #phoneTable th:nth-child(1){width:34%}.phone-link-page #whitelistTable th:nth-child(2),.phone-link-page #phoneTable th:nth-child(2){width:10%}.phone-link-page #whitelistTable th:nth-child(3),.phone-link-page #phoneTable th:nth-child(3){width:22%}.phone-link-page #whitelistTable th:nth-child(4),.phone-link-page #phoneTable th:nth-child(4){width:25%}.phone-link-page #whitelistTable th:last-child,.phone-link-page #phoneTable th:last-child{width:1%}
+.phone-actions-head{text-align:right}.phone-row-actions{position:relative;text-align:right}.phone-menu-wrap{position:relative;display:inline-flex}.phone-menu-btn{width:34px;height:30px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text);font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer}.phone-menu-btn:hover{background:var(--surface-alt)}.phone-menu{position:absolute;right:0;top:35px;z-index:50;min-width:165px;padding:5px;border:1px solid var(--line);border-radius:9px;background:var(--surface);box-shadow:0 12px 28px rgba(15,23,42,.16)}.phone-menu[hidden]{display:none!important}.phone-menu button{display:block;width:100%;padding:8px 10px;border:0;border-radius:6px;background:transparent;color:var(--text);font-size:11.5px;text-align:left;cursor:pointer}.phone-menu button:hover{background:var(--surface-alt)}.phone-menu button.danger{color:var(--danger)}.phone-link-page #whitelistTable th:nth-child(1),.phone-link-page #phoneTable th:nth-child(1){width:44%}.phone-link-page #whitelistTable th:nth-child(2),.phone-link-page #phoneTable th:nth-child(2){width:13%}.phone-link-page #whitelistTable th:nth-child(3),.phone-link-page #phoneTable th:nth-child(3){width:34%}.phone-link-page #whitelistTable th:last-child,.phone-link-page #phoneTable th:last-child{width:1%}.phone-device-editor[hidden]{display:none!important}.phone-device-editor{position:fixed;inset:0;z-index:1000000;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.42);backdrop-filter:blur(7px)}body.phone-device-editor-open{overflow:hidden}.phone-device-editor-backdrop{position:absolute;inset:0}.phone-device-editor-card{position:relative;z-index:1;width:min(560px,100%);border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 24px 70px rgba(15,23,42,.28);overflow:hidden}.phone-device-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:17px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--surface),var(--surface-alt))}.phone-device-editor-head h3{margin:0;font-size:18px}.phone-device-editor-head p{margin:4px 0 0;color:var(--text-soft);font-size:12px}.phone-device-editor-close{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-size:20px;cursor:pointer}.phone-device-editor-body{padding:16px 18px}.phone-device-editor-field{display:grid;gap:6px}.phone-device-editor-field span,.phone-device-editor-info span{color:var(--text-soft);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.phone-device-editor-field input{width:100%;height:42px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--text);padding:0 11px;font-size:14px;outline:none}.phone-device-editor-field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12)}.phone-device-editor-info{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.phone-device-editor-info>div{padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface-alt)}.phone-device-editor-info strong{display:block;margin-top:3px;font-size:12px;word-break:break-word}.phone-device-editor-actions{display:flex;justify-content:space-between;gap:10px;padding:13px 18px;border-top:1px solid var(--line);background:var(--surface-alt)}.phone-device-editor-actions-right{display:flex;gap:8px}.phone-device-editor-actions .btn{min-height:36px;font-size:12px}.phone-menu{display:none!important}@media(max-width:620px){.phone-device-editor{padding:10px;place-items:end center}.phone-device-editor-card{border-radius:16px 16px 0 0}.phone-device-editor-info{grid-template-columns:1fr}.phone-device-editor-actions{flex-direction:column-reverse}.phone-device-editor-actions-right{display:grid;grid-template-columns:1fr 1fr}.phone-device-editor-actions .btn{width:100%}}@media(max-width:900px){.phone-top-strip{grid-template-columns:1fr}.pair-inline{grid-template-columns:1fr}.devices-head{align-items:flex-start;flex-direction:column}.server-status-chip{white-space:normal}.phone-link-page #phoneTable{min-width:780px}}
+
+/* compact phone controls */
+.phone-top-strip{gap:14px!important;align-items:stretch!important}
+.phone-box{padding:0!important;overflow:hidden!important}
+.phone-box .phone-box-head{margin:0!important;padding:12px 14px!important;border-bottom:1px solid var(--line)!important}
+.phone-box-head h2{font-size:14px!important}.phone-box-head p{font-size:11px!important}
+.server-clean-body{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:14px;padding:12px 14px}
+.server-copy{min-width:0}.phone-server-info{margin:0 0 8px!important;max-width:520px!important;line-height:1.35!important}
+.phone-link-page .server-url{margin:0!important;padding:6px 8px!important;font-size:10.5px!important}
+.server-actions{align-self:end;flex-wrap:nowrap!important}.server-actions .btn,.pair-head-actions .btn{min-height:34px!important;padding:6px 12px!important}
+.phone-pair-box .phone-box-head{padding:12px 14px!important}
+.pair-clean-body{min-height:82px!important;padding:12px 14px!important;gap:12px!important}
+.pair-code-label{margin-bottom:5px!important}.pair-code.compact{min-width:136px!important;min-height:38px!important;margin:0 0 5px!important;padding:7px 10px!important;font-size:19px!important}
+.pair-meta.compact{font-size:10.5px!important}.phone-link-page .qr-box{width:92px!important;padding:5px!important}.phone-link-page .qr-box img{width:80px!important;height:80px!important}
+@media(max-width:720px){.server-clean-body{grid-template-columns:1fr}.server-actions{justify-content:flex-start}.pair-head-actions{width:100%;margin-top:8px}.phone-box-head{flex-wrap:wrap}.pair-clean-body{align-items:flex-start}}
+
+/* phone top polish v2 */
+.phone-top-strip{gap:16px!important}
+.phone-server-box,.phone-pair-box{border-radius:12px!important;box-shadow:0 2px 8px rgba(15,23,42,.05)!important}
+.phone-box .phone-box-head{padding:14px 16px!important;align-items:center!important}
+.phone-box-head h2{font-size:15px!important}.phone-box-head p{font-size:11.5px!important;margin-top:4px!important}
+.server-status-chip{padding:6px 10px!important;font-size:11.5px!important;font-weight:700!important}
+.server-clean-body{padding:14px 16px!important;gap:16px!important;align-items:center!important}
+.phone-server-info{font-size:12px!important;line-height:1.45!important;margin:0 0 10px!important}
+.phone-link-page .server-url{padding:8px 10px!important;border-radius:8px!important;font-size:11px!important;background:var(--surface-alt)!important}
+.server-actions{align-self:center!important}
+.server-actions .btn,.pair-head-actions .btn{min-height:36px!important;padding:7px 13px!important}
+.pair-clean-body{padding:16px!important;min-height:160px!important;align-items:center!important;gap:22px!important}
+.pair-code-panel{display:flex!important;flex-direction:column!important;justify-content:center!important;min-width:0!important}
+.pair-code-label{font-size:10.5px!important;margin-bottom:8px!important}
+.pair-code.compact{min-width:170px!important;min-height:46px!important;padding:9px 14px!important;font-size:22px!important;border-radius:10px!important}
+.pair-meta.compact{font-size:11px!important;line-height:1.45!important;max-width:320px!important}
+.phone-link-page .qr-box{width:190px!important;height:190px!important;padding:10px!important;border-radius:12px!important;display:grid!important;place-items:center!important}
+.phone-link-page .qr-box[hidden]{display:none!important}
+.phone-link-page .qr-box img{width:166px!important;height:166px!important;border-radius:6px!important}
+.phone-whitelist-card .devices-head{padding-right:14px!important}
+@media(max-width:900px){.pair-clean-body{min-height:0!important}.phone-link-page .qr-box{width:170px!important;height:170px!important}.phone-link-page .qr-box img{width:148px!important;height:148px!important}}
+/* phone top polish v2 */
+
+/* server control row alignment */
+.server-clean-body{display:block!important;padding:14px 16px!important}
+.server-clean-body .phone-server-info{margin:0 0 12px!important}
+.server-control-row{display:grid!important;grid-template-columns:minmax(0,1fr) 126px 126px;gap:8px;align-items:center}
+.server-control-row .server-url{display:flex;align-items:center;min-height:40px!important;height:40px!important;margin:0!important;padding:0 12px!important}
+.server-control-row .server-url[hidden]{display:none!important}
+.server-control-row:has(.server-url[hidden]){grid-template-columns:126px 126px;justify-content:end}
+.server-control-row>.btn{width:126px!important;height:40px!important;min-height:40px!important;padding:0 14px!important;margin:0!important}
+@media(max-width:720px){.server-control-row,.server-control-row:has(.server-url[hidden]){grid-template-columns:1fr 1fr}.server-control-row .server-url{grid-column:1/-1}.server-control-row>.btn{width:100%!important}}
+</style>
+</head>
+<body class="phone-link-page">
+<div class="app-shell easy-only"><main class="main">
+{{DASHBOARD_TOPBAR}}
+<section class="section active" id="phoneLink">
+  <div class="phone-page-head"><h1>Phone Link</h1><p>Pair and manage trusted mobile devices.</p></div>
+  <div class="phone-top-strip">
+    <section class="phone-box phone-server-box">
+      <div class="phone-box-head"><div><h2>Server</h2><p>Mobile access and sync</p></div><div class="server-status-chip"><span class="server-dot" id="phoneServerDot"></span><strong id="phoneServerStatus">Phone server offline</strong></div></div>
+      <div class="server-clean-body">
+        <p class="phone-server-info" id="phoneServerInfo">Start the phone server when a device needs to pair or connect.</p>
+        <div class="server-control-row">
+          <div class="server-url" id="phoneServerUrl" hidden></div>
+          <button class="btn primary" id="startPhoneServer" type="button">Start</button>
+          <button class="btn danger" id="stopPhoneServer" type="button">Stop</button>
+        </div>
+      </div>
+    </section>
+    <section class="phone-box phone-pair-box">
+      <div class="phone-box-head"><div><h2>Pair a Phone</h2><p>Create a temporary pairing code</p></div><div class="phone-actions pair-head-actions"><button class="btn primary" id="generatePairCode" type="button">Generate Code</button><button class="btn" id="cancelPairCode" type="button">Cancel</button></div></div>
+      <div class="pair-clean-body"><div class="pair-code-panel"><span class="pair-code-label">Pairing code</span><div class="pair-code compact" id="pairCode">------</div><div class="pair-meta compact" id="pairMeta">No active code</div></div><div class="qr-box" id="pairQrBox" hidden><img id="pairQr" alt="Phone link QR code"><small>Scan to pair</small></div></div>
+    </section>
+  </div>
+  <section class="phone-devices-clean phone-whitelist-card">
+    <div class="devices-head"><div><h2>Whitelisted Devices</h2><p>Trusted phones that can restore their pairing automatically</p></div></div>
+    <div class="table-wrap phone-table-wrap"><table id="whitelistTable"></table></div>
+  </section>
+  <section class="phone-devices-clean phone-linked-card">
+    <div class="devices-head"><div><h2>Linked Devices</h2><p>Current phone sessions that are not whitelisted</p></div></div>
+    <div class="table-wrap phone-table-wrap"><table id="phoneTable"></table></div>
+    <details class="phone-activity"><summary>Recent phone activity</summary><div class="phone-event-log" id="phoneEventLog"></div></details>
+  </section>
+</section>
+</main></div>
+<datalist id="vesselList"></datalist>
+<div class="toast" id="toast">Saved</div>
+<script src="/assets/old-db-data.js"></script>
+<script src="/assets/app.js?v=20260912phonerefresh1"></script>
+</body>
+</html>

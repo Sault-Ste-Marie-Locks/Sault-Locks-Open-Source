@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="/assets/lock-header-fix.css?v=20260912-dark1" />
+<link rel="stylesheet" href="/assets/dark-theme-v3.css?v=20260912-5" />
+<header class="topbar topbar-single-row" data-dashboard-topbar>
+  <a class="topbar-logo" href="/" aria-label="Go home">
+    <img class="logo-light" src="/assets/ssm-logo.png" alt="Sault Ste. Marie logo" />
+    <img class="logo-dark" src="/assets/ssm-logo-dark.png" alt="Sault Ste. Marie logo" />
+  </a>
+  <nav class="page-nav topbar-nav" aria-label="Primary navigation" data-dashboard-nav>
+    <a href="/" data-nav-route="/">Home</a>
+    <a href="/new-entry" data-nav-route="/new-entry">New Entry</a>
+    <a href="/search" data-nav-route="/search">Lookup</a>
+    <a href="/records" data-nav-route="/records">All Records</a>
+    <a href="/phone-link" data-nav-route="/phone-link">Phone Link</a>
+    <a href="/management" data-nav-route="/management">Management</a>
+    <a href="/settings" data-nav-route="/settings">Settings</a>
+  </nav>
+  <div class="top-actions">
+    <div class="pill" id="clock">00:00:00</div>
+    <div class="header-search-wrap">
+      <button class="header-search-button" id="headerSearchToggle" type="button" aria-expanded="false" aria-controls="headerSearchPopover">Search</button>
+      <div class="header-search-popover" id="headerSearchPopover" hidden>
+        <div class="searchbar header-searchbar">
+          <input id="globalSearch" type="search" aria-label="Search lock records" placeholder="Search vessels, registrations, owners, destinations..." autocomplete="off" />
+        </div>
+      </div>
+    </div>
+    <a class="pill primary" href="/new-entry">New Entry</a>
+  </div>
+</header>
+<script>
+(() => {
+  const drawClock = () => {
+    const el = document.getElementById('clock');
+    if (!el) return;
+    const d = new Date();
+    let format='24';
+    try { format=JSON.parse(localStorage.getItem('ssmCanalDashboard.settings.v2')||'{}').timeFormat||localStorage.getItem('ssmCanalDashboard.timeFormat')||'12'; } catch(_) {}
+    if(format==='12') el.textContent=d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'});
+    else el.textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':');
+  };
+  drawClock();
+  clearInterval(window.__saultLocksHeaderClock);
+  window.__saultLocksHeaderClock = setInterval(drawClock, 1000);
+
+  const toggle = document.getElementById('headerSearchToggle');
+  const popover = document.getElementById('headerSearchPopover');
+  const input = document.getElementById('globalSearch');
+  const closeSearch = () => { if (!popover) return; popover.hidden = true; toggle?.setAttribute('aria-expanded','false'); };
+  toggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = popover?.hidden;
+    if (!popover) return;
+    popover.hidden = !open;
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) setTimeout(() => input?.focus(), 0);
+  });
+  popover?.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', closeSearch);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSearch(); });
+})();
+</script>

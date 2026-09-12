@@ -4,15 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Sault Canada Locks Tracker - Today Entries</title>
-<script src="assets/theme-boot.js?v=20260803androidscroll1"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260803androidscroll1"/>
-<link rel="manifest" href="manifest.json">
+<script src="/mobile/assets/theme-boot.js?v=20260803androidscroll1"></script>
+<link rel="stylesheet" href="/mobile/assets/style.css?v=20260803androidscroll1"/>
+<link rel="manifest" href="/mobile/manifest.json">
 <meta name="theme-color" content="#6C5CE7">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sault Locks">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="/mobile/assets/icon-192.png">
 
 <style>
 .entries-actions{
@@ -1403,13 +1403,22 @@ body.delete-confirm-lock{
 }
 
 </style>
+<style id="RETURN_EDIT_TOGGLE_STYLE_20260912">
+.edit-returning-row{position:relative;display:flex;align-items:center;gap:14px;width:100%;margin:4px 0 16px;padding:14px 15px;border:1px solid var(--border-strong,rgba(148,163,184,.22));border-radius:16px;background:var(--card-2,rgba(255,255,255,.06));cursor:pointer;user-select:none}
+.edit-returning-row>input{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+.edit-returning-copy{display:grid;flex:1;min-width:0;gap:3px}.edit-returning-copy strong{color:var(--text);font-size:14px;font-weight:950}.edit-returning-copy small{color:var(--muted);font-size:12px;line-height:1.35;font-weight:750}
+.edit-returning-switch{position:relative;width:50px;height:30px;min-width:50px;border-radius:999px;border:1px solid var(--border-strong,rgba(148,163,184,.25));background:rgba(100,116,139,.35);transition:.16s ease}
+.edit-returning-switch:after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.28);transition:transform .16s ease}
+.edit-returning-row input:checked~.edit-returning-switch{background:var(--blue,#348DBC);border-color:var(--blue-border,#5CADDA)}.edit-returning-row input:checked~.edit-returning-switch:after{transform:translateX(20px)}
+html.theme-dark body.logs-page .edit-returning-row,html.app-dark body.logs-page .edit-returning-row{background:#111827!important;border-color:rgba(148,163,184,.22)!important}
+</style>
 </head>
 
 <body class="logs-page">
 <div class="page">
 
     <header class="manage-header" aria-label="Manage page header">
-        <a class="header-btn" href="index.html" aria-label="Back">
+        <a class="header-btn" href="/mobile" aria-label="Back">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="m15 18-6-6 6-6"></path>
             </svg>
@@ -1544,7 +1553,7 @@ body.delete-confirm-lock{
 </div>
     
 
-<script src="assets/app.js?v=20260803androidscroll1"></script>
+<script src="/mobile/assets/app.js?v=20260912returnsync1"></script>
 
 <script>
 const POSSIBLE_KEYS = [
@@ -2407,6 +2416,18 @@ function renderEditCard(entry, index){
     const card = document.createElement("div");
     card.className = "entry-card";
 
+    /* RETURN_EDIT_TOGGLE_DATA_20260912 */
+    const editType=String(getEntryType(entry)||"").trim().toLowerCase();
+    const canEditReturning=editType==="rb"||editType==="rec"||editType==="recreation"||editType==="recreational"||editType==="recreational boat"||editType.includes("recreational");
+    const rawReturning=entry.returningExpected ?? entry.willReturn ?? entry.returning ?? entry.returnRequired ?? entry.expectedReturn;
+    const returningChecked=rawReturning===true||rawReturning===1||["true","1","yes","y","returning","checked"].includes(String(rawReturning??"").trim().toLowerCase());
+    const returningEditHtml=canEditReturning ? `
+        <label class="edit-returning-row">
+            <input id="edit_returning_${index}" type="checkbox" ${returningChecked ? "checked" : ""}>
+            <span class="edit-returning-copy"><strong>Returning</strong><small>Keep this boat in the Returning Boat dropdown. Turn this off if it was marked returning by mistake.</small></span>
+            <span class="edit-returning-switch" aria-hidden="true"></span>
+        </label>` : "";
+
     card.innerHTML = `
         <div class="entry-header">
             <div>
@@ -2465,6 +2486,8 @@ function renderEditCard(entry, index){
 
             <label>Home Port</label>
             <input id="edit_homePort_${index}" value="${escapeHTMLLocal(entry.homePort || "")}">
+
+            ${returningEditHtml}
 
             <label>Added By</label>
             <input id="edit_user_${index}" value="${escapeHTMLLocal(getEntryUser(entry))}">
@@ -2617,6 +2640,12 @@ async function saveEdit(index){
     const reason = editFieldValue("reason", index, targetIndex);
     const notes = editFieldValue("notes", index, targetIndex);
 
+    /* RETURN_EDIT_SAVE_VALUE_20260912 */
+    const returningInput=document.getElementById(`edit_returning_${index}`)||document.getElementById(`edit_returning_${targetIndex}`);
+    const previousReturnValue=oldEntry.returningExpected ?? oldEntry.willReturn ?? oldEntry.returning ?? oldEntry.returnRequired ?? oldEntry.expectedReturn;
+    const previousReturning=previousReturnValue===true||previousReturnValue===1||["true","1","yes","y","returning","checked"].includes(String(previousReturnValue??"").trim().toLowerCase());
+    const returningExpected=returningInput ? returningInput.checked : previousReturning;
+
     logs[targetIndex] = {
         ...oldEntry,
 
@@ -2652,6 +2681,10 @@ async function saveEdit(index){
         dest:destination,
 
         homePort:homePort,
+
+        /* RETURN_EDIT_SAVE_FIELDS_20260912 */
+        returningExpected:returningExpected,
+        willReturn:returningExpected,
 
         createdBy:addedBy || getActiveProfileNameLocal(),
         createdByName:addedBy || getActiveProfileNameLocal(),

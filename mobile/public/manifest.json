@@ -2,7 +2,7 @@
   "name": "Sault Locks Ship Tracker",
   "short_name": "Sault Locks",
   "description": "Mobile log tracker for Sault Locks ship entries.",
-  "start_url": "/mobile/index.html",
+  "start_url": "/mobile",
   "scope": "/mobile/",
   "display": "standalone",
   "orientation": "portrait",

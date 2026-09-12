@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>All Records</title>
+
+  <script>
+    try {
+      if (localStorage.getItem("ssmCanalDashboard.darkMode") === "true") {
+        document.documentElement.classList.add("app-dark");
+      }
+    } catch (e) {}
+  </script>
+
+  <link rel="stylesheet" href="/assets/style.css?v=20260911headerfit1" />
+  <link rel="stylesheet" href="/assets/records.css?v=20260912darkpolish1" />
+
+</head>
+
+<body class="records-page">
+  <div class="app-shell easy-only">
+    <main class="main">
+    {{DASHBOARD_TOPBAR}}
+
+      <div class="page-intro">
+        <div>
+          <div class="eyebrow">Records Workspace</div>
+          <h1>Reports</h1>
+          <p>Pick a report, check the preview, then print or save it as PDF.</p>
+        </div>
+      </div>
+
+      <section class="section active" id="reports">
+        <div class="records-layout">
+          <section class="panel records-controls records-toolbar" aria-label="Report controls">
+            <div class="records-toolbar-body">
+              <div class="report-control-group report-type-group">
+                <span class="records-control-label">Report</span>
+                <div class="report-type-list" role="tablist" aria-label="Report type">
+                  <button class="tab report-choice active" data-report="dailyReport" type="button">Daily</button>
+                  <button class="tab report-choice" data-report="monthlyReport" type="button">Monthly</button>
+                  <button class="tab report-choice" data-report="betweenReport" type="button">Range</button>
+                </div>
+              </div>
+
+              <div class="report-control-group report-period-group">
+                <span class="records-control-label">Period</span>
+                <div class="record-date-stack">
+                  <div class="field report-field is-active" data-for-report="dailyReport">
+                    <label class="sr-only" for="reportDate">Day</label>
+                    <input type="date" id="reportDate" aria-label="Report day" />
+                  </div>
+
+                  <div class="field report-field" data-for-report="monthlyReport" hidden>
+                    <label class="sr-only" for="reportMonth">Month</label>
+                    <input type="month" id="reportMonth" aria-label="Report month" />
+                  </div>
+
+                  <div class="report-field range-fields" data-for-report="betweenReport" hidden>
+                    <div class="field">
+                      <label class="sr-only" for="startDate">Start date</label>
+                      <input type="date" id="startDate" aria-label="Start date" />
+                    </div>
+
+                    <span class="range-divider" aria-hidden="true">to</span>
+
+                    <div class="field">
+                      <label class="sr-only" for="endDate">End date</label>
+                      <input type="date" id="endDate" aria-label="End date" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <div class="panel records-preview">
+            <div class="panel-title">
+              <div class="records-preview-title">
+                <h3>Report Preview</h3>
+                <small id="recordsPreviewHint">Updates automatically</small>
+              </div>
+
+              <div class="records-preview-actions">
+                <button class="btn" id="downloadPdfReport" type="button">Download PDF</button>
+                <button class="btn primary" id="printCurrentReport" type="button">Print Report</button>
+              </div>
+            </div>
+
+            <div id="reportArea" class="report-paper compact-report-paper"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <datalist id="vesselList"></datalist>
+  <div class="toast" id="toast">Saved</div>
+
+  <script src="/assets/old-db-data.js"></script>
+  <script src="/assets/app.js?v=20260912direction1"></script>
+
+  <script>
+    /*
+      Records row menu:
+      waits for app.js, then adds ⋯ Edit/Delete menu to daily/range report rows.
+    */
+    (function () {
+      const reportArea = document.getElementById("reportArea");
+      if (!reportArea) return;
+
+      let openMenu = null;
+      let queued = false;
+
+      function closeOpenMenu() {
+        if (openMenu) {
+          openMenu.classList.remove("open");
+          openMenu = null;
+        }
+      }
+
+      function isAppReady() {
+        return (
+          typeof openEntryEditor === "function" ||
+          typeof editTrafficById === "function" ||
+          typeof deleteTrafficById === "function" ||
+          typeof renderReport === "function"
+        );
+      }
+
+      function waitForApp(callback, tries = 0) {
+        if (isAppReady() || tries > 50) {
+          callback();
+          return;
+        }
+
+        setTimeout(() => waitForApp(callback, tries + 1), 100);
+      }
+
+      function isMonthlySummaryTable(table) {
+        const text = (table.querySelector("thead")?.textContent || "").toLowerCase();
+        return text.includes("first lockage") || text.includes("last lockage") || text.includes("total");
+      }
+
+      function entryIdFromRow(row) {
+        return row.getAttribute("data-entry-id") || row.dataset.entryId || "";
+      }
+
+      function positionMenu(button, menu) {
+        const rect = button.getBoundingClientRect();
+        const menuWidth = 150;
+        const menuHeight = 82;
+
+        let left = rect.left;
+        let top = rect.bottom + 6;
+
+        if (left + menuWidth > window.innerWidth - 8) {
+          left = window.innerWidth - menuWidth - 8;
+        }
+
+        if (top + menuHeight > window.innerHeight - 8) {
+          top = rect.top - menuHeight - 6;
+        }
+
+        menu.style.setProperty("left", Math.max(8, left) + "px", "important");
+        menu.style.setProperty("top", Math.max(8, top) + "px", "important");
+      }
+
+      function openEditPopup(id) {
+        closeOpenMenu();
+
+        if (!id) {
+          if (typeof toast === "function") toast("Missing entry ID");
+          return;
+        }
+
+        if (typeof openEntryEditor === "function") {
+          openEntryEditor(id);
+          return;
+        }
+
+        if (typeof editTrafficById === "function") {
+          editTrafficById(id);
+          return;
+        }
+
+        const fake = document.createElement("button");
+        fake.type = "button";
+        fake.dataset.entryAction = "edit";
+        fake.dataset.entryId = id;
+        fake.style.position = "fixed";
+        fake.style.left = "-9999px";
+        fake.style.top = "-9999px";
+        document.body.appendChild(fake);
+        fake.click();
+        fake.remove();
+      }
+
+      function deleteEntry(id) {
+        closeOpenMenu();
+
+        if (!id) {
+          if (typeof toast === "function") toast("Missing entry ID");
+          return;
+        }
+
+        if (typeof deleteTrafficById === "function") {
+          deleteTrafficById(id);
+          return;
+        }
+
+        const fake = document.createElement("button");
+        fake.type = "button";
+        fake.dataset.entryAction = "delete";
+        fake.dataset.entryId = id;
+        fake.style.position = "fixed";
+        fake.style.left = "-9999px";
+        fake.style.top = "-9999px";
+        document.body.appendChild(fake);
+        fake.click();
+        fake.remove();
+      }
+
+      function buildMenus() {
+        const tables = Array.from(reportArea.querySelectorAll("table"));
+
+        tables.forEach(table => {
+          if (isMonthlySummaryTable(table)) return;
+
+          const rows = Array.from(table.querySelectorAll("tbody tr[data-entry-id], tr[data-entry-id]"));
+
+          rows.forEach(row => {
+            if (row.dataset.reportMenuReady === "true") return;
+
+            const id = entryIdFromRow(row);
+            if (!id) return;
+
+            const cells = Array.from(row.querySelectorAll("td"));
+            if (!cells.length) return;
+
+            const firstCell = cells[0];
+
+            row.dataset.reportMenuReady = "true";
+            row.classList.add("has-report-row-menu");
+
+            const originalDateContent = firstCell.innerHTML;
+
+            const wrapper = document.createElement("span");
+            wrapper.className = "report-row-menu-wrap";
+
+            const menuButton = document.createElement("button");
+            menuButton.type = "button";
+            menuButton.className = "report-menu-btn";
+            menuButton.setAttribute("aria-label", "Open record actions");
+            menuButton.textContent = "⋯";
+
+            const dateSpan = document.createElement("span");
+            dateSpan.className = "report-row-date-text";
+            dateSpan.innerHTML = originalDateContent;
+
+            const menu = document.createElement("div");
+            menu.className = "report-action-menu records-floating-menu";
+
+            const editButton = document.createElement("button");
+            editButton.type = "button";
+            editButton.className = "btn";
+            editButton.textContent = "Edit";
+
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.className = "btn danger";
+            deleteButton.textContent = "Delete";
+
+            editButton.addEventListener("click", function (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              openEditPopup(id);
+            });
+
+            deleteButton.addEventListener("click", function (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              deleteEntry(id);
+            });
+
+            menu.appendChild(editButton);
+            menu.appendChild(deleteButton);
+            document.body.appendChild(menu);
+
+            wrapper.appendChild(menuButton);
+            wrapper.appendChild(dateSpan);
+
+            firstCell.innerHTML = "";
+            firstCell.appendChild(wrapper);
+
+            menuButton.addEventListener("click", function (event) {
+              event.preventDefault();
+              event.stopPropagation();
+
+              const wasOpen = menu.classList.contains("open");
+              closeOpenMenu();
+
+              if (!wasOpen) {
+                menu.classList.add("open");
+                openMenu = menu;
+                positionMenu(menuButton, menu);
+
+                requestAnimationFrame(function () {
+                  positionMenu(menuButton, menu);
+                });
+              }
+            });
+
+            menu.addEventListener("click", function (event) {
+              event.stopPropagation();
+            });
+          });
+        });
+      }
+
+      function queueBuildMenus() {
+        if (queued) return;
+
+        queued = true;
+
+        requestAnimationFrame(function () {
+          queued = false;
+          buildMenus();
+        });
+      }
+
+      function initRecordsMenu() {
+        // app.js already renders the report during startup. Calling renderReport()
+        // again here caused a second async refresh and visible flashing.
+        setTimeout(buildMenus, 120);
+        setTimeout(buildMenus, 500);
+        setTimeout(buildMenus, 1000);
+      }
+
+      const observer = new MutationObserver(queueBuildMenus);
+      observer.observe(reportArea, { childList: true, subtree: true });
+
+      document.addEventListener("click", closeOpenMenu);
+      // RECORDS_ESC_MENU_CLOSE
+      document.addEventListener("keydown", function(event){ if(event.key === "Escape") closeOpenMenu(); });
+      window.addEventListener("scroll", closeOpenMenu, true);
+      window.addEventListener("resize", closeOpenMenu);
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => waitForApp(initRecordsMenu));
+      } else {
+        waitForApp(initRecordsMenu);
+      }
+    })();
+  </script>
+
+
+
+  <script>
+    /*
+      Adds Registration to Daily and Range report tables.
+      It resolves the value from the rendered row, app globals, or JSON data in localStorage.
+    */
+    (function () {
+      const reportArea = document.getElementById("reportArea");
+      if (!reportArea) return;
+
+      const REG_KEYS = [
+        "vesselReg", "registration", "registrationNumber", "registration_number", "registrationNo",
+        "registration_no", "reg", "regNo", "regNumber", "vesselRegistration",
+        "officialNumber", "officialNo", "official_number"
+      ];
+      const ID_KEYS = ["id", "_id", "entryId", "entry_id", "trafficId", "recordId", "uuid"];
+      const VESSEL_KEYS = ["vessel", "vesselName", "vessel_name", "boat", "boatName", "name"];
+      const GLOBAL_SOURCES = [
+        "traffic", "trafficData", "allTraffic", "dailyTraffic", "trafficEntries", "allTrafficEntries",
+        "entries", "allEntries", "dailyEntries", "records", "allRecords", "reportRecords",
+        "dbData", "oldDbData", "OLD_DB_DATA", "TRAFFIC_DATA", "state", "appState", "store",
+        "vesselPresets", "presets", "allPresets", "vessels", "boats"
+      ];
+
+      let queued = false;
+      let lookupCache = null;
+      let cacheExpires = 0;
+
+      function clean(value) {
+        return String(value == null ? "" : value).trim();
+      }
+
+      function firstValue(object, keys) {
+        if (!object || typeof object !== "object") return "";
+        for (const key of keys) {
+          const value = object[key];
+          if (value !== undefined && value !== null && clean(value)) return clean(value);
+        }
+        return "";
+      }
+
+      function registrationOf(object) {
+        if (!object || typeof object !== "object") return "";
+        const direct = firstValue(object, REG_KEYS);
+        if (direct) return direct;
+
+        for (const key of ["vessel", "boat", "details", "data", "record", "entry"]) {
+          const nested = object[key];
+          if (nested && typeof nested === "object") {
+            const value = firstValue(nested, REG_KEYS);
+            if (value) return value;
+          }
+        }
+        return "";
+      }
+
+      function vesselOf(object) {
+        if (!object || typeof object !== "object") return "";
+        for (const key of VESSEL_KEYS) {
+          const value = object[key];
+          if (typeof value === "string" || typeof value === "number") {
+            if (clean(value)) return clean(value);
+          } else if (value && typeof value === "object") {
+            const nested = firstValue(value, ["name", "vesselName", "boatName"]);
+            if (nested) return nested;
+          }
+        }
+        return "";
+      }
+
+      function normalizeVessel(value) {
+        return clean(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      }
+
+      function collectObjects(value, output, seen, depth) {
+        if (value == null || depth > 5 || output.length > 25000) return;
+
+        if (Array.isArray(value)) {
+          for (const item of value) collectObjects(item, output, seen, depth + 1);
+          return;
+        }
+
+        if (typeof value !== "object") return;
+        if (seen.has(value)) return;
+        seen.add(value);
+        output.push(value);
+
+        for (const [key, nested] of Object.entries(value)) {
+          if (nested && typeof nested === "object" && !/^(window|document|parent|top)$/i.test(key)) {
+            collectObjects(nested, output, seen, depth + 1);
+          }
+        }
+      }
+
+      function buildLookup() {
+        if (lookupCache && Date.now() < cacheExpires) return lookupCache;
+
+        const objects = [];
+        const seen = new WeakSet();
+
+        const sourceNames = new Set(GLOBAL_SOURCES);
+        try {
+          const renderSource = typeof renderReport === "function" ? renderReport.toString() : "";
+          const identifiers = renderSource.match(/\b[A-Za-z_$][\w$]*\b/g) || [];
+          identifiers
+            .filter(name => /traffic|entr|record|preset|vessel|boat|data|state|store/i.test(name))
+            .slice(0, 120)
+            .forEach(name => sourceNames.add(name));
+        } catch (error) {}
+
+        for (const key of sourceNames) {
+          try {
+            let value = window[key];
+            if (value === undefined) {
+              try { value = eval(key); } catch (error) {}
+            }
+            collectObjects(value, objects, seen, 0);
+          } catch (error) {}
+        }
+
+        function collectStorage(storage) {
+          if (!storage) return;
+          for (let index = 0; index < storage.length; index += 1) {
+            const key = storage.key(index);
+            if (!key) continue;
+            const raw = storage.getItem(key);
+            if (!raw || (raw[0] !== "[" && raw[0] !== "{")) continue;
+            try {
+              collectObjects(JSON.parse(raw), objects, seen, 0);
+            } catch (error) {}
+          }
+        }
+
+        try { collectStorage(localStorage); } catch (error) {}
+        try { collectStorage(sessionStorage); } catch (error) {}
+
+        try {
+          for (const key of Object.keys(window)) {
+            const value = window[key];
+            if (!value || typeof value !== "object") continue;
+            const prototype = Object.getPrototypeOf(value);
+            if (Array.isArray(value) || prototype === Object.prototype || prototype === null) {
+              collectObjects(value, objects, seen, 0);
+            }
+          }
+        } catch (error) {}
+
+        const byId = new Map();
+        const byVessel = new Map();
+
+        for (const object of objects) {
+          const registration = registrationOf(object);
+          if (!registration) continue;
+
+          const id = firstValue(object, ID_KEYS);
+          if (id) byId.set(clean(id), registration);
+
+          const vessel = normalizeVessel(vesselOf(object));
+          if (vessel && !byVessel.has(vessel)) byVessel.set(vessel, registration);
+        }
+
+        lookupCache = { byId, byVessel };
+        cacheExpires = Date.now() + 1500;
+        return lookupCache;
+      }
+
+      function registrationFromDataset(row) {
+        for (const key of [
+          "vesselReg", "registration", "registrationNumber", "registrationNo", "reg", "regNo", "regNumber"
+        ]) {
+          const value = row.dataset ? row.dataset[key] : "";
+          if (clean(value)) return clean(value);
+        }
+
+        for (const attribute of Array.from(row.attributes || [])) {
+          const raw = clean(attribute.value);
+          if (!raw || (raw[0] !== "{" && raw[0] !== "[")) continue;
+          try {
+            const value = registrationOf(JSON.parse(raw));
+            if (value) return value;
+          } catch (error) {}
+        }
+
+        const nested = row.querySelector("[data-registration], [data-registration-number], [data-reg], [data-reg-no]");
+        if (nested) {
+          const value =
+            clean(nested.dataset.registration) ||
+            clean(nested.dataset.registrationNumber) ||
+            clean(nested.dataset.reg) ||
+            clean(nested.dataset.regNo);
+          if (value) return value;
+        }
+
+        return "";
+      }
+
+      function registrationFromVesselList(vesselName) {
+        const wanted = normalizeVessel(vesselName);
+        if (!wanted) return "";
+        for (const option of document.querySelectorAll("#vesselList option")) {
+          const optionName = normalizeVessel(option.value || option.label || option.textContent);
+          if (optionName !== wanted) continue;
+          for (const key of ["vesselReg", "registration", "registrationNumber", "registrationNo", "reg", "regNo"]) {
+            const value = option.dataset ? option.dataset[key] : "";
+            if (clean(value)) return clean(value);
+          }
+        }
+        return "";
+      }
+
+      function isMonthlyTable(table) {
+        const bodyKind = document.body.dataset.reportKind || "";
+        if (bodyKind === "monthlyReport") return true;
+        const headings = Array.from(table.querySelectorAll("thead th"))
+          .map(cell => clean(cell.textContent).toLowerCase());
+        return headings.some(text => text.includes("first lockage") || text.includes("last lockage"));
+      }
+
+      function patchRegistrationColumn() {
+        const tables = Array.from(reportArea.querySelectorAll("table"));
+        if (!tables.length) return;
+
+        const lookup = buildLookup();
+
+        for (const table of tables) {
+          if (isMonthlyTable(table)) continue;
+
+          const headerRow = table.querySelector("thead tr");
+          if (!headerRow) continue;
+
+          let headers = Array.from(headerRow.querySelectorAll("th"));
+          let labels = headers.map(cell => clean(cell.textContent).toLowerCase());
+          let vesselIndex = labels.findIndex(text => text === "vessel" || text.includes("vessel") || text === "boat");
+          if (vesselIndex < 0) vesselIndex = 3;
+
+          let registrationIndex = labels.findIndex(text => text.includes("registration") || text === "reg");
+          if (registrationIndex < 0) {
+            const heading = document.createElement("th");
+            heading.className = "report-registration-heading";
+            heading.textContent = "Registration";
+            const vesselHeading = headers[vesselIndex];
+            vesselHeading?.insertAdjacentElement("afterend", heading);
+            registrationIndex = vesselIndex + 1;
+            headers = Array.from(headerRow.querySelectorAll("th"));
+            labels = headers.map(cell => clean(cell.textContent).toLowerCase());
+          }
+
+          for (const row of table.querySelectorAll("tbody tr")) {
+            let cells = Array.from(row.children).filter(cell => cell.tagName === "TD");
+            if (!cells.length) continue;
+
+            let registrationCell = cells[registrationIndex];
+            const alreadyInserted = registrationCell?.classList.contains("report-registration-cell");
+            if (!alreadyInserted && cells.length < headers.length) {
+              registrationCell = document.createElement("td");
+              registrationCell.className = "report-registration-cell";
+              const vesselCell = cells[vesselIndex];
+              vesselCell?.insertAdjacentElement("afterend", registrationCell);
+              cells = Array.from(row.children).filter(cell => cell.tagName === "TD");
+              registrationCell = cells[registrationIndex];
+            } else if (registrationCell) {
+              registrationCell.classList.add("report-registration-cell");
+            }
+
+            if (!registrationCell) continue;
+
+            const rowId = clean(row.getAttribute("data-entry-id") || row.dataset?.entryId || "");
+            const vesselName = clean(cells[vesselIndex]?.textContent || "");
+            const vesselKey = normalizeVessel(vesselName);
+            const registration =
+              registrationFromDataset(row) ||
+              (rowId ? lookup.byId.get(rowId) : "") ||
+              (vesselKey ? lookup.byVessel.get(vesselKey) : "") ||
+              registrationFromVesselList(vesselName) ||
+              "";
+
+            if (clean(registrationCell.textContent) !== registration) {
+              registrationCell.textContent = registration;
+              registrationCell.title = registration || "Registration not set";
+            }
+          }
+        }
+      }
+
+      function queuePatch() {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(function () {
+          queued = false;
+          patchRegistrationColumn();
+        });
+      }
+
+      const observer = new MutationObserver(queuePatch);
+      observer.observe(reportArea, { childList: true, subtree: true });
+
+      document.addEventListener("change", function (event) {
+        if (event.target.matches("#reportDate, #reportMonth, #startDate, #endDate")) {
+          lookupCache = null;
+          setTimeout(queuePatch, 40);
+          setTimeout(queuePatch, 180);
+        }
+      }, true);
+
+      document.addEventListener("click", function (event) {
+        if (event.target.closest("[data-report]")) {
+          lookupCache = null;
+          setTimeout(queuePatch, 40);
+          setTimeout(queuePatch, 180);
+        }
+      }, true);
+
+      window.ensureReportRegistrationColumn = patchRegistrationColumn;
+      setTimeout(queuePatch, 60);
+      setTimeout(queuePatch, 250);
+      setTimeout(queuePatch, 800);
+    })();
+  </script>
+
+
+  <script>
+    /*
+      Direct PDF download.
+      Creates a real PDF file in the browser and never opens the print dialog.
+    */
+    (function () {
+      const PAGE_WIDTH = 792;
+      const PAGE_HEIGHT = 612;
+      const MARGIN = 25;
+      const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2);
+      const BODY_FONT = 6.35;
+      const HEADER_FONT = 5.75;
+      const LINE_HEIGHT = 7.5;
+
+      function clean(value) {
+        return String(value == null ? "" : value)
+          .replace(/\s+/g, " ")
+          .replace(/^⋯\s*/, "")
+          .trim();
+      }
+
+      function ascii(value) {
+        return clean(value)
+          .replace(/[–—]/g, "-")
+          .replace(/[‘’]/g, "'")
+          .replace(/[“”]/g, '"')
+          .replace(/…/g, "...")
+          .replace(/[^\x20-\x7E]/g, "?");
+      }
+
+      function pdfEscape(value) {
+        return ascii(value)
+          .replace(/\\/g, "\\\\")
+          .replace(/\(/g, "\\(")
+          .replace(/\)/g, "\\)");
+      }
+
+      function getReportFilename() {
+        const kind = document.body.dataset.reportKind || "dailyReport";
+        const cleanPart = value =>
+          String(value || "")
+            .replace(/[^\dA-Za-z_-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+
+        if (kind === "monthlyReport") {
+          return "Sault-Canal-Monthly-Report-" + cleanPart(document.getElementById("reportMonth")?.value || "report") + ".pdf";
+        }
+
+        if (kind === "betweenReport") {
+          return (
+            "Sault-Canal-Range-Report-" +
+            cleanPart(document.getElementById("startDate")?.value || "start") +
+            "-to-" +
+            cleanPart(document.getElementById("endDate")?.value || "end") +
+            ".pdf"
+          );
+        }
+
+        return "Sault-Canal-Daily-Report-" + cleanPart(document.getElementById("reportDate")?.value || "report") + ".pdf";
+      }
+
+      function stampReportHeader() {
+        const head = document.querySelector("#reportArea .report-head");
+        if (head) head.setAttribute("data-printed", new Date().toLocaleString());
+      }
+
+      function cellText(cell) {
+        if (!cell) return "";
+        const clone = cell.cloneNode(true);
+        clone.querySelectorAll("button, .report-action-menu, script, style").forEach(node => node.remove());
+        return clean(clone.textContent);
+      }
+
+      function extractReport() {
+        const area = document.getElementById("reportArea");
+        if (!area) throw new Error("Report preview is missing.");
+
+        const table = area.querySelector("table");
+        if (!table) throw new Error("There is no report table to download.");
+
+        const title = clean(area.querySelector(".report-head h2")?.textContent || "Canal Report");
+        const subtitle = clean(area.querySelector(".report-head h3")?.textContent || "");
+        const summaries = Array.from(area.querySelectorAll(".report-summary span")).map(span => {
+          const value = clean(span.querySelector("b")?.textContent || "");
+          const clone = span.cloneNode(true);
+          clone.querySelector("b")?.remove();
+          return { value, label: clean(clone.textContent) };
+        });
+
+        const headers = Array.from(table.querySelectorAll("thead th")).map(cellText);
+        const rows = Array.from(table.querySelectorAll("tbody tr"))
+          .map(row => Array.from(row.children).filter(cell => cell.tagName === "TD").map(cellText))
+          .filter(row => row.some(Boolean));
+
+        if (!headers.length) throw new Error("The report table has no headings.");
+        return { title, subtitle, summaries, headers, rows };
+      }
+
+      function estimateTextWidth(text, fontSize, bold) {
+        return ascii(text).length * fontSize * (bold ? 0.56 : 0.51);
+      }
+
+      function wrapText(value, maxWidth, fontSize, bold) {
+        const text = ascii(value) || " ";
+        if (estimateTextWidth(text, fontSize, bold) <= maxWidth) return [text];
+
+        const words = text.split(/\s+/).filter(Boolean);
+        const lines = [];
+        let current = "";
+
+        function pushLongWord(word) {
+          let part = "";
+          for (const char of word) {
+            const next = part + char;
+            if (part && estimateTextWidth(next, fontSize, bold) > maxWidth) {
+              lines.push(part);
+              part = char;
+            } else {
+              part = next;
+            }
+          }
+          return part;
+        }
+
+        for (const word of words) {
+          const next = current ? current + " " + word : word;
+          if (estimateTextWidth(next, fontSize, bold) <= maxWidth) {
+            current = next;
+            continue;
+          }
+
+          if (current) lines.push(current);
+          current = "";
+
+          if (estimateTextWidth(word, fontSize, bold) > maxWidth) {
+            current = pushLongWord(word);
+          } else {
+            current = word;
+          }
+        }
+
+        if (current) lines.push(current);
+        return lines.length ? lines : [" "];
+      }
+
+      function columnWeights(headers) {
+        return headers.map(header => {
+          const h = header.toLowerCase();
+          if (h.includes("destination")) return 17;
+          if (h.includes("home port") || h === "port") return 14;
+          if (h.includes("registration") || h === "reg") return 10;
+          if (h.includes("vessel") || h.includes("boat") || h === "name") return 13;
+          if (h.includes("passenger") || h.includes("pax")) return 7;
+          if (h.includes("direction")) return 6;
+          if (h === "date" || h.includes("day")) return 9;
+          if (h.includes("time") || h.includes("first") || h.includes("last")) return 6;
+          if (h === "type" || h.includes("type")) return 6;
+          if (h === "up" || h === "down") return 4.5;
+          if (h.includes("total")) return 6;
+          return 6;
+        });
+      }
+
+      function makeColumnLayout(headers) {
+        const weights = columnWeights(headers);
+        const total = weights.reduce((sum, weight) => sum + weight, 0) || 1;
+        const widths = weights.map(weight => CONTENT_WIDTH * weight / total);
+        const x = [];
+        let cursor = MARGIN;
+        for (const width of widths) {
+          x.push(cursor);
+          cursor += width;
+        }
+        return { x, widths };
+      }
+
+      function textCommand(text, x, top, size, bold, align, maxWidth) {
+        let drawX = x;
+        const width = estimateTextWidth(text, size, bold);
+        if (align === "center") drawX = x + Math.max(0, (maxWidth - width) / 2);
+        if (align === "right") drawX = x + Math.max(0, maxWidth - width);
+        const y = PAGE_HEIGHT - top - size;
+        return `0 0 0 rg BT /${bold ? "F2" : "F1"} ${size.toFixed(2)} Tf ${drawX.toFixed(2)} ${y.toFixed(2)} Td (${pdfEscape(text)}) Tj ET\n`;
+      }
+
+      function lineCommand(x1, top1, x2, top2, gray, width) {
+        const y1 = PAGE_HEIGHT - top1;
+        const y2 = PAGE_HEIGHT - top2;
+        return `${gray} G ${width} w ${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S\n`;
+      }
+
+      function rectCommand(x, top, width, height, fill, stroke) {
+        const y = PAGE_HEIGHT - top - height;
+        let command = "";
+        if (fill) command += `${fill} rg `;
+        if (stroke) command += `${stroke} RG 0.45 w `;
+        command += `${x.toFixed(2)} ${y.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)} re `;
+        command += fill && stroke ? "B\n" : fill ? "f\n" : "S\n";
+        return command;
+      }
+
+      function addPageHeader(commands, report, continued) {
+        let y = MARGIN;
+        commands.push(textCommand("SAULT STE. MARIE CANAL", MARGIN, y, 14, true, "left", CONTENT_WIDTH));
+        commands.push(textCommand("Generated " + new Date().toLocaleString(), MARGIN, y + 1, 6.5, false, "right", CONTENT_WIDTH));
+        y += 18;
+        commands.push(textCommand(report.title + (continued ? " - Continued" : ""), MARGIN, y, 10.5, true, "left", CONTENT_WIDTH));
+        if (report.subtitle) {
+          commands.push(textCommand(report.subtitle, MARGIN, y + 13, 7.5, false, "left", CONTENT_WIDTH));
+          y += 13;
+        }
+        y += 17;
+        commands.push(lineCommand(MARGIN, y, PAGE_WIDTH - MARGIN, y, "0.18", 1.1));
+        return y + 8;
+      }
+
+      function addSummary(commands, summaries, startY) {
+        if (!summaries.length) return startY;
+        const columns = Math.min(8, Math.max(1, summaries.length));
+        const gap = 4;
+        const boxWidth = (CONTENT_WIDTH - gap * (columns - 1)) / columns;
+        const boxHeight = 29;
+        let y = startY;
+
+        summaries.forEach((item, index) => {
+          const column = index % columns;
+          const row = Math.floor(index / columns);
+          const x = MARGIN + column * (boxWidth + gap);
+          const top = y + row * (boxHeight + gap);
+          commands.push(rectCommand(x, top, boxWidth, boxHeight, "0.972 0.980 0.992", "0.78 0.82 0.87"));
+          commands.push(textCommand(item.value || "0", x + 5, top + 4, 9.2, true, "left", boxWidth - 10));
+          const labelLines = wrapText(item.label, boxWidth - 10, 5.7, false).slice(0, 2);
+          labelLines.forEach((line, lineIndex) => {
+            commands.push(textCommand(line, x + 5, top + 16 + lineIndex * 6, 5.7, false, "left", boxWidth - 10));
+          });
+        });
+
+        const rows = Math.ceil(summaries.length / columns);
+        return y + rows * (boxHeight + gap) + 4;
+      }
+
+      function addTableHeader(commands, headers, layout, top) {
+        const prepared = headers.map((header, index) =>
+          wrapText(header.toUpperCase(), layout.widths[index] - 6, HEADER_FONT, true).slice(0, 2)
+        );
+        const maxLines = Math.max(1, ...prepared.map(lines => lines.length));
+        const height = Math.max(17, maxLines * 6.3 + 6);
+
+        headers.forEach((header, index) => {
+          const x = layout.x[index];
+          const width = layout.widths[index];
+          commands.push(rectCommand(x, top, width, height, "0.918 0.945 0.973", "0.72 0.77 0.83"));
+          prepared[index].forEach((line, lineIndex) => {
+            commands.push(textCommand(line, x + 3, top + 3 + lineIndex * 6.3, HEADER_FONT, true, "left", width - 6));
+          });
+        });
+
+        return top + height;
+      }
+
+      function prepareRow(row, headers, layout) {
+        const cells = headers.map((header, index) => row[index] || "");
+        const lines = cells.map((value, index) =>
+          wrapText(value || " ", layout.widths[index] - 6, BODY_FONT, false).slice(0, 5)
+        );
+        const maxLines = Math.max(1, ...lines.map(value => value.length));
+        return { cells, lines, height: Math.max(14, maxLines * LINE_HEIGHT + 5) };
+      }
+
+      function addTableRow(commands, prepared, layout, top, rowIndex) {
+        prepared.cells.forEach((value, index) => {
+          const x = layout.x[index];
+          const width = layout.widths[index];
+          const fill = rowIndex % 2 === 1 ? "0.988 0.993 1" : "1 1 1";
+          commands.push(rectCommand(x, top, width, prepared.height, fill, "0.80 0.83 0.87"));
+          prepared.lines[index].forEach((line, lineIndex) => {
+            commands.push(textCommand(line, x + 3, top + 3 + lineIndex * LINE_HEIGHT, BODY_FONT, false, "left", width - 6));
+          });
+        });
+        return top + prepared.height;
+      }
+
+      function buildPdfPages(report) {
+        const layout = makeColumnLayout(report.headers);
+        const pages = [];
+        let commands = [];
+        let y = addPageHeader(commands, report, false);
+        y = addSummary(commands, report.summaries, y);
+        y = addTableHeader(commands, report.headers, layout, y);
+
+        report.rows.forEach((row, rowIndex) => {
+          const prepared = prepareRow(row, report.headers, layout);
+          if (y + prepared.height > PAGE_HEIGHT - 34) {
+            pages.push(commands);
+            commands = [];
+            y = addPageHeader(commands, report, true);
+            y = addTableHeader(commands, report.headers, layout, y);
+          }
+          y = addTableRow(commands, prepared, layout, y, rowIndex);
+        });
+
+        if (!report.rows.length) {
+          commands.push(textCommand("No records found for this report.", MARGIN, y + 14, 9, false, "center", CONTENT_WIDTH));
+        }
+
+        pages.push(commands);
+        const count = pages.length;
+        return pages.map((page, index) => {
+          page.push(lineCommand(MARGIN, PAGE_HEIGHT - 22, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - 22, "0.82", 0.5));
+          page.push(textCommand(`Page ${index + 1} of ${count}`, MARGIN, PAGE_HEIGHT - 18, 6.5, false, "right", CONTENT_WIDTH));
+          return page.join("");
+        });
+      }
+
+      function buildPdfBlob(pageStreams) {
+        const objects = [];
+        const pageIds = [];
+        const contentIds = [];
+        let nextId = 5;
+
+        for (let index = 0; index < pageStreams.length; index += 1) {
+          pageIds.push(nextId++);
+          contentIds.push(nextId++);
+        }
+
+        objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+        objects[2] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map(id => `${id} 0 R`).join(" ")}] >>`;
+        objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+        objects[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+
+        pageStreams.forEach((stream, index) => {
+          const pageId = pageIds[index];
+          const contentId = contentIds[index];
+          objects[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`;
+          objects[contentId] = `<< /Length ${stream.length} >>\nstream\n${stream}endstream`;
+        });
+
+        let pdf = "%PDF-1.4\n%SaultCanalPDF\n";
+        const offsets = [0];
+        for (let id = 1; id < objects.length; id += 1) {
+          offsets[id] = pdf.length;
+          pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
+        }
+
+        const xrefOffset = pdf.length;
+        pdf += `xref\n0 ${objects.length}\n`;
+        pdf += "0000000000 65535 f \n";
+        for (let id = 1; id < objects.length; id += 1) {
+          pdf += String(offsets[id]).padStart(10, "0") + " 00000 n \n";
+        }
+        pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+        return new Blob([pdf], { type: "application/pdf" });
+      }
+
+      function saveBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      }
+
+      async function refreshReport() {
+        try {
+          if (typeof renderReport === "function") {
+            await Promise.resolve(renderReport());
+          }
+        } catch (error) {
+          console.error("Could not refresh report before PDF download:", error);
+        }
+        await new Promise(resolve => setTimeout(resolve, 120));
+        if (typeof window.ensureReportRegistrationColumn === "function") {
+          window.ensureReportRegistrationColumn();
+        }
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      }
+
+      async function downloadPdfReport(event) {
+        event?.preventDefault();
+        event?.stopPropagation();
+        event?.stopImmediatePropagation();
+
+        const button = event?.currentTarget || event?.target;
+        const oldText = button?.textContent || "Download PDF";
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Creating PDF...";
+        }
+
+        try {
+          await refreshReport();
+          stampReportHeader();
+          const report = extractReport();
+          const pages = buildPdfPages(report);
+          const blob = buildPdfBlob(pages);
+          saveBlob(blob, getReportFilename());
+          if (typeof toast === "function") toast("PDF downloaded");
+        } catch (error) {
+          console.error("PDF download failed:", error);
+          if (typeof toast === "function") {
+            toast(error?.message || "Could not create PDF");
+          } else {
+            alert(error?.message || "Could not create PDF");
+          }
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = oldText;
+          }
+        }
+      }
+
+      function bindPdfButtons() {
+        ["downloadPdfReport", "downloadPdfSide"].forEach(id => {
+          const button = document.getElementById(id);
+          if (!button || button.dataset.directPdfBound === "true") return;
+          button.dataset.directPdfBound = "true";
+          button.addEventListener("click", downloadPdfReport, true);
+        });
+
+        ["printCurrentReport", "printDailyReport", "printMonthlyReport"].forEach(id => {
+          document.getElementById(id)?.addEventListener("click", function () {
+            if (typeof window.ensureReportRegistrationColumn === "function") {
+              window.ensureReportRegistrationColumn();
+            }
+            setTimeout(stampReportHeader, 80);
+          });
+        });
+
+        window.addEventListener("beforeprint", function () {
+          if (typeof window.ensureReportRegistrationColumn === "function") {
+            window.ensureReportRegistrationColumn();
+          }
+          stampReportHeader();
+        });
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bindPdfButtons);
+      } else {
+        bindPdfButtons();
+      }
+    })();
+  </script>
+
+
+
+
+</body>
+</html>

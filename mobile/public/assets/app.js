@@ -1077,6 +1077,7 @@ function deleteAllLogs(){
 const MOBILE_LINK_TOKEN_KEY = "ssmCanalDashboard.mobileLink.token.v1";
 const MOBILE_LINK_BASE_KEY = "ssmCanalDashboard.mobileLink.base.v1";
 const MOBILE_LINK_NAME_KEY = "ssmCanalDashboard.mobileLink.name.v1";
+const MOBILE_LINK_DEVICE_KEY = "ssmCanalDashboard.mobileLink.device.v1";
 let mobileSyncTimer = null;
 let mobileLastStatus = "";
 
@@ -1122,6 +1123,21 @@ function mobileSetToken(token){
 
 function mobileClearToken(){
     localStorage.removeItem(MOBILE_LINK_TOKEN_KEY);
+}
+
+function mobileGetDeviceId(){
+    let current = String(localStorage.getItem(MOBILE_LINK_DEVICE_KEY) || "").trim();
+    if(/^[A-Za-z0-9_-]{24,180}$/.test(current)) return current;
+
+    try{
+        const bytes = new Uint8Array(32);
+        crypto.getRandomValues(bytes);
+        current = "dev_" + Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+    }catch(e){
+        current = "dev_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    }
+    localStorage.setItem(MOBILE_LINK_DEVICE_KEY, current);
+    return current;
 }
 
 
@@ -1211,11 +1227,11 @@ function mobileApiUrl(path){
 }
 
 function mobileIsPairPage(){
-    return /(^|\/)pair\.html$/i.test(location.pathname) || /(^|\/)pair\/?$/i.test(location.pathname);
+    return /(^|\/)pair\/?$/i.test(location.pathname);
 }
 
 function mobileIsOfflinePage(){
-    return /(^|\/)offline\.html$/i.test(location.pathname) || /(^|\/)offline\/?$/i.test(location.pathname);
+    return /(^|\/)offline\/?$/i.test(location.pathname);
 }
 
 function mobilePageUrl(page, extra){
@@ -1229,24 +1245,24 @@ function mobilePageUrl(page, extra){
 }
 
 function mobileCurrentReturnPath(){
-    return (location.pathname.split('/').pop() || 'index.html') + location.search + location.hash;
+    return location.pathname + location.search + location.hash;
 }
 
 function mobileRedirectToPair(extra){
     if(mobileIsPairPage()) return;
     mobileClearToken();
-    location.replace(mobilePageUrl("pair.html", Object.assign({return: mobileCurrentReturnPath()}, extra || {})));
+    location.replace(mobilePageUrl("/mobile/pair", Object.assign({return: mobileCurrentReturnPath()}, extra || {})));
 }
 
 function mobileRedirectToOffline(reason){
     if(mobileIsOfflinePage()) return;
-    location.replace(mobilePageUrl("offline.html", {reason: reason || "offline", return: mobileCurrentReturnPath()}));
+    location.replace(mobilePageUrl("/mobile/offline", {reason: reason || "offline", return: mobileCurrentReturnPath()}));
 }
 
 function mobileRegisterServiceWorker(){
     if(!("serviceWorker" in navigator) || location.protocol === "file:") return;
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("service-worker.js").catch(() => {});
+        navigator.serviceWorker.register("/mobile/service-worker.js").catch(() => {});
     }, {once:true});
 }
 
@@ -1254,12 +1270,14 @@ async function mobilePost(path, payload, options){
     options = options || {};
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), Number(options.timeoutMs || 7000));
+    const bodyPayload = Object.assign({}, payload || {});
+    if(!bodyPayload.deviceId) bodyPayload.deviceId = mobileGetDeviceId();
 
     try{
         const res = await fetch(mobileApiUrl(path), {
             method:"POST",
             headers:{"Content-Type":"application/json"},
-            body:JSON.stringify(payload || {}),
+            body:JSON.stringify(bodyPayload),
             cache:"no-store",
             signal:controller.signal,
             keepalive:!!options.keepalive
@@ -1288,6 +1306,19 @@ async function mobileGetPhoneStatus(){
         return out;
     }finally{
         clearTimeout(timeout);
+    }
+}
+
+async function mobileTryRestorePairing(){
+    try{
+        const out = await mobilePost("/api/mobile/restore", {deviceId:mobileGetDeviceId()}, {timeoutMs:6500});
+        if(!out || !out.token) return null;
+        mobileSetToken(out.token);
+        if(out.phone && out.phone.name) localStorage.setItem(MOBILE_LINK_NAME_KEY, out.phone.name);
+        mobileSetStatus("Trusted device restored.", "linked");
+        return out;
+    }catch(error){
+        return null;
     }
 }
 
@@ -1422,10 +1453,12 @@ function mobileMergeServerLogs(serverLogs, options){
     if(!replaceDates.size && options.authoritative !== false) replaceDates.add(mobileTodayKey());
 
     const map = new Map();
+    const localByKey = new Map();
 
     getLogs().forEach(log => {
         const key = mobileEntryKey(log);
         if(!key) return;
+        localByKey.set(key, log);
 
         const dateKey = mobileLogDateKey(log) || mobileTodayKey();
 
@@ -1446,6 +1479,12 @@ function mobileMergeServerLogs(serverLogs, options){
         }));
         const key = mobileEntryKey(normalized);
         if(!key) return;
+        const localCopy = localByKey.get(key);
+        const serverHasReturnState = Object.prototype.hasOwnProperty.call(log, "returningExpected") || Object.prototype.hasOwnProperty.call(log, "willReturn");
+        if(localCopy && !serverHasReturnState){
+            if(Object.prototype.hasOwnProperty.call(localCopy, "returningExpected")) normalized.returningExpected = localCopy.returningExpected === true;
+            if(Object.prototype.hasOwnProperty.call(localCopy, "willReturn")) normalized.willReturn = localCopy.willReturn === true;
+        }
         map.set(key, Object.assign({}, map.get(key) || {}, normalized));
     });
 
@@ -1509,7 +1548,8 @@ async function mobileLinkWithCode(code){
         const out = await mobilePost("/api/mobile/link", {
             code:String(code || "").trim(),
             name:getActiveDeviceLabel(),
-            platform:getDeviceInfo().platform
+            platform:getDeviceInfo().platform,
+            deviceId:mobileGetDeviceId()
         }, {timeoutMs:8000});
 
         mobileSetToken(out.token);
@@ -1529,8 +1569,11 @@ async function mobileBootstrap(showStatus){
     mobileEnsureLinkBanner();
 
     if(!token){
-        if(!mobileIsPairPage() && !mobileIsOfflinePage()) mobileRedirectToPair();
-        return null;
+        const restored = await mobileTryRestorePairing();
+        if(!restored){
+            if(!mobileIsPairPage() && !mobileIsOfflinePage()) mobileRedirectToPair();
+            return null;
+        }
     }
 
     if(showStatus) mobileSetStatus("Loading dashboard entries…", "idle");
@@ -1545,6 +1588,8 @@ async function mobileBootstrap(showStatus){
         return out;
     }catch(error){
         if(error.status === 401){
+            const restored = await mobileTryRestorePairing();
+            if(restored) return mobileBootstrap(showStatus);
             mobileClearToken();
             if(!mobileIsPairPage()) mobileRedirectToPair({reason:"unlinked"});
         }else if(error.status === 423){
@@ -1622,11 +1667,17 @@ async function mobileSyncAll(logs){
     const token = mobileGetToken();
     if(!token) return null;
 
+    // Only upload records that originated locally and have not yet been
+    // acknowledged by the dashboard. Re-uploading dashboard-origin records was
+    // the cause of the 'everything doubled after adding a kayak' bug.
     const list = (Array.isArray(logs) ? logs : getLogs())
         .filter(log => String(log.date || log.createdAt || "").includes(mobileTodayKey()))
         .filter(log => !mobileIsDeletedLocal(log))
+        .filter(log => mobileIsPendingLocalLog(log))
         .map(mobileNormalizeForServer)
         .slice(0, 250);
+
+    if(!list.length) return {ok:true,added:0,updated:0,skipped:true};
 
     try{
         const out = await mobilePost("/api/mobile/logs", {token, date:mobileTodayKey(), logs:list}, {timeoutMs:9000});
@@ -1646,9 +1697,25 @@ function mobileQueueSyncAll(logs){
 
 function finishSavedEntry(entry){
     clearCurrentDraft();
-    const go = () => { window.location.href = "logs.html"; };
+    const go = () => { window.location.href = "/mobile/logs"; };
+    mobileCancelQueuedSync();
     if(window.mobileLinkSync && window.mobileLinkSync.isLinked()){
         window.mobileLinkSync.pushEntry(entry, {silent:true, timeoutMs:2500}).finally(go);
+    }else{
+        go();
+    }
+}
+
+function finishSavedEntries(entries){
+    clearCurrentDraft();
+    const go = () => { window.location.href = "/mobile/logs"; };
+    const list = Array.isArray(entries) ? entries : [];
+    if(!list.length){ go(); return; }
+    mobileCancelQueuedSync();
+    if(window.mobileLinkSync && window.mobileLinkSync.isLinked()){
+        // Send only the newly-created kayak records. Never bulk-upload all of
+        // today's server-origin logs just because one kayak was entered.
+        Promise.all(list.map(entry => mobilePushEntry(entry, {silent:true, timeoutMs:3500}))).finally(go);
     }else{
         go();
     }
@@ -1663,12 +1730,7 @@ async function mobileInitLinking(){
     let oldPair = "";
     try{ oldPair = String(new URLSearchParams(window.location.search || "").get("pair") || "").trim(); }catch(e){}
     if(oldPair){
-        mobileRedirectToPair({code:oldPair, return: location.pathname.split('/').pop() || 'index.html'});
-        return;
-    }
-
-    if(!mobileGetToken()){
-        mobileRedirectToPair();
+        mobileRedirectToPair({code:oldPair, return: location.pathname || '/mobile'});
         return;
     }
 
@@ -1683,7 +1745,19 @@ async function mobileInitLinking(){
         return;
     }
 
-    mobileBootstrap(true);
+    if(!mobileGetToken()){
+        const restored = await mobileTryRestorePairing();
+        if(!restored){
+            mobileRedirectToPair();
+            return;
+        }
+    }
+
+    mobileBootstrap(true).then(() => {
+        // If entries were created while offline, push only those pending local
+        // records after a successful reconnect/bootstrap.
+        mobileSyncAll(getLogs()).catch(() => {});
+    });
 }
 
 window.mobileLinkSync = {
@@ -2545,11 +2619,25 @@ function setupRecreationalReturnSystem(type){
 
 /* FORMS */
 
+function canonicalSavedTrafficType(type){
+    const raw=String(type || "").replace(/\s+/g, " ").trim();
+    const lower=raw.toLowerCase();
+    if(lower === "k" || lower.includes("kayak") || lower.includes("returning") || lower.includes("returned") || lower === "return" || lower === "ret" || lower.includes("recreational")) return "RB";
+    if(lower.includes("tour")) return "TB";
+    if(lower.includes("government")) return "Gov";
+    if(lower.includes("commercial")) return "Com";
+    if(lower.includes("reversal")) return "LR";
+    if(lower.includes("test")) return "LT";
+    return raw;
+}
+
 function setupNormalForm(type){
     applySavedTheme();
     applyEntryDefaults();
 
     const normalType = String(type || "").toLowerCase();
+    const savedType = canonicalSavedTrafficType(type);
+    const isKayak = normalType.includes("kayak") || normalType === "k";
 
     if(normalType.includes("recreational") || normalType.includes("returning")){
         setupRecreationalReturnSystem(type);
@@ -2598,6 +2686,74 @@ function setupNormalForm(type){
             const dirValue = getRealSelectValue("dir", "dirManual");
             const destValue = getRealSelectValue("dest", "destManual") || "N/A";
             const homePortValue = getRealSelectValue("homePort", "homePortManual") || "N/A";
+            const regValue = getFieldValue("reg") || "N/A";
+            const canalValue = getFieldValue("canal") || getDefaultCanal();
+            const timeValue = normalizeMilitaryTime(getFieldValue("entryTime"), formatTime(new Date()));
+            const dateValue = currentDate();
+            const createdAt = new Date().toISOString();
+            const rawPassengerTotal = Math.max(0, Math.floor(Number(getFieldValue("pass")) || 0));
+            const rawNotes = String(getFieldValue("notes") || "-").trim();
+            const returningBox = document.getElementById("returningExpected");
+            const returningExpected = savedType === "RB" && !isKayak && !normalType.includes("returning") && Boolean(returningBox && returningBox.checked);
+
+            if(isKayak){
+                const requestedCount = Math.floor(Number(getFieldValue("kayakCount")) || 1);
+                const kayakTotal = Math.max(1, Math.min(100, requestedCount));
+                const groupId = "kayak_group_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+                const basePerKayak = Math.floor(rawPassengerTotal / kayakTotal);
+                const passengerRemainder = rawPassengerTotal % kayakTotal;
+                const cleanedNotes = rawNotes
+                    .replace(/\bNumber of Kayaks\s*:\s*\d+\s*\|?\s*/ig, "")
+                    .replace(/^\|\s*|\s*\|$/g, "")
+                    .trim();
+                const entries = [];
+
+                for(let index = 0; index < kayakTotal; index++){
+                    const entryId = "mobile_" + Date.now().toString(36) + "_k" + String(index + 1).padStart(2, "0") + "_" + Math.random().toString(36).slice(2, 7);
+                    const passengerCount = basePerKayak + (index < passengerRemainder ? 1 : 0);
+                    const individualNoteParts = [];
+                    if(cleanedNotes && cleanedNotes !== "-") individualNoteParts.push(cleanedNotes);
+                    individualNoteParts.push(`Kayak ${index + 1} of ${kayakTotal}`);
+
+                    entries.push(stampLogWithProfile({
+                        id:entryId,
+                        mobileId:entryId,
+                        entryType:type,
+                        formType:type,
+                        type:"RB",
+                        sourceType:"Kayak",
+                        vessel:vesselValue,
+                        vesselName:vesselValue,
+                        reg:regValue,
+                        registration:regValue,
+                        canal:canalValue,
+                        dir:dirValue,
+                        direction:dirValue,
+                        pass:String(passengerCount),
+                        passengers:String(passengerCount),
+                        kayakCount:"1",
+                        numberOfKayaks:"1",
+                        kayakGroupId:groupId,
+                        kayakGroupCount:kayakTotal,
+                        kayakGroupIndex:index + 1,
+                        dest:destValue,
+                        destination:destValue,
+                        homePort:homePortValue,
+                        time:timeValue,
+                        entryTime:timeValue,
+                        date:dateValue,
+                        notes:individualNoteParts.join(" | "),
+                        status:"Pending",
+                        completed:false,
+                        createdAt
+                    }));
+                }
+
+                logs.unshift(...entries);
+                setLogs(logs);
+                finishSavedEntries(entries);
+                return;
+            }
 
             const entryId = "mobile_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
             const entry = stampLogWithProfile({
@@ -2605,28 +2761,31 @@ function setupNormalForm(type){
                 mobileId:entryId,
                 entryType:type,
                 formType:type,
-                type:type,
+                type:savedType,
+                sourceType:savedType !== type ? type : "",
+                returningExpected:returningExpected,
+                willReturn:returningExpected,
                 vessel:vesselValue,
                 vesselName:vesselValue,
-                reg:getFieldValue("reg") || "N/A",
-                registration:getFieldValue("reg") || "N/A",
-                canal:getFieldValue("canal") || getDefaultCanal(),
+                reg:regValue,
+                registration:regValue,
+                canal:canalValue,
                 dir:dirValue,
                 direction:dirValue,
-                pass:getFieldValue("pass") || "0",
-                passengers:getFieldValue("pass") || "0",
-                kayakCount:getFieldValue("kayakCount") || "",
-                numberOfKayaks:getFieldValue("kayakCount") || "",
+                pass:String(rawPassengerTotal),
+                passengers:String(rawPassengerTotal),
+                kayakCount:"",
+                numberOfKayaks:"",
                 dest:destValue,
                 destination:destValue,
                 homePort:homePortValue,
-                time:normalizeMilitaryTime(getFieldValue("entryTime"), formatTime(new Date())),
-                entryTime:normalizeMilitaryTime(getFieldValue("entryTime"), formatTime(new Date())),
-                date:currentDate(),
-                notes:getFieldValue("notes") || "-",
+                time:timeValue,
+                entryTime:timeValue,
+                date:dateValue,
+                notes:rawNotes || "-",
                 status:"Pending",
                 completed:false,
-                createdAt:new Date().toISOString()
+                createdAt
             });
 
             logs.unshift(entry);
@@ -2635,7 +2794,6 @@ function setupNormalForm(type){
         });
     }
 }
-
 function setupReversalForm(type = "Lock Reversal"){
     applySavedTheme();
     applyEntryDefaults();
@@ -2873,46 +3031,46 @@ function ensureSharedBottomBar(){
         nav.classList.add("ssm-bottom-nav");
     }
 
-    const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+    const page = (location.pathname.replace(/\/+$/, "").split("/").pop() || "mobile").toLowerCase();
     const entryPages = [
-        "new-entry.html",
-        "recreational-boat.html",
-        "returning-boat.html",
-        "tour-boat.html",
-        "government-boat.html",
-        "commercial-boat.html",
-        "kayak.html",
-        "lock-reversal.html",
-        "lock-test.html"
+        "new-entry",
+        "recreational-boat",
+        "returning-boat",
+        "tour-boat",
+        "government-boat",
+        "commercial-boat",
+        "kayak",
+        "lock-reversal",
+        "lock-test"
     ];
 
     function active(name){
-        if(name === "home") return page === "" || page === "index.html";
+        if(name === "home") return page === "" || page === "mobile";
         if(name === "add") return entryPages.includes(page);
-        if(name === "logs") return page === "logs.html";
-        if(name === "profile") return page === "profile.html";
-        if(name === "settings") return page === "settings.html";
+        if(name === "logs") return page === "logs";
+        if(name === "profile") return page === "profile";
+        if(name === "settings") return page === "settings";
         return false;
     }
 
     nav.innerHTML = `
-        <a class="nav-link ${active("home") ? "active" : ""}" href="index.html" aria-label="Home">
+        <a class="nav-link ${active("home") ? "active" : ""}" href="/mobile" aria-label="Home">
             <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 10v10h14V10"></path><path d="M9 20v-6h6v6"></path></svg>
             <span>Home</span>
         </a>
-        <a class="nav-link ${active("add") ? "active" : ""}" href="new-entry.html" aria-label="New Entry">
+        <a class="nav-link ${active("add") ? "active" : ""}" href="/mobile/new-entry" aria-label="New Entry">
             <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
             <span>Add</span>
         </a>
-        <a class="nav-link ${active("logs") ? "active" : ""}" href="logs.html" aria-label="Logs">
+        <a class="nav-link ${active("logs") ? "active" : ""}" href="/mobile/logs" aria-label="Logs">
             <svg viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
             <span>Logs</span>
         </a>
-        <a class="nav-link ${active("profile") ? "active" : ""}" href="profile.html" aria-label="Profile">
+        <a class="nav-link ${active("profile") ? "active" : ""}" href="/mobile/profile" aria-label="Profile">
             <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"></path><path d="M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"></path></svg>
             <span>Profile</span>
         </a>
-        <a class="nav-link ${active("settings") ? "active" : ""}" href="settings.html" aria-label="Settings">
+        <a class="nav-link ${active("settings") ? "active" : ""}" href="/mobile/settings" aria-label="Settings">
             <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"></path><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.1 2.1 0 0 1-2.97 2.97l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.65V21a2.1 2.1 0 0 1-4.2 0v-.08a1.8 1.8 0 0 0-1.1-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05a2.1 2.1 0 0 1-2.97-2.97l.05-.05a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.65-1.1H3a2.1 2.1 0 0 1 0-4.2h.08a1.8 1.8 0 0 0 1.65-1.1 1.8 1.8 0 0 0-.36-1.98l-.05-.05a2.1 2.1 0 0 1 2.97-2.97l.05.05a1.8 1.8 0 0 0 1.98.36 1.8 1.8 0 0 0 1.1-1.65V3a2.1 2.1 0 0 1 4.2 0v.08a1.8 1.8 0 0 0 1.1 1.65 1.8 1.8 0 0 0 1.98-.36l.05-.05a2.1 2.1 0 0 1 2.97 2.97l-.05.05a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.1H21a2.1 2.1 0 0 1 0 4.2h-.08A1.8 1.8 0 0 0 19.4 15Z"></path></svg>
             <span>Settings</span>
         </a>

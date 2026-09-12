@@ -4,15 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Kayak Entry</title>
-<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
-<link rel="manifest" href="manifest.json">
+<script src="/mobile/assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="/mobile/assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="/mobile/manifest.json">
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sault Locks">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="/mobile/assets/icon-192.png">
 
 <style>
 .time-row{
@@ -418,7 +418,7 @@ html.theme-light body.kayak-page .kayak-back{
 <div class="page">
 
     <header class="kayak-header" aria-label="Kayak entry header">
-        <a class="kayak-back" href="index.html" aria-label="Back to home">
+        <a class="kayak-back" href="/mobile" aria-label="Back to home">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M15 18 9 12l6-6"></path>
             </svg>
@@ -461,12 +461,13 @@ html.theme-light body.kayak-page .kayak-back{
             type="text" 
             inputmode="numeric"
             placeholder="Number of Kayaks">
+        <small style="display:block;margin-top:6px;color:var(--muted,#64748b);font-weight:600;">Each kayak will be saved as its own Recreational record.</small>
 
         <label>Registration</label>
         <input 
             id="reg" 
             type="text" 
-            value="K"
+            value="RB"
             placeholder="Registration">
 
         <label>Home Port</label>
@@ -531,7 +532,7 @@ html.theme-light body.kayak-page .kayak-back{
     </div>
 </div>
 
-<script src="assets/app.js?v=20260711returntimepoll1"></script>
+<script src="/mobile/assets/app.js?v=20260911whitelist1"></script>
 
 <script>
 /*
@@ -549,11 +550,11 @@ html.theme-light body.kayak-page .kayak-back{
 
 const KAYAK_PRESETS = {
     "Birds Eye Tours": {
-        registration:"K",
-        canalReg:"K",
+        registration:"1544",
+        canalReg:"RB",
         homePort:"",
         destination:"",
-        vesselType:"K"
+        vesselType:"RB"
     }
 };
 
@@ -569,7 +570,7 @@ function getSharedKayakPresets(){
 }
 
 function kayakPresetRegistration(preset){
-    return String((preset && (preset.canalReg || preset.reg || preset.registration || preset.vesselReg)) || "K").trim() || "K";
+    return String((preset && (preset.canalReg || preset.reg || preset.registration || preset.vesselReg)) || "RB").trim() || "RB";
 }
 
 function kayakPresetHomePort(preset){
@@ -629,7 +630,7 @@ function applyKayakPreset(name){
     }
 
     if(!String(reg.value || "").trim() || String(reg.value || "").trim().toUpperCase() === "N/A"){
-        reg.value = "K";
+        reg.value = "RB";
     }
 }
 

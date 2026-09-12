@@ -4,15 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Pair Phone · Sault Locks</title>
-<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
-<link rel="manifest" href="manifest.json">
+<script src="/mobile/assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="/mobile/assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="/mobile/manifest.json">
 <meta name="theme-color" content="#348DBC">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sault Locks">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="/mobile/assets/icon-192.png">
 <style>
 :root{--pair-bg:#f6f9fc;--pair-card:#fff;--pair-text:#0f172a;--pair-muted:#64748b;--pair-line:rgba(148,163,184,.28);--pair-shadow:0 24px 70px rgba(15,23,42,.14)}
 html.theme-dark,html.app-dark{--pair-bg:#0f172a;--pair-card:#172033;--pair-text:#f8fafc;--pair-muted:#94a3b8;--pair-line:rgba(148,163,184,.18);--pair-shadow:0 24px 70px rgba(0,0,0,.34)}
@@ -48,23 +48,29 @@ html.theme-dark,html.app-dark{--pair-bg:#0f172a;--pair-card:#172033;--pair-text:
   const TOKEN_KEY="ssmCanalDashboard.mobileLink.token.v1";
   const BASE_KEY="ssmCanalDashboard.mobileLink.base.v1";
   const NAME_KEY="ssmCanalDashboard.mobileLink.name.v1";
+  const DEVICE_KEY="ssmCanalDashboard.mobileLink.device.v1";
+  const PROFILE_KEY="ssmCanalDashboard.profile.v1";
   const $=id=>document.getElementById(id);
   const params=new URLSearchParams(location.search||"");
   function cleanBase(v){return String(v||"").trim().replace(/\/+$/,"");}
+  function deviceId(){let v=String(localStorage.getItem(DEVICE_KEY)||"").trim(); if(/^[A-Za-z0-9_-]{24,180}$/.test(v))return v; try{const a=new Uint8Array(32);crypto.getRandomValues(a);v="dev_"+Array.from(a,b=>b.toString(16).padStart(2,"0")).join("");}catch(e){v="dev_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);} localStorage.setItem(DEVICE_KEY,v); return v;}
   function base(){const supplied=cleanBase(params.get("base")||params.get("server")||params.get("dashboard")); if(supplied){localStorage.setItem(BASE_KEY,supplied); return supplied;} const saved=cleanBase(localStorage.getItem(BASE_KEY)); if(saved) return saved; const origin=location.origin&&location.protocol!=="file:"?cleanBase(location.origin):""; if(origin)localStorage.setItem(BASE_KEY,origin); return origin;}
   function api(path){const b=base(); if(!b) throw new Error("Missing dashboard address"); return b+path;}
+  function savedDeviceName(){try{const profile=JSON.parse(localStorage.getItem(PROFILE_KEY)||"{}"); return String(profile.deviceLabel||profile.deviceName||localStorage.getItem(NAME_KEY)||"").trim();}catch(e){return String(localStorage.getItem(NAME_KEY)||"").trim();}}
+  function storeDeviceName(value){const clean=String(value||"").trim().slice(0,60); if(!clean)return ""; localStorage.setItem(NAME_KEY,clean); try{const profile=JSON.parse(localStorage.getItem(PROFILE_KEY)||"{}"); profile.deviceLabel=clean; profile.updatedAt=new Date().toISOString(); localStorage.setItem(PROFILE_KEY,JSON.stringify(profile));}catch(e){} return clean;}
   function setStatus(msg,state){const el=$("pairStatus"); if(el){el.textContent=msg; el.dataset.state=state||"idle";}}
-  function returnPage(){return params.get("return") || "index.html";}
+  function returnPage(){return params.get("return") || "/mobile";}
   function appUrl(){const url=new URL(returnPage(), location.href); const b=base(); if(b) url.searchParams.set("base", b); return url.toString();}
   async function status(){const r=await fetch(api("/api/phone-server/status"),{cache:"no-store"}); const out=await r.json().catch(()=>({})); if(!r.ok||out.ok===false) throw new Error(out.error||"Server status failed"); return out;}
   function setOffline(isOffline){document.body.classList.toggle("is-offline",!!isOffline); $("serverBadge").textContent=isOffline?"Phone Link offline":"Phone Link online";}
   async function check(){setStatus("Checking Phone Link…"); try{const out=await status(); setOffline(!out.running); if(out.running)setStatus("Enter the 6-digit dashboard code."); else setStatus("Start Phone Link on the dashboard first.","error"); return out.running;}catch(e){setOffline(true); setStatus("Dashboard server is not reachable.","error"); return false;}}
-  async function pair(code){code=String(code||"").replace(/\D/g,"").slice(0,6); if(code.length!==6){setStatus("Enter the full 6-digit code.","error"); return;} const btn=$("pairButton"); btn.disabled=true; setStatus("Pairing phone…"); try{const r=await fetch(api("/api/mobile/link"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,name:navigator.platform||"Mobile device",platform:navigator.userAgent||""}),cache:"no-store"}); const out=await r.json().catch(()=>({})); if(!r.ok||out.ok===false) throw Object.assign(new Error(out.error||"Pairing failed"),{status:r.status}); localStorage.setItem(TOKEN_KEY,out.token); if(out.phone&&out.phone.name)localStorage.setItem(NAME_KEY,out.phone.name); setStatus("Paired. Opening mobile app…","linked"); setTimeout(()=>{location.replace(appUrl());},450);}catch(e){if(e.status===423){setOffline(true); setStatus("Phone Link is offline. Start it on the dashboard.","error");}else setStatus(e.message||"Could not pair phone.","error"); btn.disabled=false;}}
+  async function restore(){try{const r=await fetch(api("/api/mobile/restore"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({deviceId:deviceId()}),cache:"no-store"}); const out=await r.json().catch(()=>({})); if(!r.ok||out.ok===false||!out.token)return false; localStorage.setItem(TOKEN_KEY,out.token); if(out.phone&&out.phone.name)localStorage.setItem(NAME_KEY,out.phone.name); setStatus("Trusted device restored. Opening app…","linked"); return true;}catch(e){return false;}}
+  async function pair(code){code=String(code||"").replace(/\D/g,"").slice(0,6); if(code.length!==6){setStatus("Enter the full 6-digit code.","error"); return;} const btn=$("pairButton"); btn.disabled=true; setStatus("Pairing phone..."); const autoName=/iPhone/i.test(navigator.userAgent)?"iPhone":/iPad/i.test(navigator.userAgent)?"iPad":/Android/i.test(navigator.userAgent)?"Android Device":"Mobile Device"; try{const r=await fetch(api("/api/mobile/link"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,name:autoName,platform:navigator.userAgent||"",deviceId:deviceId()}),cache:"no-store"}); const out=await r.json().catch(()=>({})); if(!r.ok||out.ok===false) throw Object.assign(new Error(out.error||"Pairing failed"),{status:r.status}); localStorage.setItem(TOKEN_KEY,out.token); if(out.phone&&out.phone.name)localStorage.setItem(NAME_KEY,out.phone.name); setStatus("Paired. Opening mobile app...","linked"); setTimeout(()=>{location.replace(appUrl());},450);}catch(e){if(e.status===423){setOffline(true); setStatus("Phone Link is offline. Start it on the dashboard.","error");}else setStatus(e.message||"Could not pair phone.","error"); btn.disabled=false;}}
   const input=$("pairCodeInput"); const incoming=params.get("code")||params.get("pair")||""; if(incoming) input.value=String(incoming).replace(/\D/g,"").slice(0,6);
   $("pairForm").addEventListener("submit",e=>{e.preventDefault(); pair(input.value);});
   $("retryButton").addEventListener("click",check);
   input.addEventListener("input",()=>{input.value=input.value.replace(/\D/g,"").slice(0,6);});
-  if(localStorage.getItem(TOKEN_KEY) && !incoming){ check().then(ok=>{ if(ok) location.replace(appUrl()); }); } else { check(); setTimeout(()=>input.focus(),250); }
+  if(!incoming){ check().then(async ok=>{ if(!ok)return; if(localStorage.getItem(TOKEN_KEY) || await restore()){ location.replace(appUrl()); return; } setTimeout(()=>input.focus(),250); }); } else { check(); setTimeout(()=>input.focus(),250); }
   if("serviceWorker" in navigator && location.protocol!=="file:") window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{}));
 })();
 </script>

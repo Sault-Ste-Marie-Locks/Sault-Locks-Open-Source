@@ -4,15 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Returning Boat</title>
-<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
-<link rel="manifest" href="manifest.json">
+<script src="/mobile/assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="/mobile/assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="/mobile/manifest.json">
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sault Locks">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="/mobile/assets/icon-192.png">
 
 <style>
 
@@ -341,7 +341,7 @@ body.light .continue-btn{
 <div class="page returning-page">
 
     <header class="clean-entry-header" aria-label="Returning boat header">
-        <a class="clean-header-btn" href="index.html" aria-label="Back">
+        <a class="clean-header-btn" href="/mobile" aria-label="Back">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M15 18 9 12l6-6"></path>
             </svg>
@@ -436,7 +436,7 @@ body.light .continue-btn{
     </div>
 </div>
 
-<script src="assets/app.js?v=20260711returntimepoll1"></script>
+<script src="/mobile/assets/app.js?v=20260912returnflow4"></script>
 
 <script>
 (function(){
@@ -582,6 +582,23 @@ body.light .continue-btn{
         );
     }
 
+    function returnFlagEnabled(value){
+        if(value === true || value === 1) return true;
+        const text = normalize(value);
+        return text === "true" || text === "1" || text === "yes" || text === "y" || text === "returning" || text === "checked";
+    }
+
+    function isMarkedForReturn(entry){
+        if(!entry || typeof entry !== "object") return false;
+        return returnFlagEnabled(
+            entry.returningExpected ??
+            entry.willReturn ??
+            entry.returning ??
+            entry.returnRequired ??
+            entry.expectedReturn
+        );
+    }
+
     function isBoatEntry(entry){
         if(!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
         if(isReturnEntry(entry)) return false;
@@ -594,6 +611,7 @@ body.light .continue-btn{
         // Return Boat is only for recreational boats.
         // Do NOT include Tour, Government, Commercial, Kayak, Lock Test, Lock Reversal, or generic boat entries.
         if(!vessel) return false;
+        if(!isMarkedForReturn(entry)) return false;
 
         return (
             type === "rb" ||
@@ -741,6 +759,44 @@ body.light .continue-btn{
 
     let returnBoatChoices = [];
 
+    /* RETURN_LIVE_MERGE_20260912 */
+    let liveServerEntries = [];
+
+    function mergedReturnEntries(){
+        const map = new Map();
+
+        [...readAllStoredEntries(), ...liveServerEntries].forEach(entry => {
+            if(!entry || typeof entry !== "object") return;
+
+            const identity =
+                normalize(
+                    pick(entry, [
+                        "mobileId",
+                        "oldId",
+                        "id",
+                        "dashboardId",
+                        "recordId"
+                    ])
+                ) ||
+                [
+                    getEntryTypeNorm(entry),
+                    getBoatKey(entry),
+                    getEntryDate(entry),
+                    normalizeMilitaryTime(
+                        getEntryTime(entry),
+                        getEntryTime(entry)
+                    )
+                ].join("|");
+
+            const old = map.get(identity) || {};
+            const merged = Object.assign({}, old, entry);
+
+            map.set(identity, merged);
+        });
+
+        return Array.from(map.values());
+    }
+
     function entrySortValue(entry){
         const date = getEntryDate(entry) || todayKey();
         const time = normalizeMilitaryTime(getEntryTime(entry), "00:00");
@@ -783,14 +839,14 @@ body.light .continue-btn{
         if(!vesselSelect) return;
 
         const currentKey = keepCurrent ? vesselSelect.dataset.selectedBoatKey : "";
-        const todayEntries = readAllStoredEntries().filter(isTodayEntry);
+        const todayEntries = mergedReturnEntries().filter(isTodayEntry);
         returnBoatChoices = buildWaitingReturnBoats(todayEntries);
 
         vesselSelect.innerHTML = "";
 
         const placeholder = document.createElement("option");
         placeholder.value = "";
-        placeholder.textContent = returnBoatChoices.length ? "Select a boat waiting to return" : "No boats waiting to return";
+        placeholder.textContent = returnBoatChoices.length ? "Select a boat waiting to return" : "No boats marked returning today";
         vesselSelect.appendChild(placeholder);
 
         returnBoatChoices.forEach((boat, index) => {
@@ -811,6 +867,29 @@ body.light .continue-btn{
         }
 
         vesselSelect.classList.toggle("placeholder", !vesselSelect.value);
+    }
+
+    /* RETURN_SERVER_REFRESH_20260912 */
+    async function refreshReturnDropdownFromServer(keepCurrent = true){
+        try{
+            const response = await fetch(
+                "/api/data?returnRefresh=" + Date.now(),
+                { cache:"no-store" }
+            );
+
+            if(!response.ok) return;
+
+            const payload = await response.json();
+
+            liveServerEntries =
+                payload && Array.isArray(payload.traffic)
+                    ? payload.traffic
+                    : [];
+
+            buildReturnDropdown(keepCurrent);
+        }catch(error){
+            console.warn("Return list refresh failed:", error);
+        }
     }
 
     function clearReturnFields(){
@@ -881,15 +960,19 @@ body.light .continue-btn{
 
         setCurrentTime(false);
         buildReturnDropdown(false);
+        refreshReturnDropdownFromServer(false);
 
         window.addEventListener("ssm-mobile-logs-synced", function(){
             buildReturnDropdown(true);
+            refreshReturnDropdownFromServer(true);
         });
         window.addEventListener("pageshow", function(){
             buildReturnDropdown(true);
+            refreshReturnDropdownFromServer(true);
         });
         window.addEventListener("focus", function(){
             buildReturnDropdown(true);
+            refreshReturnDropdownFromServer(true);
         });
 
         vesselSelect.addEventListener("change", autofillReturnBoat);

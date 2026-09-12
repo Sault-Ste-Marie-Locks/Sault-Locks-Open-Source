@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lookup Records</title>
+<script>try{if(localStorage.getItem('ssmCanalDashboard.darkMode')==='true')document.documentElement.classList.add('app-dark')}catch(e){}</script>
+<link rel="stylesheet" href="/assets/style.css?v=20260911headerfit1" />
+<style id="lookup-clean-v6">
+.lookup-page #search{max-width:1360px;margin:18px auto 30px;padding:0 18px}.lookup-head{margin-bottom:14px}.lookup-head h1{margin:0;font-size:26px;line-height:1.08;letter-spacing:-.025em}.lookup-head p{margin:5px 0 0;color:var(--text-soft);font-size:12.5px}
+.lookup-filter-card,.lookup-results-card{background:var(--surface);border:1px solid var(--line);border-radius:11px;box-shadow:0 1px 2px rgba(15,23,42,.04)}.lookup-filter-card{padding:14px;margin-bottom:14px}.lookup-filter-grid{display:grid;grid-template-columns:1.05fr .75fr 1fr .65fr .8fr 1.1fr auto;gap:10px;align-items:end}.lookup-filter-grid .field{display:grid;gap:5px;min-width:0}.lookup-filter-grid label{font-size:10px;font-weight:800;letter-spacing:.055em;text-transform:uppercase;color:var(--text-soft)}.lookup-filter-grid input{width:100%;height:38px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--text);padding:0 10px;font-size:12.5px;outline:none;box-shadow:none}.lookup-filter-grid input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.11)}.lookup-filter-actions{display:flex;gap:7px;align-items:center}.lookup-filter-actions .btn{height:38px;min-height:38px;padding:0 13px!important;border-radius:8px!important;font-size:12px!important;font-weight:700!important}
+.lookup-results-card{overflow:hidden}.lookup-results-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 14px;border-bottom:1px solid var(--line)}.lookup-results-head h2{margin:0!important;font-size:14px!important;line-height:1.2!important}.lookup-results-head p{margin:2px 0 0!important;color:var(--text-soft)!important;font-size:10.5px!important}.lookup-table-shell{max-height:calc(100vh - 225px);min-height:360px;overflow:auto;background:var(--surface);border-radius:0 0 11px 11px}
+.lookup-page #searchTable{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;border-collapse:collapse!important}.lookup-page #searchTable th,.lookup-page #searchTable td{height:34px!important;min-height:34px!important;padding:6px 8px!important;border-bottom:1px solid var(--line)!important;font-size:11.5px!important;line-height:1.2!important;vertical-align:middle!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;box-sizing:border-box!important}.lookup-page #searchTable th{position:sticky!important;top:0!important;z-index:5!important;background:var(--surface-alt)!important;color:var(--text-soft)!important;font-size:9.5px!important;font-weight:800!important;letter-spacing:.055em!important;text-transform:uppercase!important}.lookup-page #searchTable tbody tr:hover td{background:var(--surface-hover)!important}
+.lookup-page #searchTable th:nth-child(1),.lookup-page #searchTable td:nth-child(1){width:6%!important;min-width:54px!important;max-width:64px!important;text-align:center!important;overflow:visible!important}.lookup-page #searchTable th:nth-child(2),.lookup-page #searchTable td:nth-child(2){width:11%!important}.lookup-page #searchTable th:nth-child(3),.lookup-page #searchTable td:nth-child(3){width:7%!important}.lookup-page #searchTable th:nth-child(4),.lookup-page #searchTable td:nth-child(4){width:19%!important}.lookup-page #searchTable th:nth-child(5),.lookup-page #searchTable td:nth-child(5){width:7%!important}.lookup-page #searchTable th:nth-child(6),.lookup-page #searchTable td:nth-child(6){width:7%!important}.lookup-page #searchTable th:nth-child(7),.lookup-page #searchTable td:nth-child(7){width:9%!important}.lookup-page #searchTable th:nth-child(8),.lookup-page #searchTable td:nth-child(8){width:9%!important}.lookup-page #searchTable th:nth-child(9),.lookup-page #searchTable td:nth-child(9),.lookup-page #searchTable th:last-child,.lookup-page #searchTable td:last-child{width:25%!important;min-width:0!important;max-width:none!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}.lookup-page #searchTable .badge{font-size:10px!important;padding:2px 7px!important;border-radius:999px!important}
+.lookup-page #searchTable td.entry-actions{display:table-cell!important;width:56px!important;min-width:56px!important;max-width:56px!important;padding:3px 6px!important;text-align:center!important;vertical-align:middle!important;white-space:nowrap!important;overflow:visible!important}
+.lookup-page #searchTable th.entry-actions{display:table-cell!important;width:56px!important;min-width:56px!important;max-width:56px!important;padding:3px 6px!important;text-align:center!important;vertical-align:middle!important}
+.lookup-menu-trigger{width:28px!important;height:28px!important;min-height:28px!important;padding:0!important;border:1px solid var(--line-strong)!important;border-radius:7px!important;background:var(--surface)!important;color:var(--text)!important;font-size:16px!important;font-weight:800!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}.lookup-menu-trigger:hover{background:var(--surface-hover)!important}.lookup-floating-menu{position:fixed;z-index:99999;min-width:150px;padding:6px;border:1px solid var(--line);border-radius:9px;background:var(--surface);box-shadow:0 14px 34px rgba(15,23,42,.22);display:grid;gap:5px}.lookup-floating-menu .btn{width:100%!important;min-height:34px!important;justify-content:flex-start!important;text-align:left!important;border-radius:7px!important;font-size:12px!important;padding:8px 10px!important}.lookup-floating-menu .danger{color:var(--danger)!important}.lookup-empty{display:none;padding:36px 20px;text-align:center;color:var(--text-soft);font-size:12px}.lookup-empty strong{display:block;margin-bottom:4px;color:var(--text);font-size:14px}
+body.dark-mode .lookup-filter-card,body.dark-mode .lookup-results-card,html.app-dark .lookup-filter-card,html.app-dark .lookup-results-card{background:var(--surface)!important;border-color:var(--line)!important}body.dark-mode .lookup-filter-grid input,html.app-dark .lookup-filter-grid input{background:#11151c!important;color:var(--text)!important;border-color:var(--line-strong)!important}
+@media(max-width:1050px){.lookup-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.lookup-filter-actions{grid-column:1/-1}.lookup-table-shell{max-height:none}}@media(max-width:680px){.lookup-page #search{padding:0 10px}.lookup-filter-grid{grid-template-columns:1fr 1fr}.lookup-filter-actions{grid-column:1/-1}.lookup-filter-actions .btn{flex:1}.lookup-table-shell{overflow:auto}.lookup-page #searchTable{min-width:860px!important}}
+</style>
+</head>
+<body class="lookup-page">
+<div class="app-shell easy-only"><main class="main">
+{{DASHBOARD_TOPBAR}}
+<section class="section active" id="search">
+  <div class="lookup-head">
+    <h1>Lookup</h1>
+    <p>Find traffic records quickly by vessel, date, registration, destination, or home port.</p>
+  </div>
+
+  <section class="lookup-filter-card" aria-label="Record filters">
+    <div class="lookup-filter-grid">
+      <div class="field"><label for="searchDate">Date</label><input type="date" id="searchDate"></div>
+      <div class="field"><label for="searchCanal">Canal Reg #</label><input id="searchCanal" placeholder="0507"></div>
+      <div class="field"><label for="searchVessel">Vessel</label><input id="searchVessel" placeholder="Holiday"></div>
+      <div class="field"><label for="searchType">Type</label><input id="searchType" placeholder="TB"></div>
+      <div class="field"><label for="searchDestination">Destination</label><input id="searchDestination" placeholder="LSM"></div>
+      <div class="field"><label for="searchHomePort">Home Port</label><input id="searchHomePort" placeholder="Sault Ste. Marie"></div>
+      <div class="lookup-filter-actions"><button class="btn primary" id="runSearch" type="button">Find</button><button class="btn" id="clearSearch" type="button">Clear</button></div>
+    </div>
+  </section>
+
+  <section class="lookup-results-card">
+    <div class="lookup-results-head"><div><h2>Results</h2><p>Newest matching records appear first.</p></div></div>
+    <div class="lookup-table-shell"><table id="searchTable"></table><div class="lookup-empty" id="lookupEmpty"><strong>No matching records</strong>Try changing or clearing one of the filters.</div></div>
+  </section>
+</section>
+</main></div>
+<datalist id="vesselList"></datalist>
+<div class="toast" id="toast">Saved</div>
+<script src="/assets/old-db-data.js"></script>
+<script src="/assets/app.js?v=20260912direction1"></script>
+<script>
+(function(){
+  const table=document.getElementById('searchTable');
+  const empty=document.getElementById('lookupEmpty');
+  if(!table)return;
+  let observer=null;
+  let floatingMenu=null;
+  function closeFloatingMenu(){if(floatingMenu){floatingMenu.remove();floatingMenu=null;}}
+  function openFloatingMenu(trigger,buttons){
+    closeFloatingMenu();
+    const menu=document.createElement('div');menu.className='lookup-floating-menu';
+    buttons.forEach(btn=>menu.appendChild(btn.cloneNode(true)));
+    document.body.appendChild(menu);
+    const r=trigger.getBoundingClientRect();const m=menu.getBoundingClientRect();
+    const left=Math.max(8,Math.min(r.left,window.innerWidth-m.width-8));
+    let top=r.bottom+6;if(top+m.height>window.innerHeight-8)top=Math.max(8,r.top-m.height-6);
+    menu.style.left=left+'px';menu.style.top=top+'px';floatingMenu=menu;
+  }
+  function enhance(){
+    if(observer)observer.disconnect();
+    const rows=[...table.querySelectorAll('tbody tr')];
+    if(empty)empty.style.display=rows.length?'none':'block';
+    rows.forEach(row=>{
+      if(row.dataset.lookupMenuReady==='1')return;
+      const action=row.querySelector('td.entry-actions');if(!action)return;
+      const buttons=[...action.querySelectorAll('[data-entry-action]')];if(!buttons.length)return;
+      const store=document.createElement('div');store.hidden=true;buttons.forEach(btn=>store.appendChild(btn));
+      const trigger=document.createElement('button');trigger.type='button';trigger.className='lookup-menu-trigger';trigger.textContent='⋯';trigger.setAttribute('aria-label','Record actions');
+      action.innerHTML='';action.appendChild(trigger);action.appendChild(store);row.dataset.lookupMenuReady='1';
+      trigger.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openFloatingMenu(trigger,buttons);});
+    });
+    if(observer)observer.observe(table,{childList:true,subtree:true});
+  }
+  document.addEventListener('click',e=>{if(!e.target.closest('.lookup-floating-menu')&&!e.target.closest('.lookup-menu-trigger'))closeFloatingMenu();});
+  window.addEventListener('scroll',closeFloatingMenu,true);window.addEventListener('resize',closeFloatingMenu);
+  observer=new MutationObserver(enhance);observer.observe(table,{childList:true,subtree:true});enhance();
+})();
+</script>
+</body>
+</html>

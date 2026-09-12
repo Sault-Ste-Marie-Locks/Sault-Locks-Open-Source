@@ -4,15 +4,15 @@
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
       <title>Offline · Sault Locks</title>
-      <script src="assets/theme-boot.js?v=20260707pairpage2"></script>
-      <link rel="stylesheet" href="assets/style.css?v=20260707pairpage2" />
-      <link rel="manifest" href="manifest.json">
+      <script src="/mobile/assets/theme-boot.js?v=20260707pairpage2"></script>
+      <link rel="stylesheet" href="/mobile/assets/style.css?v=20260707pairpage2" />
+      <link rel="manifest" href="/mobile/manifest.json">
       <meta name="theme-color" content="#0f172a">
       <meta name="mobile-web-app-capable" content="yes">
       <meta name="apple-mobile-web-app-capable" content="yes">
       <meta name="apple-mobile-web-app-title" content="Sault Locks">
       <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-      <link rel="apple-touch-icon" href="assets/icon-192.png">
+      <link rel="apple-touch-icon" href="/mobile/assets/icon-192.png">
       <style>
          :root {
             --off-bg: #f6f9fc;
@@ -148,7 +148,7 @@
                     if(!out.running) { status("Phone Link is stopped on the dashboard.", "error"); return; }
                     
                     const token=localStorage.getItem(TOKEN_KEY); 
-                    if(!token) { location.replace(url("pair.html")); return; }
+                    if(!token) { location.replace(url("/mobile/pair")); return; }
                     
                     const b=await fetch(api("/api/mobile/bootstrap"), {
                         method:"POST", 
@@ -158,10 +158,10 @@
                     }); 
                     
                     const boot=await b.json().catch(()=>({})); 
-                    if(!b.ok||boot.ok===false) { localStorage.removeItem(TOKEN_KEY); location.replace(url("pair.html")); return; }
+                    if(!b.ok||boot.ok===false) { localStorage.removeItem(TOKEN_KEY); location.replace(url("/mobile/pair")); return; }
                     
                     status("Connected. Redirecting...", "linked"); 
-                    setTimeout(()=>location.replace(url("index.html")), 350);
+                    setTimeout(()=>location.replace(url("/mobile")), 350);
                 } catch(e) {
                     status(navigator.onLine===false?"Phone is offline.":"Dashboard not reachable.", "error");
                 }
@@ -170,7 +170,7 @@
             $("retryBtn").addEventListener("click", retry); 
             $("pairBtn").addEventListener("click", ()=> {
                 localStorage.removeItem(TOKEN_KEY); 
-                location.replace(url("pair.html"));
+                location.replace(url("/mobile/pair"));
             });
             
             if("serviceWorker" in navigator && location.protocol !=="file:") 

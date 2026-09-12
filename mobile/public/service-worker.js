@@ -1,18 +1,18 @@
-const CACHE_NAME = "sault-locks-mobile-20260722-optional-reason-v26";
+const CACHE_NAME = "sault-locks-mobile-20260912-returnedit2";
 const APP_SHELL = [
-  '/mobile/offline.html',
-  '/mobile/pair.html',
-  '/mobile/index.html',
-  '/mobile/new-entry.html',
-  '/mobile/logs.html',
-  '/mobile/recreational-boat.html',
-  '/mobile/returning-boat.html',
-  '/mobile/tour-boat.html',
-  '/mobile/government-boat.html',
-  '/mobile/commercial-boat.html',
-  '/mobile/kayak.html',
-  '/mobile/lock-reversal.html',
-  '/mobile/lock-test.html',
+  '/mobile/offline',
+  '/mobile/pair',
+  '/mobile',
+  '/mobile/new-entry',
+  '/mobile/logs',
+  '/mobile/recreational-boat',
+  '/mobile/returning-boat',
+  '/mobile/tour-boat',
+  '/mobile/government-boat',
+  '/mobile/commercial-boat',
+  '/mobile/kayak',
+  '/mobile/lock-reversal',
+  '/mobile/lock-test',
   '/mobile/assets/app.js',
   '/mobile/assets/style.css',
   '/mobile/assets/theme-boot.js',
@@ -41,7 +41,7 @@ self.addEventListener('fetch', event => {
   if(url.origin !== location.origin) return;
 
   if(req.mode === 'navigate'){
-    event.respondWith(fetch(req).catch(() => caches.match('/mobile/offline.html')));
+    event.respondWith(fetch(req).catch(() => caches.match('/mobile/offline')));
     return;
   }
 

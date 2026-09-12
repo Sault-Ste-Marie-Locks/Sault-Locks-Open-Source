@@ -4,15 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>Recreational Boat</title>
-<script src="assets/theme-boot.js?v=20260707pairpage2"></script>
-<link rel="stylesheet" href="assets/style.css?v=20260707pairpage2"/>
-<link rel="manifest" href="manifest.json">
+<script src="/mobile/assets/theme-boot.js?v=20260707pairpage2"></script>
+<link rel="stylesheet" href="/mobile/assets/style.css?v=20260707pairpage2"/>
+<link rel="manifest" href="/mobile/manifest.json">
 <meta name="theme-color" content="#6C5CE7">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sault Locks">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="/mobile/assets/icon-192.png">
 
 <style>
 *{
@@ -187,6 +187,68 @@ body.light .entry-header-btn{
         font-size:16px !important;
     }
 }
+
+.returning-option{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin:2px 0 16px;
+    padding:14px 15px;
+    border:1px solid var(--border-strong);
+    border-radius:16px;
+    background:var(--card-2);
+    box-shadow:var(--inner);
+    cursor:pointer;
+    user-select:none;
+}
+.returning-option:active{transform:scale(.99);}
+.returning-option input{
+    position:absolute !important;
+    width:1px !important;
+    height:1px !important;
+    min-width:1px !important;
+    margin:0 !important;
+    padding:0 !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+}
+.returning-option-copy{
+    min-width:0;
+    flex:1;
+    display:grid;
+    gap:3px;
+}
+.returning-option-copy strong{color:var(--text);font-size:14px;font-weight:950;}
+.returning-option-copy small{color:var(--muted);font-size:12px;line-height:1.35;font-weight:750;}
+.returning-toggle{
+    position:relative;
+    width:50px;
+    height:30px;
+    min-width:50px;
+    border-radius:999px;
+    border:1px solid var(--border-strong);
+    background:var(--card-3);
+    transition:background .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.returning-toggle::after{
+    content:'';
+    position:absolute;
+    left:3px;
+    top:3px;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,.28);
+    transition:transform .16s ease;
+}
+.returning-option input:checked ~ .returning-toggle{
+    background:var(--blue);
+    border-color:var(--blue-border);
+}
+.returning-option input:checked ~ .returning-toggle::after{transform:translateX(20px);}
+.returning-option input:focus-visible ~ .returning-toggle{box-shadow:0 0 0 4px rgba(var(--accent-rgb,52,141,188),.20);}
 
 .time-row{
     display:flex;
@@ -506,7 +568,7 @@ body.light .continue-btn{
 <div class="page">
 
     <header class="entry-app-header" aria-label="Recreational Boat page header">
-        <a class="entry-header-btn" href="index.html" aria-label="Back">
+        <a class="entry-header-btn" href="/mobile" aria-label="Back">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M15 18 9 12l6-6"></path>
             </svg>
@@ -588,6 +650,41 @@ body.light .continue-btn{
             type="text" 
             placeholder="Home Port">
 
+        <label class="returning-option" for="returningExpected">
+            <input id="returningExpected" type="checkbox" value="true">
+            <span class="returning-option-copy">
+                <strong>Returning</strong>
+                <small>Add this boat to the Returning Boat list for a later return trip.</small>
+            </span>
+            <span class="returning-toggle" aria-hidden="true"></span>
+        </label>
+
+        <script>
+/* RETURN_TOGGLE_PATCH_20260912 */
+document.addEventListener("DOMContentLoaded", function(){
+    const row = document.querySelector(".returning-option");
+    const box = document.getElementById("returningExpected");
+
+    if(!row || !box || row.dataset.returnToggleReady === "1") return;
+
+    row.dataset.returnToggleReady = "1";
+
+    row.addEventListener("click", function(event){
+        event.preventDefault();
+
+        box.checked = !box.checked;
+
+        box.dispatchEvent(new Event("input", {
+            bubbles:true
+        }));
+
+        box.dispatchEvent(new Event("change", {
+            bubbles:true
+        }));
+    });
+});
+</script>
+
         <label>Time</label>
         <div class="time-row">
             <input 
@@ -651,7 +748,7 @@ window.getRealSelectValue = function(selectId, manualId){
     return selectedValue;
 };
 </script>
-<script src="assets/app.js?v=20260724presetfix1"></script>
+<script src="/mobile/assets/app.js?v=20260912returnflow4"></script>
 
 <script>
 function getTimeSetting(){
