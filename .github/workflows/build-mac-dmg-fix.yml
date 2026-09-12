@@ -72,11 +72,13 @@ jobs:
           set -euo pipefail
           mkdir -p dist-universal
           node <<'NODE'
+          const path = require('path');
           const { makeUniversalApp } = require('@electron/universal');
+          const root = process.cwd();
           makeUniversalApp({
-            x64AppPath: 'dist-x64/Lock Release-darwin-x64/Lock Release.app',
-            arm64AppPath: 'dist-arm64/Lock Release-darwin-arm64/Lock Release.app',
-            outAppPath: 'dist-universal/Lock Release.app',
+            x64AppPath: path.join(root, 'dist-x64/Lock Release-darwin-x64/Lock Release.app'),
+            arm64AppPath: path.join(root, 'dist-arm64/Lock Release-darwin-arm64/Lock Release.app'),
+            outAppPath: path.join(root, 'dist-universal/Lock Release.app'),
             force: true,
           }).catch(err => {
             console.error(err);
