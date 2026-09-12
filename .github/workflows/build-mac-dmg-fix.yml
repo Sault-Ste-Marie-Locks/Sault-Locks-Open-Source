@@ -27,13 +27,14 @@ jobs:
           fs.writeFileSync('.lock-release-version', '1.0.64\n');
           NODE
 
-      - name: Build native macOS icon
+      - name: Build native macOS icon from real logo
         shell: bash
         run: |
           set -euo pipefail
           rm -rf build-icon.iconset
           mkdir build-icon.iconset
           SRC="assets/lock-release.png"
+          test -s "$SRC"
           sips -z 16 16     "$SRC" --out build-icon.iconset/icon_16x16.png >/dev/null
           sips -z 32 32     "$SRC" --out build-icon.iconset/icon_16x16@2x.png >/dev/null
           sips -z 32 32     "$SRC" --out build-icon.iconset/icon_32x32.png >/dev/null
@@ -58,7 +59,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf dist-x64 dist-arm64 dist-universal dmg-root dmg-stage
+          rm -rf dist-x64 dist-arm64 dist-universal dmg-root
           npx electron-packager . "Lock Release" \
             --platform=darwin --arch=x64 --overwrite --out=dist-x64 \
             --ignore="^/dist" --ignore="^/update-payload"
@@ -66,7 +67,7 @@ jobs:
             --platform=darwin --arch=arm64 --overwrite --out=dist-arm64 \
             --ignore="^/dist" --ignore="^/update-payload"
 
-      - name: Merge into universal app
+      - name: Merge universal app and apply real app icon
         shell: bash
         run: |
           set -euo pipefail
@@ -110,7 +111,6 @@ jobs:
           let canvas = NSSize(width: 760, height: 480)
           let image = NSImage(size: canvas)
           image.lockFocus()
-
           NSColor(calibratedWhite: 0.985, alpha: 1).setFill()
           NSBezierPath(rect: NSRect(origin: .zero, size: canvas)).fill()
 
@@ -125,30 +125,26 @@ jobs:
               let maxW: CGFloat = 250
               let scale = min(maxW / logo.size.width, 64 / logo.size.height)
               let sz = NSSize(width: logo.size.width * scale, height: logo.size.height * scale)
-              logo.draw(in: NSRect(x: 30, y: 404, width: sz.width, height: sz.height),
-                        from: .zero, operation: .sourceOver, fraction: 1)
+              logo.draw(in: NSRect(x: 30, y: 404, width: sz.width, height: sz.height), from: .zero, operation: .sourceOver, fraction: 1)
           }
 
-          let titleStyle: [NSAttributedString.Key: Any] = [
+          let title = NSAttributedString(string: "Lock Release", attributes: [
               .font: NSFont.systemFont(ofSize: 22, weight: .semibold),
               .foregroundColor: NSColor(calibratedWhite: 0.15, alpha: 1)
-          ]
-          let title = NSAttributedString(string: "Lock Release", attributes: titleStyle)
+          ])
           title.draw(at: NSPoint(x: 310, y: 424))
 
-          let subStyle: [NSAttributedString.Key: Any] = [
-              .font: NSFont.systemFont(ofSize: 13, weight: .regular),
+          let sub = NSAttributedString(string: "Drag Lock Release to Applications", attributes: [
+              .font: NSFont.systemFont(ofSize: 13),
               .foregroundColor: NSColor(calibratedWhite: 0.48, alpha: 1)
-          ]
-          let sub = NSAttributedString(string: "Drag Lock Release to Applications", attributes: subStyle)
+          ])
           let subSize = sub.size()
           sub.draw(at: NSPoint(x: (760 - subSize.width) / 2, y: 365))
 
-          let arrowStyle: [NSAttributedString.Key: Any] = [
+          let arrow = NSAttributedString(string: "→", attributes: [
               .font: NSFont.systemFont(ofSize: 72, weight: .light),
               .foregroundColor: NSColor(calibratedRed: 0.23, green: 0.36, blue: 0.95, alpha: 1)
-          ]
-          let arrow = NSAttributedString(string: "→", attributes: arrowStyle)
+          ])
           let arrowSize = arrow.size()
           arrow.draw(at: NSPoint(x: (760 - arrowSize.width) / 2, y: 184))
 
@@ -164,12 +160,12 @@ jobs:
           swift /tmp/make-dmg-bg.swift
           test -s dmg-root/.background/background.png
 
-      - name: Build styled Finder DMG
+      - name: Build styled Finder DMG with real volume icon
         shell: bash
         run: |
           set -euo pipefail
           RW_DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_RW.dmg"
-          DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_STYLED.dmg"
+          DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_LOGO.dmg"
           rm -f "$RW_DMG" "$DMG" "$DMG.sha256"
 
           hdiutil create \
@@ -188,11 +184,25 @@ jobs:
           test -n "$MOUNT_POINT"
           test -d "$MOUNT_POINT"
 
+          # Real Lock Release logo for the mounted disk/volume icon.
           cp assets/lock-release.icns "$MOUNT_POINT/.VolumeIcon.icns"
-          if command -v SetFile >/dev/null 2>&1; then
-            SetFile -a C "$MOUNT_POINT" || true
-            SetFile -a V "$MOUNT_POINT/.background" || true
+          chflags hidden "$MOUNT_POINT/.VolumeIcon.icns" || true
+          chflags hidden "$MOUNT_POINT/.background" || true
+
+          SETFILE="$(xcrun --find SetFile 2>/dev/null || true)"
+          if [ -n "$SETFILE" ]; then
+            echo "Using SetFile at $SETFILE"
+            "$SETFILE" -a C "$MOUNT_POINT"
+            "$SETFILE" -a V "$MOUNT_POINT/.VolumeIcon.icns" || true
+            "$SETFILE" -a V "$MOUNT_POINT/.background" || true
+          else
+            echo "SetFile unavailable; applying Finder custom-icon flag with xattr"
+            xattr -wx com.apple.FinderInfo 0000000000000000040000000000000000000000000000000000000000000000 "$MOUNT_POINT"
           fi
+
+          echo "Volume FinderInfo after icon flag:"
+          xattr -px com.apple.FinderInfo "$MOUNT_POINT" || true
+          test -s "$MOUNT_POINT/.VolumeIcon.icns"
 
           osascript <<'APPLESCRIPT'
           tell application "Finder"
@@ -204,25 +214,28 @@ jobs:
               set pathbar visible of container window to false
               set sidebar width of container window to 0
               set the bounds of container window to {120, 120, 880, 600}
-
               set opts to the icon view options of container window
               set arrangement of opts to not arranged
               set icon size of opts to 128
               set text size of opts to 14
               set background picture of opts to file ".background:background.png"
-
               set position of item "Lock Release.app" of container window to {190, 255}
               set position of item "Applications" of container window to {570, 255}
-
               update without registering applications
               delay 2
               close container window
-              open
-              delay 2
             end tell
           end tell
           APPLESCRIPT
 
+          # Reassert the custom volume icon flag after Finder writes .DS_Store.
+          if [ -n "$SETFILE" ]; then
+            "$SETFILE" -a C "$MOUNT_POINT"
+          else
+            xattr -wx com.apple.FinderInfo 0000000000000000040000000000000000000000000000000000000000000000 "$MOUNT_POINT"
+          fi
+
+          bless --folder "$MOUNT_POINT" --openfolder "$MOUNT_POINT" || true
           sync
           hdiutil detach "$DEVICE"
 
@@ -234,14 +247,14 @@ jobs:
 
           test -s "$DMG"
           shasum -a 256 "$DMG" > "$DMG.sha256"
-          hdiutil imageinfo "$DMG" | head -80
+          hdiutil verify "$DMG"
 
-      - name: Upload finished styled DMG
+      - name: Upload finished logo DMG
         uses: actions/upload-artifact@v4
         with:
-          name: Lock-Release-Mac-DMG-1.0.64-STYLED
+          name: Lock-Release-Mac-DMG-1.0.64-LOGO
           path: |
-            Lock_Release_Mac_Installer_1.0.64_STYLED.dmg
-            Lock_Release_Mac_Installer_1.0.64_STYLED.dmg.sha256
+            Lock_Release_Mac_Installer_1.0.64_LOGO.dmg
+            Lock_Release_Mac_Installer_1.0.64_LOGO.dmg.sha256
           if-no-files-found: error
           compression-level: 0
