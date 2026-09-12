@@ -54,12 +54,13 @@ jobs:
           set -euo pipefail
           npm install --no-audit --no-fund
           npm install --no-save @electron/universal
+          brew install create-dmg
 
       - name: Build Intel and Apple Silicon apps
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf dist-x64 dist-arm64 dist-universal dmg-root
+          rm -rf dist-x64 dist-arm64 dist-universal dmg-stage dmg-art
           npx electron-packager . "Lock Release" \
             --platform=darwin --arch=x64 --overwrite --out=dist-x64 \
             --ignore="^/dist" --ignore="^/update-payload"
@@ -88,22 +89,19 @@ jobs:
           NODE
 
           APP="dist-universal/Lock Release.app"
-          test -d "$APP"
           /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Lock Release" "$APP/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleName Lock Release" "$APP/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile lock-release.icns" "$APP/Contents/Info.plist" 2>/dev/null || \
             /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string lock-release.icns" "$APP/Contents/Info.plist"
           cp assets/lock-release.icns "$APP/Contents/Resources/lock-release.icns"
           codesign --force --deep --sign - "$APP"
-          test -s "$APP/Contents/Resources/lock-release.icns"
 
       - name: Create branded DMG background
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p dmg-root/.background
-          ditto "dist-universal/Lock Release.app" "dmg-root/Lock Release.app"
-          ln -s /Applications "dmg-root/Applications"
+          mkdir -p dmg-art dmg-stage
+          ditto "dist-universal/Lock Release.app" "dmg-stage/Lock Release.app"
 
           cat > /tmp/make-dmg-bg.swift <<'SWIFT'
           import AppKit
@@ -154,107 +152,54 @@ jobs:
                 let png = rep.representation(using: .png, properties: [:]) else {
               fatalError("Could not create DMG background")
           }
-          try png.write(to: URL(fileURLWithPath: "dmg-root/.background/background.png"))
+          try png.write(to: URL(fileURLWithPath: "dmg-art/background.png"))
           SWIFT
 
           swift /tmp/make-dmg-bg.swift
-          test -s dmg-root/.background/background.png
+          test -s dmg-art/background.png
 
-      - name: Build styled Finder DMG with real volume icon
+      - name: Build DMG with real mounted-volume icon
         shell: bash
         run: |
           set -euo pipefail
-          RW_DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_RW.dmg"
-          DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_LOGO.dmg"
-          rm -f "$RW_DMG" "$DMG" "$DMG.sha256"
+          DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_VOLUME_ICON.dmg"
+          rm -f "$DMG" "$DMG.sha256"
 
-          hdiutil create \
-            -volname "Lock Release" \
-            -srcfolder dmg-root \
-            -fs HFS+ \
-            -ov \
-            -format UDRW \
-            "$RW_DMG"
+          create-dmg \
+            --volname "Lock Release Installer" \
+            --volicon "assets/lock-release.icns" \
+            --background "dmg-art/background.png" \
+            --window-pos 120 120 \
+            --window-size 760 480 \
+            --icon-size 128 \
+            --text-size 14 \
+            --icon "Lock Release.app" 190 255 \
+            --hide-extension "Lock Release.app" \
+            --app-drop-link 570 255 \
+            --no-internet-enable \
+            "$DMG" \
+            "dmg-stage"
 
-          ATTACH_OUTPUT="$(hdiutil attach -readwrite -noverify -noautoopen "$RW_DMG")"
+          test -s "$DMG"
+          hdiutil verify "$DMG"
+
+          ATTACH_OUTPUT="$(hdiutil attach -readonly -noverify -noautoopen "$DMG")"
           printf '%s\n' "$ATTACH_OUTPUT"
           DEVICE="$(printf '%s\n' "$ATTACH_OUTPUT" | awk '/^\/dev\// {print $1; exit}')"
           MOUNT_POINT="$(printf '%s\n' "$ATTACH_OUTPUT" | sed -n 's#^.*\(/Volumes/.*\)$#\1#p' | tail -1)"
-          test -n "$DEVICE"
-          test -n "$MOUNT_POINT"
-          test -d "$MOUNT_POINT"
-
-          # Real Lock Release logo for the mounted disk/volume icon.
-          cp assets/lock-release.icns "$MOUNT_POINT/.VolumeIcon.icns"
-          chflags hidden "$MOUNT_POINT/.VolumeIcon.icns" || true
-          chflags hidden "$MOUNT_POINT/.background" || true
-
-          SETFILE="$(xcrun --find SetFile 2>/dev/null || true)"
-          if [ -n "$SETFILE" ]; then
-            echo "Using SetFile at $SETFILE"
-            "$SETFILE" -a C "$MOUNT_POINT"
-            "$SETFILE" -a V "$MOUNT_POINT/.VolumeIcon.icns" || true
-            "$SETFILE" -a V "$MOUNT_POINT/.background" || true
-          else
-            echo "SetFile unavailable; applying Finder custom-icon flag with xattr"
-            xattr -wx com.apple.FinderInfo 0000000000000000040000000000000000000000000000000000000000000000 "$MOUNT_POINT"
-          fi
-
-          echo "Volume FinderInfo after icon flag:"
-          xattr -px com.apple.FinderInfo "$MOUNT_POINT" || true
           test -s "$MOUNT_POINT/.VolumeIcon.icns"
-
-          osascript <<'APPLESCRIPT'
-          tell application "Finder"
-            tell disk "Lock Release"
-              open
-              set current view of container window to icon view
-              set toolbar visible of container window to false
-              set statusbar visible of container window to false
-              set pathbar visible of container window to false
-              set sidebar width of container window to 0
-              set the bounds of container window to {120, 120, 880, 600}
-              set opts to the icon view options of container window
-              set arrangement of opts to not arranged
-              set icon size of opts to 128
-              set text size of opts to 14
-              set background picture of opts to file ".background:background.png"
-              set position of item "Lock Release.app" of container window to {190, 255}
-              set position of item "Applications" of container window to {570, 255}
-              update without registering applications
-              delay 2
-              close container window
-            end tell
-          end tell
-          APPLESCRIPT
-
-          # Reassert the custom volume icon flag after Finder writes .DS_Store.
-          if [ -n "$SETFILE" ]; then
-            "$SETFILE" -a C "$MOUNT_POINT"
-          else
-            xattr -wx com.apple.FinderInfo 0000000000000000040000000000000000000000000000000000000000000000 "$MOUNT_POINT"
-          fi
-
-          bless --folder "$MOUNT_POINT" --openfolder "$MOUNT_POINT" || true
-          sync
+          echo "Mounted volume custom-icon flag:"
+          xattr -px com.apple.FinderInfo "$MOUNT_POINT" || true
           hdiutil detach "$DEVICE"
 
-          hdiutil convert "$RW_DMG" \
-            -format UDZO \
-            -imagekey zlib-level=9 \
-            -o "$DMG"
-          rm -f "$RW_DMG"
-
-          test -s "$DMG"
           shasum -a 256 "$DMG" > "$DMG.sha256"
-          hdiutil verify "$DMG"
 
-      - name: Upload finished logo DMG
+      - name: Upload finished DMG
         uses: actions/upload-artifact@v4
         with:
-          name: Lock-Release-Mac-DMG-1.0.64-LOGO
+          name: Lock-Release-Mac-DMG-1.0.64-VOLUME-ICON
           path: |
-            Lock_Release_Mac_Installer_1.0.64_LOGO.dmg
-            Lock_Release_Mac_Installer_1.0.64_LOGO.dmg.sha256
+            Lock_Release_Mac_Installer_1.0.64_VOLUME_ICON.dmg
+            Lock_Release_Mac_Installer_1.0.64_VOLUME_ICON.dmg.sha256
           if-no-files-found: error
           compression-level: 0
