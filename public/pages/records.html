@@ -17,6 +17,27 @@
   <link rel="stylesheet" href="/assets/style.css?v=20260911headerfit1" />
   <link rel="stylesheet" href="/assets/records.css?v=20260912darkpolish1" />
 
+
+
+
+
+
+<style id="RECORD_PERIOD_FINAL_20260912">
+body.records-page .report-period-group{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:14px!important;flex-wrap:nowrap!important;min-width:0!important}
+body.records-page .record-date-stack,body.records-page .report-field[data-for-report="dailyReport"]{width:auto!important;min-width:0!important;overflow:visible!important}
+body.records-page .report-day-picker{display:grid!important;grid-template-columns:34px 216px 34px!important;width:284px!important;min-width:284px!important;max-width:284px!important;height:42px!important;gap:0!important;overflow:hidden!important;box-sizing:border-box!important;border:1px solid var(--line-strong)!important;border-radius:9px!important;background:var(--surface)!important}
+body.records-page #reportDate{box-sizing:border-box!important;width:216px!important;min-width:216px!important;max-width:216px!important;height:40px!important;min-height:40px!important;margin:0!important;padding:0 8px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:var(--surface)!important;color:var(--text)!important;font-size:13px!important;font-weight:600!important;text-align:center!important}
+body.records-page #reportDate::-webkit-datetime-edit{display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;color:var(--text)!important;font-size:13px!important;font-weight:600!important}
+body.records-page #reportDate::-webkit-datetime-edit-fields-wrapper{display:flex!important;align-items:center!important;justify-content:center!important}
+body.records-page #reportDate::-webkit-calendar-picker-indicator{display:block!important;visibility:visible!important;opacity:.92!important;width:16px!important;height:16px!important;margin:0 4px 0 6px!important;padding:2px!important;cursor:pointer!important;filter:none!important}
+html.app-dark body.records-page #reportDate,body.dark-mode.records-page #reportDate{color-scheme:dark!important}
+html:not(.app-dark) body.records-page #reportDate{color-scheme:light!important}
+body.records-page #reportPrevDay,body.records-page #reportNextDay{display:flex!important;align-items:center!important;justify-content:center!important;visibility:visible!important;opacity:1!important;box-sizing:border-box!important;width:34px!important;min-width:34px!important;max-width:34px!important;height:40px!important;min-height:40px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:var(--surface-alt)!important;color:var(--text-soft)!important;font-size:20px!important;font-weight:700!important;line-height:1!important;cursor:pointer!important}
+body.records-page #reportPrevDay{border-right:1px solid var(--line)!important}
+body.records-page #reportNextDay{border-left:1px solid var(--line)!important}
+body.records-page #reportPrevDay:hover,body.records-page #reportNextDay:hover{background:var(--surface-hover)!important;color:var(--accent)!important}
+@media(max-width:700px){body.records-page .report-period-group{gap:10px!important}body.records-page .report-day-picker{grid-template-columns:32px 196px 32px!important;width:260px!important;min-width:260px!important;max-width:260px!important}body.records-page #reportDate{width:196px!important;min-width:196px!important;max-width:196px!important;font-size:12.5px!important}body.records-page #reportPrevDay,body.records-page #reportNextDay{width:32px!important;min-width:32px!important;max-width:32px!important}}
+</style>
 </head>
 
 <body class="records-page">
@@ -50,7 +71,14 @@
                 <div class="record-date-stack">
                   <div class="field report-field is-active" data-for-report="dailyReport">
                     <label class="sr-only" for="reportDate">Day</label>
-                    <input type="date" id="reportDate" aria-label="Report day" />
+                    <!-- RECORD_DAY_ARROWS_20260912 -->
+<div class="report-day-picker">
+  <button class="report-day-arrow" id="reportPrevDay" type="button" aria-label="Previous day">‹</button>
+
+  <input type="date" id="reportDate" aria-label="Report day" />
+
+  <button class="report-day-arrow" id="reportNextDay" type="button" aria-label="Next day">›</button>
+</div>
                   </div>
 
                   <div class="field report-field" data-for-report="monthlyReport" hidden>
@@ -1128,9 +1156,16 @@
       }
     })();
   </script>
-
-
-
-
+<script id="RECORD_DAY_NAV_FINAL_20260912">
+(function(){
+ function shiftReportDay(delta){
+  const input=document.getElementById('reportDate'); if(!input)return;
+  const m=String(input.value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); const d=m?new Date(+m[1],+m[2]-1,+m[3]):new Date();
+  d.setDate(d.getDate()+delta); input.value=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+  input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new Event('change',{bubbles:true}));
+ }
+ document.addEventListener('DOMContentLoaded',()=>{document.getElementById('reportPrevDay')?.addEventListener('click',()=>shiftReportDay(-1));document.getElementById('reportNextDay')?.addEventListener('click',()=>shiftReportDay(1));});
+})();
+</script>
 </body>
 </html>
