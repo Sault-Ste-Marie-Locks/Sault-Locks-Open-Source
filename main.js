@@ -18,6 +18,9 @@ let updatePollTimer = null;
 let lastPromptedUpdateVersion = '';
 let lastPromptedUpdateAt = 0;
 let updateWindow = null;
+let updatePromptWindow = null;
+let activeUpdateRequest = null;
+let updateCancelRequested = false;
 let tray = null;
 let isQuitting = false;
 let phoneServerRunning = false;
@@ -199,44 +202,150 @@ function currentVersion() {
 function escapeHtml(v) {
   return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
-function createUpdateWindow(latestVersion) {
-  if (updateWindow && !updateWindow.isDestroyed()) return updateWindow;
-  const icon = path.join(appRoot(), 'assets', 'lock-release.ico');
-  updateWindow = new BrowserWindow({
-    width: 680,
-    height: 420,
+function updaterLogoSrc() {
+  try {
+    const logoFile = path.join(appRoot(), 'assets', 'lock-release.png');
+    return `data:image/png;base64,${fs.readFileSync(logoFile).toString('base64')}`;
+  } catch (_) {
+    return '';
+  }
+}
+function updaterBrowserWindowOptions(width, height) {
+  const isMac = process.platform === 'darwin';
+  const icon = path.join(appRoot(), 'assets', isMac ? 'lock-release.png' : 'lock-release.ico');
+  const common = {
+    width,
+    height,
+    useContentSize: true,
     resizable: false,
     maximizable: false,
     minimizable: false,
-    title: 'Lock Release Updater',
+    title: 'Locks Tracker',
     icon,
-    backgroundColor: '#f6f7f9',
+    backgroundColor: '#f4f4f4',
     autoHideMenuBar: true,
     alwaysOnTop: true,
+    show: false,
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
-  });
+  };
+  if (isMac) {
+    common.titleBarStyle = 'hiddenInset';
+    common.trafficLightPosition = { x: 14, y: 14 };
+  } else {
+    common.titleBarStyle = 'hidden';
+    common.titleBarOverlay = { color: '#4d4b48', symbolColor: '#ffffff', height: 42 };
+  }
+  return common;
+}
+function createUpdateWindow(latestVersion) {
+  if (updateWindow && !updateWindow.isDestroyed()) return updateWindow;
+  updateCancelRequested = false;
+  const isMac = process.platform === 'darwin';
+  const logoSrc = updaterLogoSrc();
+  updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 600 : 850, isMac ? 242 : 310));
   updateWindow.setMenuBarVisibility(false);
 
-  let logoSrc = '';
-  try {
-    const logoFile = path.join(appRoot(), 'assets', 'lock-release.png');
-    logoSrc = `data:image/png;base64,${fs.readFileSync(logoFile).toString('base64')}`;
-  } catch (_) {}
-
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Lock Release Updater</title>
+  const platformClass = isMac ? 'mac' : 'windows';
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Locks Tracker</title>
 <style>
-*{box-sizing:border-box}html,body{height:100%}
-body{margin:0;font-family:"Segoe UI Variable","Segoe UI",system-ui,Arial,sans-serif;background:#f6f7f9;color:#1f2937;overflow:hidden;font-size:14px}
-.shell{height:100%;padding:22px;background:linear-gradient(180deg,#fbfcff 0%,#f6f7f9 100%)}
-.window{height:100%;border:1px solid #dde2ea;border-radius:18px;background:#fff;box-shadow:0 18px 50px rgba(15,23,42,.14);overflow:hidden;display:flex;flex-direction:column}
-.header{height:112px;padding:22px 26px;display:flex;align-items:center;gap:18px;border-bottom:1px solid #e5eaf1;background:linear-gradient(180deg,#ffffff,#fbfcfe)}
-.logo{width:64px;height:64px;border-radius:16px;border:1px solid #dde2ea;background:#f8fafc;display:grid;place-items:center;box-shadow:0 1px 2px rgba(15,23,42,.06)}
-.logo img{width:54px;height:54px;object-fit:contain;display:block}.logoFallback{font-weight:800;color:#2563eb;font-size:20px}.titleBlock{min-width:0;flex:1}
-.eyebrow{font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
-h1{margin:0 0 6px;font-size:26px;line-height:1.12;letter-spacing:-.03em;font-weight:750;color:#111827}.subtitle{margin:0;color:#64748b;line-height:1.45}.subtitle strong{color:#1f2937}.versionTag{display:inline-flex;align-items:center;min-height:28px;padding:4px 10px;border-radius:999px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-weight:800;font-size:12px;white-space:nowrap}
-.content{padding:24px 26px;display:flex;flex-direction:column;gap:18px;flex:1}.statusRow{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.stageLabel{font-size:12px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}.stage{font-size:20px;font-weight:750;letter-spacing:-.02em;color:#1f2937}.pct{font-size:32px;font-weight:750;letter-spacing:-.04em;color:#2563eb;font-variant-numeric:tabular-nums;line-height:1}.detail{margin-top:8px;color:#64748b;line-height:1.45;min-height:38px;white-space:pre-wrap}.progressBox{border:1px solid #dde2ea;background:#fafbfc;border-radius:16px;padding:16px;box-shadow:0 1px 2px rgba(15,23,42,.04)}.bar{height:12px;border-radius:999px;background:#e5eaf1;overflow:hidden;border:1px solid #d6dde8}.fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#38bdf8);transition:width .25s ease}.progressMeta{display:flex;justify-content:space-between;gap:12px;margin-top:10px;color:#64748b;font-size:12px}.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.step{border:1px solid #e5eaf1;background:#fff;border-radius:14px;padding:12px}.num{width:24px;height:24px;border-radius:999px;display:grid;place-items:center;background:#eff6ff;color:#2563eb;font-weight:800;font-size:12px;margin-bottom:9px}.step strong{display:block;color:#334155;font-size:12px;margin-bottom:3px}.step span{display:block;color:#94a3b8;font-size:11px;line-height:1.3}.footer{padding:14px 26px;border-top:1px solid #e5eaf1;background:#fbfcfe;color:#64748b;display:flex;justify-content:space-between;gap:14px;font-size:12px}.safe{display:inline-block;width:8px;height:8px;border-radius:50%;background:#15803d;margin-right:8px}.err .fill{background:linear-gradient(90deg,#b42318,#f97316)}.err .pct{color:#b42318}.err .versionTag{background:#fff7f7;color:#b42318;border-color:#fecaca}.done .fill{background:linear-gradient(90deg,#15803d,#22c55e)}.done .pct{color:#15803d}.done .versionTag{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
-</style></head><body><div class="shell"><div class="window card" id="card"><div class="header"><div class="logo">${logoSrc ? `<img src="${logoSrc}" alt="Lock Release">` : `<div class="logoFallback">LR</div>`}</div><div class="titleBlock"><div class="eyebrow">Lock Release desktop</div><h1>Installing update</h1><p class="subtitle">Updating to <strong>version ${escapeHtml(latestVersion)}</strong>. Your data will be kept.</p></div><div class="versionTag" id="statusPill">Working</div></div><div class="content"><div class="statusRow"><div><div class="stageLabel">Current step</div><div class="stage" id="stage">Preparing update...</div><div class="detail" id="detail">Getting the update ready.</div></div><div class="pct" id="pct">0%</div></div><div class="progressBox"><div class="bar"><div class="fill" id="fill"></div></div><div class="progressMeta"><span id="metaLeft">Please keep Lock Release open while this finishes.</span><span>Usually under 1 minute</span></div></div><div class="steps"><div class="step"><div class="num">1</div><strong>Download</strong><span>Fetch update package</span></div><div class="step"><div class="num">2</div><strong>Extract</strong><span>Prepare new files</span></div><div class="step"><div class="num">3</div><strong>Apply</strong><span>Replace app files</span></div><div class="step"><div class="num">4</div><strong>Restart</strong><span>Open latest version</span></div></div></div><div class="footer"><div><span class="safe"></span>Lock Release will reopen after the update finishes.</div><div>Do not close this window.</div></div></div></div><script>window.setUpdateProgress=function(stage,pct,detail,state){pct=Math.max(0,Math.min(100,Number(pct)||0));var safeState=state||'';var status=safeState==='done'?'Complete':safeState==='err'?'Error':'Working';document.getElementById('stage').textContent=stage||'Working...';document.getElementById('pct').textContent=Math.round(pct)+'%';document.getElementById('fill').style.width=pct+'%';document.getElementById('detail').textContent=detail||'';document.getElementById('statusPill').textContent=status;document.getElementById('card').className='window card '+safeState;};</script></body></html>`;
+* {box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif' : '"Segoe UI Variable","Segoe UI",Arial,sans-serif'};background:#f4f4f4;color:#1d1d1f}
+.titlebar{-webkit-app-region:drag;user-select:none}.titlebar button,.actions button{-webkit-app-region:no-drag}
+.logo{object-fit:cover;display:block;background:#252525}
+.mac .titlebar{height:38px;border-bottom:1px solid #c8c8c8;background:#fafafa;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#4b4b4b}
+.mac .body{height:204px;background:#f7f7f7;padding:22px 20px 12px;display:grid;grid-template-columns:92px 1fr;grid-template-rows:auto 1fr auto;column-gap:18px}
+.mac .logo{width:92px;height:92px;border-radius:17px;grid-row:1/3}
+.mac h1{font-size:14px;line-height:20px;margin:10px 0 12px;font-weight:700}
+.mac .status{font-size:13px;line-height:18px;color:#505050;margin:0 0 8px}
+.mac .bar{height:12px;border-radius:999px;background:#d0d0d0;overflow:hidden;margin-top:2px}
+.mac .fill{height:100%;width:0%;border-radius:999px;background:#5b9cf6;transition:width .18s linear}
+.mac .detail{font-size:13px;line-height:18px;color:#5a5a5a;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mac .actions{grid-column:2;display:flex;justify-content:flex-end;align-items:end}
+.mac button{min-width:118px;height:30px;padding:0 18px;border:1px solid #a9a9a9;border-radius:6px;background:linear-gradient(#fff,#f3f3f3);font-size:14px;color:#202020}
+.mac button:disabled{opacity:.45}
+.windows .titlebar{height:42px;background:#4d4b48;color:#fff;display:flex;align-items:center;padding:0 16px;font-size:16px}
+.windows .body{height:198px;background:#fff;padding:18px 22px;display:grid;grid-template-columns:140px 1fr;column-gap:34px}
+.windows .logo{width:116px;height:116px;border-radius:17px;align-self:start}
+.windows .content{padding-top:7px}
+.windows h1{font-size:20px;line-height:28px;font-weight:400;margin:0 0 22px}
+.windows .status{font-size:18px;line-height:24px;margin:0 0 8px}
+.windows .bar{height:38px;border:1px solid #c9c9c9;background:#f1f1f1;overflow:hidden}
+.windows .fill{height:100%;width:0%;background:#3f7fd3;transition:width .18s linear}
+.windows .detail{font-size:16px;line-height:24px;margin-top:8px;color:#222}
+.windows .footer{height:70px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 22px}
+.windows button{width:152px;height:34px;border:2px solid #d2d2d2;background:#fff;font-size:17px;color:#202020}
+.windows button:disabled{color:#8a8a8a;background:#f7f7f7}
+.err .fill{background:#c83b32}.done .fill{background:#4a9b58}
+</style></head><body class="${platformClass}">
+<div class="titlebar">${isMac ? '<span>Locks Tracker</span>' : '<span>Locks Tracker</span>'}</div>
+${isMac ? `
+<div class="body" id="card">
+  ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : '<div class="logo"></div>'}
+  <div>
+    <h1 id="headline">Updating Locks Tracker...</h1>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="detail" id="detail">Preparing update...</div>
+  </div>
+  <div class="actions"><button id="cancel" onclick="location.href='lockrelease-update://cancel'">Cancel</button></div>
+</div>` : `
+<div class="body" id="card">
+  ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : '<div class="logo"></div>'}
+  <div class="content">
+    <h1 id="headline">Updating “Locks Tracker”...</h1>
+    <div class="status" id="status">Preparing update...</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="detail" id="detail">0% Complete</div>
+  </div>
+</div>
+<div class="footer"><button id="cancel" onclick="location.href='lockrelease-update://cancel'">Cancel</button></div>`}
+<script>
+window.setUpdateProgress=function(stage,pct,detail,state){
+  pct=Math.max(0,Math.min(100,Number(pct)||0));
+  var card=document.getElementById('card');
+  var fill=document.getElementById('fill');
+  var cancel=document.getElementById('cancel');
+  fill.style.width=pct+'%';
+  card.className=(card.className||'')+' '+(state||'');
+  if(document.body.classList.contains('mac')){
+    document.getElementById('headline').textContent=state==='done'?'Update complete':state==='err'?'Update failed':'Updating Locks Tracker...';
+    document.getElementById('detail').textContent=detail||stage||'Working...';
+  }else{
+    var label=stage||'Working';
+    if(label==='Downloading update') label='Downloading latest version';
+    if(!/[.!…]$/.test(label)) label+='...';
+    document.getElementById('status').textContent=label;
+    document.getElementById('detail').textContent=Math.round(pct)+'% Complete';
+  }
+  var canCancel=!state && pct<80;
+  cancel.disabled=!canCancel;
+};
+</script></body></html>`;
+
+  updateWindow.webContents.on('will-navigate', (event, url) => {
+    if (!String(url).startsWith('lockrelease-update://')) return;
+    event.preventDefault();
+    let action = '';
+    try { action = new URL(url).hostname; } catch (_) {}
+    if (action === 'cancel') {
+      updateCancelRequested = true;
+      const err = new Error('Update cancelled by user.');
+      err.code = 'LOCK_RELEASE_UPDATE_CANCELLED';
+      try { if (activeUpdateRequest) activeUpdateRequest.destroy(err); } catch (_) {}
+      try { if (updateWindow && !updateWindow.isDestroyed()) updateWindow.close(); } catch (_) {}
+    }
+  });
   updateWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  updateWindow.once('ready-to-show', () => {
+    try { updateWindow.show(); updateWindow.focus(); } catch (_) {}
+  });
+  updateWindow.on('close', () => {
+    if (!updateCancelRequested && activeUpdateRequest) {
+      updateCancelRequested = true;
+      const err = new Error('Update cancelled by user.');
+      err.code = 'LOCK_RELEASE_UPDATE_CANCELLED';
+      try { activeUpdateRequest.destroy(err); } catch (_) {}
+    }
+  });
   updateWindow.on('closed', () => { updateWindow = null; });
   return updateWindow;
 }
@@ -244,8 +353,79 @@ h1{margin:0 0 6px;font-size:26px;line-height:1.12;letter-spacing:-.03em;font-wei
 function updateProgress(stage, percent, detail, state) {
   appendLog(`UPDATE PROGRESS ${Math.round(percent || 0)}% ${stage || ''} ${detail || ''}`);
   if (!updateWindow || updateWindow.isDestroyed()) return;
-  const script = `window.setUpdateProgress(${JSON.stringify(stage || 'Working...')}, ${Number(percent)||0}, ${JSON.stringify(detail || '')}, ${JSON.stringify(state || '')})`;
+  const pct = Number(percent) || 0;
+  try { updateWindow.setClosable(!!state || pct < 80); } catch (_) {}
+  const script = `window.setUpdateProgress(${JSON.stringify(stage || 'Working...')}, ${pct}, ${JSON.stringify(detail || '')}, ${JSON.stringify(state || '')})`;
   updateWindow.webContents.executeJavaScript(script).catch(() => {});
+}
+
+function showUpdaterPromptWindow(latestVersion, hasAsset) {
+  return new Promise(resolve => {
+    if (updatePromptWindow && !updatePromptWindow.isDestroyed()) {
+      try { updatePromptWindow.focus(); } catch (_) {}
+      resolve(1);
+      return;
+    }
+    const isMac = process.platform === 'darwin';
+    const logoSrc = updaterLogoSrc();
+    const width = isMac ? 700 : 850;
+    const height = isMac ? 252 : 255;
+    updatePromptWindow = new BrowserWindow(updaterBrowserWindowOptions(width, height));
+    updatePromptWindow.setMenuBarVisibility(false);
+    let settled = false;
+    const finish = (choice) => {
+      if (settled) return;
+      settled = true;
+      resolve(choice);
+      try { if (updatePromptWindow && !updatePromptWindow.isDestroyed()) updatePromptWindow.close(); } catch (_) {}
+    };
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Locks Tracker</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif' : '"Segoe UI Variable","Segoe UI",Arial,sans-serif'};background:#f5f5f5;color:#111}
+.titlebar{-webkit-app-region:drag;user-select:none}
+.logo{object-fit:cover;display:block;background:#252525}
+.mac .titlebar{height:38px;border-bottom:1px solid #c8c8c8;background:#fafafa}
+.mac .body{height:214px;background:#f7f7f7;padding:20px 34px;display:grid;grid-template-columns:116px 1fr;grid-template-rows:1fr 42px;column-gap:26px}
+.mac .logo{width:112px;height:112px;border-radius:18px;align-self:start}
+.mac .text{padding-top:6px}.mac h1{font-size:25px;line-height:31px;margin:0 0 12px;font-weight:700;letter-spacing:-.2px}.mac p{font-size:18px;line-height:27px;margin:0;color:#171717}
+.mac .actions{grid-column:2;display:flex;justify-content:flex-end;align-items:end;gap:12px}
+.mac button{height:34px;min-width:118px;padding:0 20px;border:1px solid #b8b8b8;border-radius:7px;background:linear-gradient(#fff,#f2f2f2);font-size:17px}
+.mac .primary{border-color:#4387e8;background:linear-gradient(#6fa8ff,#347be2);color:#fff;box-shadow:inset 0 1px rgba(255,255,255,.35)}
+.windows .titlebar{height:42px;background:#4d4b48;color:#fff;display:flex;align-items:center;padding:0 16px;font-size:16px}
+.windows .body{height:142px;background:#fff;padding:17px 22px;display:grid;grid-template-columns:140px 1fr;column-gap:34px}
+.windows .logo{width:116px;height:116px;border-radius:17px}
+.windows .text{padding-top:7px}.windows h1{font-size:24px;line-height:30px;font-weight:400;margin:0 0 30px}
+.windows p{font-size:20px;line-height:28px;margin:0}
+.windows .footer{height:71px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 42px;gap:16px}
+.windows button{width:156px;height:35px;border:2px solid #d2d2d2;background:#fff;font-size:17px}
+</style></head><body class="${isMac ? 'mac' : 'windows'}">
+<div class="titlebar">${isMac ? '' : '<span>Locks Tracker</span>'}</div>
+<div class="body">
+  ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : '<div class="logo"></div>'}
+  <div class="text"><h1>An Update is available on the web</h1><p>Do you want to update “Locks Tracker” to the latest version?</p></div>
+  ${isMac ? `<div class="actions"><button onclick="location.href='lockrelease-update://later'">Cancel</button><button class="primary" onclick="location.href='lockrelease-update://${hasAsset ? 'update' : 'github'}'">${hasAsset ? 'Update' : 'Open GitHub'}</button></div>` : ''}
+</div>
+${isMac ? '' : `<div class="footer"><button onclick="location.href='lockrelease-update://${hasAsset ? 'update' : 'github'}'">${hasAsset ? 'Update' : 'Open GitHub'}</button><button onclick="location.href='lockrelease-update://later'">Cancel</button></div>`}
+</body></html>`;
+    updatePromptWindow.webContents.on('will-navigate', (event, url) => {
+      if (!String(url).startsWith('lockrelease-update://')) return;
+      event.preventDefault();
+      let action = '';
+      try { action = new URL(url).hostname; } catch (_) {}
+      if (action === 'update') finish(0);
+      else if (action === 'github') finish(2);
+      else finish(1);
+    });
+    updatePromptWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+    updatePromptWindow.once('ready-to-show', () => {
+      try { updatePromptWindow.show(); updatePromptWindow.focus(); } catch (_) {}
+    });
+    updatePromptWindow.on('closed', () => {
+      updatePromptWindow = null;
+      if (!settled) { settled = true; resolve(1); }
+    });
+  });
 }
 
 function readJsonSafe(file, fallback) {
@@ -336,7 +516,26 @@ function getJson(url, headers = {}) {
 function downloadFile(url, target, headers = {}, onProgress) {
   return new Promise((resolve, reject) => {
     fs.mkdirSync(path.dirname(target), { recursive: true });
+    let settled = false;
+    const finishReject = (err) => {
+      if (settled) return;
+      settled = true;
+      activeUpdateRequest = null;
+      reject(err);
+    };
+    const finishResolve = (value) => {
+      if (settled) return;
+      settled = true;
+      activeUpdateRequest = null;
+      resolve(value);
+    };
     const run = (downloadUrl) => {
+      if (updateCancelRequested) {
+        const err = new Error('Update cancelled by user.');
+        err.code = 'LOCK_RELEASE_UPDATE_CANCELLED';
+        finishReject(err);
+        return;
+      }
       let finalHeaders = {
         'User-Agent': `${APP_NAME.replace(/\s+/g, '-')}/${currentVersion()}`,
         ...headers
@@ -347,10 +546,15 @@ function downloadFile(url, target, headers = {}, onProgress) {
       } catch (_) {}
       const req = https.get(downloadUrl, { headers: finalHeaders }, res => {
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          res.resume(); run(res.headers.location); return;
+          activeUpdateRequest = null;
+          res.resume();
+          run(res.headers.location);
+          return;
         }
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          res.resume(); reject(new Error(`Download failed: HTTP ${res.statusCode}`)); return;
+          res.resume();
+          finishReject(new Error(`Download failed: HTTP ${res.statusCode}`));
+          return;
         }
         const total = Number(res.headers['content-length'] || 0);
         let received = 0;
@@ -360,10 +564,11 @@ function downloadFile(url, target, headers = {}, onProgress) {
           if (typeof onProgress === 'function' && total > 0) onProgress(received, total);
         });
         res.pipe(file);
-        file.on('finish', () => file.close(() => resolve({ received, total })));
-        file.on('error', reject);
+        file.on('finish', () => file.close(() => finishResolve({ received, total })));
+        file.on('error', finishReject);
       });
-      req.on('error', reject);
+      activeUpdateRequest = req;
+      req.on('error', finishReject);
       req.setTimeout(180000, () => req.destroy(new Error('Update download timed out')));
     };
     run(url);
@@ -686,41 +891,21 @@ function bringAppForwardForUpdatePrompt() {
   }
   try { updateTrayMenu(); } catch (_) {}
 }
-function showUpdateAvailablePrompt(latestVersion, installedVersion, release, repo, asset, config, force) {
+async function showUpdateAvailablePrompt(latestVersion, installedVersion, release, repo, asset, config, force) {
   if (!shouldShowUpdatePrompt(latestVersion, force)) return 1;
   const wasHidden = mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible();
   if (wasHidden && tray && tray.displayBalloon) {
     try {
       tray.displayBalloon({
-        title: 'Lock Release update available',
+        title: 'Locks Tracker update available',
         content: `Version ${latestVersion} is ready to install.`,
         iconType: 'info'
       });
     } catch (_) {}
   }
   bringAppForwardForUpdatePrompt();
-  if (!asset || (!asset.browser_download_url && !asset.url)) {
-    const result = dialog.showMessageBoxSync(mainWindow || undefined, {
-      type: 'info',
-      title: 'Lock Release update available',
-      message: `Lock Release ${latestVersion} is available.`,
-      detail: 'No automatic update zip was attached to the GitHub release. Open the release page instead?',
-      buttons: ['Open GitHub', 'Later'],
-      defaultId: 0,
-      cancelId: 1
-    });
-    if (result === 0) shell.openExternal(release.html_url || `https://github.com/${repo}/releases/latest`);
-    return 1;
-  }
-  return dialog.showMessageBoxSync(mainWindow || undefined, {
-    type: 'info',
-    title: 'Lock Release update available',
-    message: `Lock Release ${latestVersion} is available.`,
-    detail: `Installed: ${installedVersion}\nLatest: ${latestVersion}\n\nDownload and install the update now? The app will close and reopen.`,
-    buttons: ['Update Now', 'Later', 'Open GitHub'],
-    defaultId: 0,
-    cancelId: 1
-  });
+  const hasAsset = !!(asset && (asset.browser_download_url || asset.url));
+  return await showUpdaterPromptWindow(latestVersion, hasAsset);
 }
 
 async function checkForUpdatesOnStartup(options = {}) {
@@ -795,7 +980,7 @@ async function checkForUpdatesOnStartup(options = {}) {
     if (!asset) asset = assets.find(a => a && /Lock[_\s-]*Release.*Windows.*\.zip$/i.test(a.name || ''));
     if (!asset) asset = assets.find(a => a && /\.zip$/i.test(a.name || ''));
 
-    const result = showUpdateAvailablePrompt(latestVersion, installedVersion, release, repo, asset, config, force);
+    const result = await showUpdateAvailablePrompt(latestVersion, installedVersion, release, repo, asset, config, force);
     if (result === 2) { shell.openExternal(release.html_url || `https://github.com/${repo}/releases/latest`); return; }
     if (result !== 0) return;
     if (!asset || (!asset.browser_download_url && !asset.url)) return;
@@ -1033,6 +1218,8 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
   const tempDir = path.join(os.tmpdir(), `LockReleaseUpdate_${Date.now()}`);
   fs.mkdirSync(tempDir, { recursive: true });
   const zipPath = path.join(tempDir, 'Lock_Release_Windows.zip');
+  updateCancelRequested = false;
+  activeUpdateRequest = null;
 
   try {
     createUpdateWindow(latestVersion);
@@ -1040,12 +1227,21 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
     await wait(350);
 
     const headers = (config && config.privateRepo) ? githubHeaders(config, 'application/octet-stream') : {};
-    updateProgress('Downloading update', 8, 'Connecting to GitHub release asset...');
+    updateProgress('Downloading update', 8, 'Connecting to the latest version...');
+    const downloadStartedAt = Date.now();
     await downloadFile(downloadUrl, zipPath, headers, (received, total) => {
       const pct = total > 0 ? 8 + (received / total) * 68 : 40;
       const mb = (received / 1024 / 1024).toFixed(1);
       const totalMb = total > 0 ? (total / 1024 / 1024).toFixed(1) : '?';
-      updateProgress('Downloading update', pct, `${mb} MB of ${totalMb} MB downloaded`);
+      const elapsedSeconds = Math.max(1, (Date.now() - downloadStartedAt) / 1000);
+      const bytesPerSecond = received / elapsedSeconds;
+      const remainingSeconds = (total > received && bytesPerSecond > 0) ? (total - received) / bytesPerSecond : 0;
+      let eta = '';
+      if (remainingSeconds > 0 && Number.isFinite(remainingSeconds)) {
+        if (remainingSeconds < 60) eta = ` — About ${Math.max(1, Math.ceil(remainingSeconds))} seconds remaining`;
+        else eta = ` — About ${Math.max(1, Math.ceil(remainingSeconds / 60))} minutes remaining`;
+      }
+      updateProgress('Downloading update', pct, `${mb} MB of ${totalMb} MB${eta}`);
     });
 
     const sourceMode = !app.isPackaged || !/resources[\\/]app$/i.test(appRoot());
@@ -1082,9 +1278,16 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
     child.unref();
     setTimeout(() => app.quit(), 400);
   } catch (err) {
+    if (updateCancelRequested || (err && err.code === 'LOCK_RELEASE_UPDATE_CANCELLED')) {
+      appendLog('Update cancelled by user.');
+      try { if (fs.existsSync(zipPath)) fs.rmSync(zipPath, { force: true }); } catch (_) {}
+      return;
+    }
     appendLog('UPDATE INSTALL ERROR: ' + (err && err.stack || err));
     updateProgress('Update failed', 100, `${err && err.message || err}\n\nLog file: ${logFile()}`, 'err');
     dialog.showErrorBox('Lock Release update failed', `${err && err.message || err}\n\nLog file:\n${logFile()}`);
+  } finally {
+    activeUpdateRequest = null;
   }
 }
 function updatePowerShell() {
