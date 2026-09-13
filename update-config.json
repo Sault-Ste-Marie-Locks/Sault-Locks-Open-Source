@@ -2,6 +2,6 @@
   "githubRepo": "OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates",
   "privateRepo": false,
   "checkOnStartup": true,
-  "assetName": "Lock_Release_Windows.zip",
+  "assetName": "Lock_Release_Update.zip",
   "allowPrerelease": false
 }

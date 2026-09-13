@@ -2,13 +2,15 @@
   "name": "lock-release-desktop",
   "version": "0.0.0",
   "description": "Lock Release desktop app with V26 optional lock reason fix",
-  "main": "main.js",
+  "main": "bootstrap.js",
   "private": true,
   "author": "Lock Release",
   "productName": "Lock Release",
   "scripts": {
     "start": "electron .",
-    "build-win": "electron-packager . \"Lock Release\" --platform=win32 --arch=x64 --overwrite --out=dist --no-asar"
+    "build-win": "electron-packager . \"Lock Release\" --platform=win32 --arch=x64 --overwrite --out=dist --no-asar",
+    "build-mac-arm64": "electron-packager . \"Lock Release\" --platform=darwin --arch=arm64 --overwrite --out=dist --no-asar",
+    "build-mac-x64": "electron-packager . \"Lock Release\" --platform=darwin --arch=x64 --overwrite --out=dist --no-asar"
   },
   "devDependencies": {
     "electron": "latest",
