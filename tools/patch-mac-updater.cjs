@@ -7,20 +7,26 @@ function replaceExact(oldText, newText, label) {
   if (!s.includes(oldText)) throw new Error(`Mac updater repair failed: could not find ${label}`);
   s = s.replace(oldText, () => newText);
 }
+function replaceRange(startMarker, endMarker, replacement, label) {
+  const start = s.indexOf(startMarker);
+  const end = s.indexOf(endMarker, start);
+  if (start < 0 || end < 0) throw new Error(`Mac updater repair failed: could not find ${label}`);
+  s = s.slice(0, start) + replacement + s.slice(end);
+}
 
 replaceExact("    assetName: 'Lock_Release_Windows.zip',", "    assetName: 'Lock_Release_Update.zip',", 'default update asset');
 
 replaceExact(`function killOldPort() {
   return new Promise(resolve => {
     const ps = \`$lines = netstat -ano | Select-String ':\${APP_PORT}'; foreach($l in $lines){$parts = ($l.ToString() -split '\\\\s+') | Where-Object { $_ }; if($parts.Length -ge 5){$pid=$parts[-1]; if($pid -match '^\\\\d+$'){try{taskkill /PID $pid /F | Out-Null}catch{}}}}\`;
-    execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps], { windowsHide: true }, () => resolve());
+    execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps], { windowsHide: true }, () => resolve());
   });
 }`,
 `function killOldPort() {
   return new Promise(resolve => {
     if (process.platform === 'win32') {
       const ps = \`$lines = netstat -ano | Select-String ':\${APP_PORT}'; foreach($l in $lines){$parts = ($l.ToString() -split '\\\\s+') | Where-Object { $_ }; if($parts.Length -ge 5){$pid=$parts[-1]; if($pid -match '^\\\\d+$'){try{taskkill /PID $pid /F | Out-Null}catch{}}}}\`;
-      execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps], { windowsHide: true }, () => resolve());
+      execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps], { windowsHide: true }, () => resolve());
       return;
     }
 
@@ -60,14 +66,14 @@ replaceExact(`    const assets = Array.isArray(release.assets) ? release.assets 
 replaceExact(`async function expandZip(zipPath, extractDir) {
   fs.mkdirSync(extractDir, { recursive: true });
   const ps = \`Expand-Archive -LiteralPath '\${String(zipPath).replace(/'/g,"''")}' -DestinationPath '\${String(extractDir).replace(/'/g,"''")}' -Force\`;
-  await runProcess('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps]);
+  await runProcess('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps]);
 }`,
 `async function expandZip(zipPath, extractDir) {
   fs.mkdirSync(extractDir, { recursive: true });
 
   if (process.platform === 'win32') {
     const ps = \`Expand-Archive -LiteralPath '\${String(zipPath).replace(/'/g,"''")}' -DestinationPath '\${String(extractDir).replace(/'/g,"''")}' -Force\`;
-    await runProcess('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps]);
+    await runProcess('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps]);
     return;
   }
 
@@ -80,46 +86,9 @@ replaceExact(`async function expandZip(zipPath, extractDir) {
 }`,
 'cross-platform zip extraction');
 
-replaceExact(`function relaunchPackagedAppAutoOpen() {
-  const exePath = process.execPath;
-  const workDir = path.dirname(process.execPath);
-  appendLog('V17 auto-open relaunch requested. exe=' + exePath + '; cwd=' + workDir);
-
-  // First use Electron's native relaunch. This is the cleanest way to reopen the app after update.
-  try {
-    app.relaunch({ execPath: exePath, args: [] });
-    appendLog('V17 Electron app.relaunch scheduled.');
-  } catch (err) {
-    appendLog('V17 app.relaunch failed: ' + (err && err.message || err));
-  }
-
-  // Safety fallback: after the old process exits, start the app only if it is not already running.
-  // This avoids the update completing but leaving the user with no app window.
-  try {
-    const cmd = 'timeout /t 6 /nobreak >nul & tasklist /FI "IMAGENAME eq Lock Release.exe" | find /I "Lock Release.exe" >nul || start "" /D ' + cmdQuote(workDir) + ' ' + cmdQuote(exePath);
-    const child = spawn('cmd.exe', ['/d', '/s', '/c', cmd], {
-      detached: true,
-      stdio: 'ignore',
-      windowsHide: true
-    });
-    child.unref();
-    appendLog('V17 fallback relaunch helper scheduled through cmd.exe.');
-  } catch (err) {
-    appendLog('V17 fallback relaunch helper failed: ' + (err && err.message || err));
-  }
-
-  // Force exit instead of app.quit(); quit can be cancelled by windows or before-quit handlers.
-  setTimeout(() => {
-    appendLog('V17 exiting current process for relaunch.');
-    app.exit(0);
-  }, 900);
-}
-function relaunchSourceAppHidden() {
-  const root = appRoot().replace(/'/g, "''");
-  const ps = \`Start-Sleep -Seconds 1; Set-Location -LiteralPath '\${root}'; npm install | Out-File -FilePath (Join-Path '\${root}' 'launcher-install.log') -Append; npx electron .\`;
-  const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps], { detached: true, stdio: 'ignore', windowsHide: true });
-  child.unref();
-}`,
+replaceRange(
+'function relaunchPackagedAppAutoOpen() {',
+'\nasync function installSourceModeUpdate',
 `function relaunchPackagedAppAutoOpen() {
   const exePath = process.execPath;
   const workDir = path.dirname(process.execPath);
@@ -132,21 +101,6 @@ function relaunchSourceAppHidden() {
     appendLog('app.relaunch failed: ' + (err && err.message || err));
   }
 
-  if (process.platform === 'win32') {
-    try {
-      const cmd = 'timeout /t 6 /nobreak >nul & tasklist /FI "IMAGENAME eq Lock Release.exe" | find /I "Lock Release.exe" >nul || start "" /D ' + cmdQuote(workDir) + ' ' + cmdQuote(exePath);
-      const child = spawn('cmd.exe', ['/d', '/s', '/c', cmd], {
-        detached: true,
-        stdio: 'ignore',
-        windowsHide: true
-      });
-      child.unref();
-      appendLog('Windows fallback relaunch helper scheduled through cmd.exe.');
-    } catch (err) {
-      appendLog('Windows fallback relaunch helper failed: ' + (err && err.message || err));
-    }
-  }
-
   setTimeout(() => {
     appendLog('Exiting current process for relaunch.');
     app.exit(0);
@@ -156,8 +110,8 @@ function relaunchSourceAppHidden() {
   if (process.platform === 'win32') {
     const root = appRoot().replace(/'/g, "''");
     const ps = \`Start-Sleep -Seconds 1; Set-Location -LiteralPath '\${root}'; npm install | Out-File -FilePath (Join-Path '\${root}' 'launcher-install.log') -Append; npx electron .\`;
-    const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps], { detached: true, stdio: 'ignore', windowsHide: true });
-    child.unref();
+    const command = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps].map(winCommandArg).join(' ');
+    spawnHiddenWindowsCommand(command, os.tmpdir(), 'source-relaunch');
     return;
   }
 
@@ -168,7 +122,8 @@ function relaunchSourceAppHidden() {
   });
   child.unref();
 }`,
-'cross-platform relaunch');
+'cross-platform relaunch'
+);
 
 replaceExact("  const zipPath = path.join(tempDir, 'Lock_Release_Windows.zip');", "  const zipPath = path.join(tempDir, 'Lock_Release_Update.zip');", 'download filename');
 
