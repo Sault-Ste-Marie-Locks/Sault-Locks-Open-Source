@@ -34,69 +34,63 @@ jobs:
           rm -rf build-icon.iconset
           mkdir build-icon.iconset
           SRC="assets/lock-release.png"
-          sips -z 16 16     "$SRC" --out build-icon.iconset/icon_16x16.png >/dev/null
-          sips -z 32 32     "$SRC" --out build-icon.iconset/icon_16x16@2x.png >/dev/null
-          sips -z 32 32     "$SRC" --out build-icon.iconset/icon_32x32.png >/dev/null
-          sips -z 64 64     "$SRC" --out build-icon.iconset/icon_32x32@2x.png >/dev/null
-          sips -z 128 128   "$SRC" --out build-icon.iconset/icon_128x128.png >/dev/null
-          sips -z 256 256   "$SRC" --out build-icon.iconset/icon_128x128@2x.png >/dev/null
-          sips -z 256 256   "$SRC" --out build-icon.iconset/icon_256x256.png >/dev/null
-          sips -z 512 512   "$SRC" --out build-icon.iconset/icon_256x256@2x.png >/dev/null
-          sips -z 512 512   "$SRC" --out build-icon.iconset/icon_512x512.png >/dev/null
+          sips -z 16 16 "$SRC" --out build-icon.iconset/icon_16x16.png >/dev/null
+          sips -z 32 32 "$SRC" --out build-icon.iconset/icon_16x16@2x.png >/dev/null
+          sips -z 32 32 "$SRC" --out build-icon.iconset/icon_32x32.png >/dev/null
+          sips -z 64 64 "$SRC" --out build-icon.iconset/icon_32x32@2x.png >/dev/null
+          sips -z 128 128 "$SRC" --out build-icon.iconset/icon_128x128.png >/dev/null
+          sips -z 256 256 "$SRC" --out build-icon.iconset/icon_128x128@2x.png >/dev/null
+          sips -z 256 256 "$SRC" --out build-icon.iconset/icon_256x256.png >/dev/null
+          sips -z 512 512 "$SRC" --out build-icon.iconset/icon_256x256@2x.png >/dev/null
+          sips -z 512 512 "$SRC" --out build-icon.iconset/icon_512x512.png >/dev/null
           sips -z 1024 1024 "$SRC" --out build-icon.iconset/icon_512x512@2x.png >/dev/null
           iconutil -c icns build-icon.iconset -o assets/lock-release.icns
 
-      - name: Build clean DMG volume icon
+      - name: Build DMG icon directly from uploaded PNG
         shell: bash
         run: |
           set -euo pipefail
-          cat > /tmp/make-volume-icon.swift <<'SWIFT'
-          import AppKit
-          let source = NSImage(contentsOfFile: "assets/dmg-volume-icon.png")!
-          let canvasSize = NSSize(width: 1024, height: 1024)
-          let canvas = NSImage(size: canvasSize)
-          canvas.lockFocus()
-          NSColor.clear.setFill()
-          NSBezierPath(rect: NSRect(origin: .zero, size: canvasSize)).fill()
-          let maxSide: CGFloat = 900
-          let scale = min(maxSide / source.size.width, maxSide / source.size.height)
-          let size = NSSize(width: source.size.width * scale, height: source.size.height * scale)
-          let rect = NSRect(x: (1024 - size.width)/2, y: (1024 - size.height)/2, width: size.width, height: size.height)
-          source.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1)
-          canvas.unlockFocus()
-          let rep = NSBitmapImageRep(data: canvas.tiffRepresentation!)!
-          let png = rep.representation(using: .png, properties: [:])!
-          try png.write(to: URL(fileURLWithPath: "dmg-volume-source.png"))
-          SWIFT
-          swift /tmp/make-volume-icon.swift
+          SRC="assets/dmg-volume-icon.png"
+          test -s "$SRC"
           rm -rf dmg-volume.iconset
-          mkdir dmg-volume.iconset
-          sips -z 16 16     dmg-volume-source.png --out dmg-volume.iconset/icon_16x16.png >/dev/null
-          sips -z 32 32     dmg-volume-source.png --out dmg-volume.iconset/icon_16x16@2x.png >/dev/null
-          sips -z 32 32     dmg-volume-source.png --out dmg-volume.iconset/icon_32x32.png >/dev/null
-          sips -z 64 64     dmg-volume-source.png --out dmg-volume.iconset/icon_32x32@2x.png >/dev/null
-          sips -z 128 128   dmg-volume-source.png --out dmg-volume.iconset/icon_128x128.png >/dev/null
-          sips -z 256 256   dmg-volume-source.png --out dmg-volume.iconset/icon_128x128@2x.png >/dev/null
-          sips -z 256 256   dmg-volume-source.png --out dmg-volume.iconset/icon_256x256.png >/dev/null
-          sips -z 512 512   dmg-volume-source.png --out dmg-volume.iconset/icon_256x256@2x.png >/dev/null
-          sips -z 512 512   dmg-volume-source.png --out dmg-volume.iconset/icon_512x512.png >/dev/null
-          cp dmg-volume-source.png dmg-volume.iconset/icon_512x512@2x.png
+          mkdir dmg-volume.iconset dmg-art
+          sips -z 16 16 "$SRC" --out dmg-volume.iconset/icon_16x16.png >/dev/null
+          sips -z 32 32 "$SRC" --out dmg-volume.iconset/icon_16x16@2x.png >/dev/null
+          sips -z 32 32 "$SRC" --out dmg-volume.iconset/icon_32x32.png >/dev/null
+          sips -z 64 64 "$SRC" --out dmg-volume.iconset/icon_32x32@2x.png >/dev/null
+          sips -z 128 128 "$SRC" --out dmg-volume.iconset/icon_128x128.png >/dev/null
+          sips -z 256 256 "$SRC" --out dmg-volume.iconset/icon_128x128@2x.png >/dev/null
+          sips -z 256 256 "$SRC" --out dmg-volume.iconset/icon_256x256.png >/dev/null
+          sips -z 512 512 "$SRC" --out dmg-volume.iconset/icon_256x256@2x.png >/dev/null
+          sips -z 512 512 "$SRC" --out dmg-volume.iconset/icon_512x512.png >/dev/null
+          sips -z 1024 1024 "$SRC" --out dmg-volume.iconset/icon_512x512@2x.png >/dev/null
           iconutil -c icns dmg-volume.iconset -o dmg-volume.icns
+          test -s dmg-volume.icns
+          sips -s format png dmg-volume.icns --out dmg-art/dmg-volume-preview.png >/dev/null
+          test -s dmg-art/dmg-volume-preview.png
+          echo "DMG icon preview:"
+          sips -g pixelWidth -g pixelHeight -g hasAlpha dmg-art/dmg-volume-preview.png
 
       - name: Install build dependencies
+        shell: bash
         run: |
+          set -euo pipefail
           npm install --no-audit --no-fund
           npm install --no-save @electron/universal
           brew install create-dmg
 
       - name: Build Intel and Apple Silicon apps
+        shell: bash
         run: |
-          rm -rf dist-x64 dist-arm64 dist-universal dmg-stage dmg-art
+          set -euo pipefail
+          rm -rf dist-x64 dist-arm64 dist-universal dmg-stage
           npx electron-packager . "Lock Release" --platform=darwin --arch=x64 --overwrite --out=dist-x64 --ignore="^/dist" --ignore="^/update-payload"
           npx electron-packager . "Lock Release" --platform=darwin --arch=arm64 --overwrite --out=dist-arm64 --ignore="^/dist" --ignore="^/update-payload"
 
       - name: Merge universal app and apply app icon
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p dist-universal
           node <<'NODE'
           const path = require('path');
@@ -117,7 +111,9 @@ jobs:
           codesign --force --deep --sign - "$APP"
 
       - name: Create branded DMG background
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p dmg-art dmg-stage
           ditto "dist-universal/Lock Release.app" "dmg-stage/Lock Release.app"
           cat > /tmp/make-bg.swift <<'SWIFT'
@@ -144,19 +140,46 @@ jobs:
           SWIFT
           swift /tmp/make-bg.swift
 
-      - name: Build fixed DMG
+      - name: Build and force custom mounted-volume icon
+        shell: bash
         run: |
-          DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_ICON_FIXED.dmg"
-          create-dmg --volname "Lock Release Installer Fixed" --volicon "dmg-volume.icns" --background "dmg-art/background.png" --window-pos 120 120 --window-size 760 480 --icon-size 128 --text-size 14 --icon "Lock Release.app" 190 255 --hide-extension "Lock Release.app" --app-drop-link 570 255 --no-internet-enable "$DMG" "dmg-stage"
-          hdiutil verify "$DMG"
-          shasum -a 256 "$DMG" > "$DMG.sha256"
+          set -euo pipefail
+          BASE_DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_BASE.dmg"
+          RW_DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_RW.dmg"
+          FINAL_DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_ICON_FINAL.dmg"
+          rm -f "$BASE_DMG" "$RW_DMG" "$FINAL_DMG" "$FINAL_DMG.sha256"
+
+          create-dmg --volname "Lock Release 1.0.64" --volicon "dmg-volume.icns" --background "dmg-art/background.png" --window-pos 120 120 --window-size 760 480 --icon-size 128 --text-size 14 --icon "Lock Release.app" 190 255 --hide-extension "Lock Release.app" --app-drop-link 570 255 --no-internet-enable "$BASE_DMG" "dmg-stage"
+
+          hdiutil convert "$BASE_DMG" -format UDRW -o "$RW_DMG"
+          ATTACH_OUTPUT="$(hdiutil attach -readwrite -noverify -noautoopen "$RW_DMG")"
+          DEVICE="$(printf '%s\n' "$ATTACH_OUTPUT" | awk '/^\/dev\// {print $1; exit}')"
+          MOUNT_POINT="$(printf '%s\n' "$ATTACH_OUTPUT" | sed -n 's#^.*\(/Volumes/.*\)$#\1#p' | tail -1)"
+          test -n "$DEVICE"
+          test -n "$MOUNT_POINT"
+          cp -f dmg-volume.icns "$MOUNT_POINT/.VolumeIcon.icns"
+          SETFILE="$(xcrun --find SetFile)"
+          "$SETFILE" -a C "$MOUNT_POINT"
+          "$SETFILE" -a V "$MOUNT_POINT/.VolumeIcon.icns"
+          chflags hidden "$MOUNT_POINT/.VolumeIcon.icns" || true
+          touch "$MOUNT_POINT/.VolumeIcon.icns"
+          sync
+          echo "FinderInfo on mounted volume:"
+          xattr -px com.apple.FinderInfo "$MOUNT_POINT" || true
+          test -s "$MOUNT_POINT/.VolumeIcon.icns"
+          hdiutil detach "$DEVICE"
+
+          hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$FINAL_DMG"
+          hdiutil verify "$FINAL_DMG"
+          shasum -a 256 "$FINAL_DMG" > "$FINAL_DMG.sha256"
 
       - name: Upload finished DMG
         uses: actions/upload-artifact@v4
         with:
-          name: Lock-Release-Mac-DMG-1.0.64-ICON-FIXED
+          name: Lock-Release-Mac-DMG-1.0.64-ICON-FINAL
           path: |
-            Lock_Release_Mac_Installer_1.0.64_ICON_FIXED.dmg
-            Lock_Release_Mac_Installer_1.0.64_ICON_FIXED.dmg.sha256
+            Lock_Release_Mac_Installer_1.0.64_ICON_FINAL.dmg
+            Lock_Release_Mac_Installer_1.0.64_ICON_FINAL.dmg.sha256
+            dmg-art/dmg-volume-preview.png
           if-no-files-found: error
           compression-level: 0
