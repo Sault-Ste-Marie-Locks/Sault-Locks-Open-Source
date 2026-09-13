@@ -526,11 +526,30 @@ function hideAppWindow() {
 }
 function quitFromTray() {
   isQuitting = true;
-  try { if (tray) tray.destroy(); } catch (_) {}
+
+  // Clear the shared tray reference before destroying it so any late async
+  // refresh cannot touch an Electron Tray object that has already been destroyed.
+  const trayToDestroy = tray;
+  tray = null;
+  try {
+    if (trayToDestroy && (!trayToDestroy.isDestroyed || !trayToDestroy.isDestroyed())) {
+      trayToDestroy.destroy();
+    }
+  } catch (_) {}
+
   app.quit();
 }
 function updateTrayMenu() {
-  if (!tray) return;
+  if (isQuitting || !tray) return;
+  try {
+    if (tray.isDestroyed && tray.isDestroyed()) {
+      tray = null;
+      return;
+    }
+  } catch (_) {
+    tray = null;
+    return;
+  }
   const visible = !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible());
   const phoneLabel = phoneServerRunning ? 'Phone Server: Running' : 'Phone Server: Stopped';
   const menu = Menu.buildFromTemplate([
@@ -1229,6 +1248,10 @@ try {
 
 process.on('uncaughtException', err => {
   appendLog('UNCAUGHT: ' + (err && err.stack || err));
+
+  // Do not show a crash popup for harmless cleanup races while the user is quitting.
+  if (isQuitting) return;
+
   try { dialog.showErrorBox('Lock Release crashed', String(err && err.message || err)); } catch (_) {}
   app.quit();
 });
