@@ -92,6 +92,7 @@ jobs:
           set -euo pipefail
           DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_FINAL.dmg"
           ZIP="Lock_Release_Mac_Installer_${BUILD_VERSION}_WITH_ICON.zip"
+          DISTDIR="Lock Release Installer ${BUILD_VERSION}"
 
           cat > "$RUNNER_TEMP/set-file-icon.swift" <<'SWIFT'
           import AppKit
@@ -100,35 +101,37 @@ jobs:
           guard args.count == 3 else { exit(2) }
           let iconPath = args[1]
           let targetPath = args[2]
-          guard let icon = NSImage(contentsOfFile: iconPath) else {
-              fputs("Could not load icon\n", stderr)
-              exit(3)
-          }
-          let ok = NSWorkspace.shared.setIcon(icon, forFile: targetPath, options: [])
-          if !ok {
-              fputs("NSWorkspace setIcon failed\n", stderr)
-              exit(4)
-          }
+          guard let icon = NSImage(contentsOfFile: iconPath) else { exit(3) }
+          if !NSWorkspace.shared.setIcon(icon, forFile: targetPath, options: []) { exit(4) }
           SWIFT
 
           swift "$RUNNER_TEMP/set-file-icon.swift" "$PWD/dmg-art/dmg-volume-preview.png" "$PWD/$DMG"
 
-          echo "DMG Finder metadata before packaging:"
-          xattr -l "$DMG"
+          echo "Custom Finder icon metadata on source DMG:"
+          xattr "$DMG"
           xattr "$DMG" | grep -q 'com.apple.ResourceFork'
           xattr "$DMG" | grep -q 'com.apple.FinderInfo'
 
-          rm -f "$ZIP"
-          ditto -c -k --sequesterRsrc --keepParent "$DMG" "$ZIP"
+          rm -rf "$DISTDIR" "$ZIP"
+          mkdir -p "$DISTDIR"
+          ditto "$DMG" "$DISTDIR/$DMG"
+
+          echo "Metadata after copying into distribution folder:"
+          xattr "$DISTDIR/$DMG"
+          xattr "$DISTDIR/$DMG" | grep -q 'com.apple.ResourceFork'
+          xattr "$DISTDIR/$DMG" | grep -q 'com.apple.FinderInfo'
+
+          ditto -c -k --sequesterRsrc --keepParent "$DISTDIR" "$ZIP"
           test -s "$ZIP"
 
-          rm -rf "$RUNNER_TEMP/icon-restore-check"
-          mkdir -p "$RUNNER_TEMP/icon-restore-check"
-          ditto -x -k "$ZIP" "$RUNNER_TEMP/icon-restore-check"
-          RESTORED="$RUNNER_TEMP/icon-restore-check/$DMG"
+          VERIFY="$RUNNER_TEMP/icon-restore-check"
+          rm -rf "$VERIFY"
+          mkdir -p "$VERIFY"
+          ditto -x -k "$ZIP" "$VERIFY"
+          RESTORED="$VERIFY/$DISTDIR/$DMG"
           test -s "$RESTORED"
-          echo "Restored DMG Finder metadata after ZIP round-trip:"
-          xattr -l "$RESTORED"
+          echo "Metadata after Mac ZIP round-trip:"
+          xattr "$RESTORED"
           xattr "$RESTORED" | grep -q 'com.apple.ResourceFork'
           xattr "$RESTORED" | grep -q 'com.apple.FinderInfo'
 
