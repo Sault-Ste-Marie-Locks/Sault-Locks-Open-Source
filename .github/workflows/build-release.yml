@@ -205,9 +205,9 @@ jobs:
         shell: bash
         run: |
           ls -lah release-artifacts
-          gh release view "v$BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates >/dev/null 2>&1 && \
-            gh release delete "v$BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes --cleanup-tag || true
+          gh release view "v$BUILD_VERSION" --repo Sault-Ste-Marie-Locks/Locks-Dashboard-Manager-Updates >/dev/null 2>&1 && \
+            gh release delete "v$BUILD_VERSION" --repo Sault-Ste-Marie-Locks/Locks-Dashboard-Manager-Updates --yes --cleanup-tag || true
           gh release create "v$BUILD_VERSION" release-artifacts/* \
-            --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates \
+            --repo Sault-Ste-Marie-Locks/Locks-Dashboard-Manager-Updates \
             --title "Lock Release v$BUILD_VERSION" \
             --notes "Cross-platform Lock Release desktop build with Windows, macOS, and the shared automatic update payload."
