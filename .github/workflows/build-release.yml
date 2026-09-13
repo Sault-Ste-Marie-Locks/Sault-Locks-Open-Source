@@ -146,8 +146,8 @@ jobs:
         shell: bash
         run: |
           rm -rf dist-x64 dist-arm64 dist-universal dmg-root
-          npx electron-packager . "Lock Release" --platform=darwin --arch=x64 --overwrite --out=dist-x64 --no-asar
-          npx electron-packager . "Lock Release" --platform=darwin --arch=arm64 --overwrite --out=dist-arm64 --no-asar
+          npx electron-packager . "Lock Release" --platform=darwin --arch=x64 --overwrite --out=dist-x64 --no-asar --ignore="^/dist" --ignore="^/update-payload"
+          npx electron-packager . "Lock Release" --platform=darwin --arch=arm64 --overwrite --out=dist-arm64 --no-asar --ignore="^/dist" --ignore="^/update-payload"
           mkdir -p dist-universal
           node <<'NODE'
           const path = require('path');
