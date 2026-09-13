@@ -1290,7 +1290,19 @@ if (!gotLock) {
     return boot();
   });
 }
-app.on('before-quit', () => { isQuitting = true; });
+app.on('before-quit', event => {
+  // On macOS, normal Dock/Cmd+Q quit requests hide Lock Release to the menu bar.
+  // The tray/menu-bar "Quit Lock Release" action sets isQuitting first and still exits fully.
+  if (process.platform === 'darwin' && !isQuitting) {
+    event.preventDefault();
+    try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide(); } catch (_) {}
+    try { if (app.dock) app.dock.hide(); } catch (_) {}
+    appendLog('macOS quit request converted to hide-to-menu-bar.');
+    updateTrayMenu();
+    return;
+  }
+  isQuitting = true;
+});
 app.on('activate', () => { showApp(APP_URL); });
 app.on('window-all-closed', () => {
   // Keep Lock Release running in the background/tray. Use the tray Quit item to exit.
