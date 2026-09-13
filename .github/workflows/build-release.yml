@@ -1,4 +1,4 @@
-name: Build Lock Release Windows Update
+name: Build Lock Release Desktop Update
 
 on:
   push:
@@ -6,25 +6,68 @@ on:
   workflow_dispatch:
 
 jobs:
-  windows-release:
-    runs-on: windows-latest
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      build_version: ${{ steps.version.outputs.build_version }}
+    steps:
+      - id: version
+        shell: bash
+        run: echo "build_version=1.0.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
+  update-payload:
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      BUILD_VERSION: ${{ needs.version.outputs.build_version }}
     steps:
       - name: Checkout private source
         uses: actions/checkout@v4
 
-      - name: Set automatic build version
+      - name: Stamp build version
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'); const p=require('./package.json'); p.version=process.env.BUILD_VERSION; fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');"
+          printf '%s' "$BUILD_VERSION" > .lock-release-version
+
+      - name: Build cross-platform source update
+        shell: bash
+        run: |
+          zip -qry Lock_Release_Update.zip . \
+            -x 'node_modules/*' 'dist/*' '.git/*' '.github/*' \
+               'database/*' 'data/*' 'data-backup/*' 'update-payload/*'
+          test -s Lock_Release_Update.zip
+
+      - name: Upload source update artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-update
+          path: Lock_Release_Update.zip
+          retention-days: 3
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    env:
+      BUILD_VERSION: ${{ needs.version.outputs.build_version }}
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+
+      - name: Stamp build version
         shell: pwsh
         run: |
-          $version = "1.0.$env:GITHUB_RUN_NUMBER"
-          Write-Host "BUILD_VERSION=$version"
-          "BUILD_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
-
           $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
-          $pkg.version = $version
+          $pkg.version = $env:BUILD_VERSION
           [System.IO.File]::WriteAllText((Resolve-Path package.json), ($pkg | ConvertTo-Json -Depth 50), $utf8NoBom)
-          [System.IO.File]::WriteAllText((Join-Path $PWD ".lock-release-version"), $version, $utf8NoBom)
+          [System.IO.File]::WriteAllText((Join-Path $PWD ".lock-release-version"), $env:BUILD_VERSION, $utf8NoBom)
 
       - name: Install build dependencies
         shell: pwsh
@@ -34,34 +77,116 @@ jobs:
         shell: pwsh
         run: |
           npm run build-win
-
           $packageDir = Join-Path $PWD "dist\Lock Release-win32-x64"
           if (-not (Test-Path (Join-Path $packageDir "Lock Release.exe"))) {
             throw "Packaged Lock Release.exe was not created."
           }
-
           $appDir = Join-Path $packageDir "resources\app"
           if (-not (Test-Path (Join-Path $appDir "package.json"))) {
             throw "Packaged resources/app source was not created."
           }
-
           foreach ($name in @("database","data","data-backup","dist","update-payload",".git",".github")) {
             Remove-Item (Join-Path $appDir $name) -Recurse -Force -ErrorAction SilentlyContinue
           }
-
           Compress-Archive -Path (Join-Path $packageDir "*") -DestinationPath "Lock_Release_Windows.zip" -Force
 
-      - name: Publish release to public updates repo
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
-        run: |
-          gh release view "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release delete "v$env:BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes --cleanup-tag
-          }
+      - name: Upload Windows release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: Lock_Release_Windows.zip
+          retention-days: 3
 
-          gh release create "v$env:BUILD_VERSION" "Lock_Release_Windows.zip" `
-            --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates `
-            --title "Lock Release v$env:BUILD_VERSION" `
-            --notes "Emergency updater recovery. Restores the proven auto-update engine while keeping the rebuilt Locks Tracker application and supports automatic recovery from v1.0.64-v1.0.66."
+  mac:
+    needs: version
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            label: Apple_Silicon
+          - arch: x64
+            label: Intel
+    env:
+      BUILD_VERSION: ${{ needs.version.outputs.build_version }}
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+
+      - name: Stamp build version
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'); const p=require('./package.json'); p.version=process.env.BUILD_VERSION; fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');"
+          printf '%s' "$BUILD_VERSION" > .lock-release-version
+
+      - name: Install build dependencies
+        shell: bash
+        run: npm ci
+
+      - name: Build macOS app
+        shell: bash
+        run: |
+          npx electron-packager . "Lock Release" --platform=darwin --arch=${{ matrix.arch }} --overwrite --out=dist --no-asar
+          APP="dist/Lock Release-darwin-${{ matrix.arch }}/Lock Release.app"
+          test -d "$APP"
+          APP_SOURCE="$APP/Contents/Resources/app"
+          test -f "$APP_SOURCE/package.json"
+          for name in database data data-backup dist update-payload .git .github; do
+            rm -rf "$APP_SOURCE/$name"
+          done
+
+      - name: Create macOS DMG and ZIP
+        shell: bash
+        run: |
+          APP="dist/Lock Release-darwin-${{ matrix.arch }}/Lock Release.app"
+          DMG="Lock_Release_Mac_${{ matrix.label }}.dmg"
+          ZIP="Lock_Release_Mac_${{ matrix.label }}.zip"
+          rm -rf dmg-root
+          mkdir -p dmg-root
+          cp -R "$APP" dmg-root/
+          ln -s /Applications dmg-root/Applications
+          hdiutil create -volname "Lock Release" -srcfolder dmg-root -ov -format UDZO "$DMG"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+          test -s "$DMG"
+          test -s "$ZIP"
+
+      - name: Upload macOS release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-mac-${{ matrix.arch }}
+          path: |
+            Lock_Release_Mac_${{ matrix.label }}.dmg
+            Lock_Release_Mac_${{ matrix.label }}.zip
+          retention-days: 3
+
+  release:
+    needs: [version, update-payload, windows, mac]
+    runs-on: ubuntu-latest
+    env:
+      BUILD_VERSION: ${{ needs.version.outputs.build_version }}
+      GH_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Publish release to public updates repo
+        shell: bash
+        run: |
+          ls -lah release-artifacts
+          gh release view "v$BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates >/dev/null 2>&1 && \
+            gh release delete "v$BUILD_VERSION" --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates --yes --cleanup-tag || true
+          gh release create "v$BUILD_VERSION" release-artifacts/* \
+            --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates \
+            --title "Lock Release v$BUILD_VERSION" \
+            --notes "Cross-platform updater repair. Adds macOS builds, keeps the legacy Windows package for existing clients, and publishes a shared source-update payload for future Windows and Mac updates."
