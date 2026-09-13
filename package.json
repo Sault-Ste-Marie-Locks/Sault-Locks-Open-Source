@@ -1,8 +1,8 @@
 {
   "name": "lock-release-desktop",
   "version": "0.0.0",
-  "description": "Lock Release desktop app with V26 optional lock reason fix",
-  "main": "bootstrap.js",
+  "description": "Cross-platform Lock Release desktop app and Sault Locks tracker.",
+  "main": "main.js",
   "private": true,
   "author": "Lock Release",
   "productName": "Lock Release",

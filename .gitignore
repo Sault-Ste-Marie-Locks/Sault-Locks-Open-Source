@@ -5,6 +5,7 @@ release/
 build/
 *.exe
 *.zip
+*.dmg
 *.log
 *.tmp
 .DS_Store
@@ -17,3 +18,7 @@ yarn-error.log*
 # SQLite temp files - keep the main .db if you want starter data
 database/*.db-shm
 database/*.db-wal
+
+# Generated import/debug artifacts
+data/import-report.json
+imports/

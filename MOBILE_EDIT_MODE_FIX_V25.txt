@@ -1,1 +1,0 @@
-V25 fixes mobile Logs edit mode so background sync does not close the editor, Save/Cancel stays sticky at the top, entry identity survives dashboard sync, and edits update the existing dashboard record instead of creating duplicates.

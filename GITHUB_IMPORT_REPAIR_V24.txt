@@ -1,9 +1,0 @@
-Lock Release V24 GitHub/Desktop JSON Import Visible Repair
-
-Fixes JSON import not showing in Records by adding:
-- /api/import/json endpoint
-- /api/debug/db endpoint
-- clear DB path + before/after import counts
-- force import helper that uses the running app server instead of guessing SQLite paths
-
-The app database remains in AppData and is protected from updates.

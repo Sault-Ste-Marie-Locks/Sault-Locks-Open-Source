@@ -24,12 +24,6 @@ jobs:
       - name: Checkout private source
         uses: actions/checkout@v4
 
-      - name: Repair cross-platform updater
-        shell: bash
-        run: |
-          node tools/patch-mac-updater.cjs main.js
-          node --check main.js
-
       - name: Stamp build version
         shell: bash
         run: |
@@ -65,12 +59,6 @@ jobs:
         with:
           node-version: '22.12.0'
           cache: npm
-
-      - name: Repair cross-platform updater
-        shell: pwsh
-        run: |
-          node tools/patch-mac-updater.cjs main.js
-          node --check main.js
 
       - name: Stamp build version
         shell: pwsh
@@ -124,12 +112,6 @@ jobs:
           node-version: '22.12.0'
           cache: npm
 
-      - name: Repair macOS updater
-        shell: bash
-        run: |
-          node tools/patch-mac-updater.cjs main.js
-          node --check main.js
-
       - name: Stamp build version
         shell: bash
         run: |
@@ -170,7 +152,7 @@ jobs:
             rm -rf "$APP_SOURCE/$name"
           done
 
-      - name: Verify updater repair is inside app
+      - name: Verify updater is inside app
         shell: bash
         run: |
           APP_SOURCE="dist-universal/Lock Release.app/Contents/Resources/app"
@@ -228,4 +210,4 @@ jobs:
           gh release create "v$BUILD_VERSION" release-artifacts/* \
             --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates \
             --title "Lock Release v$BUILD_VERSION" \
-            --notes "macOS updater repair. The universal Mac installer now uses native macOS update tools and the shared cross-platform update payload. Windows updating remains supported."
+            --notes "Cross-platform Lock Release desktop build with Windows, macOS, and the shared automatic update payload."

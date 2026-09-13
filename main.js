@@ -442,7 +442,7 @@ function updateConfig() {
     githubRepo: 'OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates',
     checkOnStartup: true,
     allowPrerelease: false,
-    assetName: 'Lock_Release_Windows.zip',
+    assetName: 'Lock_Release_Update.zip',
     privateRepo: false,
     tokenEnvName: 'LOCK_RELEASE_GITHUB_TOKEN',
     tokenFileName: 'github-token.txt'
@@ -630,8 +630,20 @@ async function waitForServer(totalMs) {
 }
 function killOldPort() {
   return new Promise(resolve => {
-    const ps = `$lines = netstat -ano | Select-String ':${APP_PORT}'; foreach($l in $lines){$parts = ($l.ToString() -split '\\s+') | Where-Object { $_ }; if($parts.Length -ge 5){$pid=$parts[-1]; if($pid -match '^\\d+$'){try{taskkill /PID $pid /F | Out-Null}catch{}}}}`;
-    execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps], { windowsHide: true }, () => resolve());
+    if (process.platform === 'win32') {
+      const ps = `$lines = netstat -ano | Select-String ':${APP_PORT}'; foreach($l in $lines){$parts = ($l.ToString() -split '\\s+') | Where-Object { $_ }; if($parts.Length -ge 5){$pid=$parts[-1]; if($pid -match '^\\d+$'){try{taskkill /PID $pid /F | Out-Null}catch{}}}}`;
+      execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps], { windowsHide: true }, () => resolve());
+      return;
+    }
+
+    execFile('lsof', ['-ti', `tcp:${APP_PORT}`], (err, stdout) => {
+      if (!err && stdout) {
+        for (const pid of String(stdout).split(/\s+/).filter(Boolean)) {
+          try { process.kill(Number(pid), 'SIGTERM'); } catch (_) {}
+        }
+      }
+      resolve();
+    });
   });
 }
 async function startBundledServer() {
@@ -987,8 +999,19 @@ async function checkForUpdatesOnStartup(options = {}) {
 
     const assets = Array.isArray(release.assets) ? release.assets : [];
     let asset = assets.find(a => a && a.name === config.assetName);
-    if (!asset) asset = assets.find(a => a && /Lock[_\s-]*Release.*Windows.*\.zip$/i.test(a.name || ''));
-    if (!asset) asset = assets.find(a => a && /\.zip$/i.test(a.name || ''));
+
+    if (!asset) asset = assets.find(a => a && /^Lock_Release_Update\.zip$/i.test(a.name || ''));
+    if (!asset && process.platform === 'darwin') {
+      const archLabel = process.arch === 'arm64' ? 'Apple[_\\s-]*Silicon' : 'Intel';
+      const macRe = new RegExp(`Lock[_\\s-]*Release.*Mac.*${archLabel}.*\\.zip$`, 'i');
+      asset = assets.find(a => a && macRe.test(a.name || ''));
+    }
+    if (!asset && process.platform === 'win32') {
+      asset = assets.find(a => a && /Lock[_\s-]*Release.*Windows.*\.zip$/i.test(a.name || ''));
+    }
+    if (!asset && process.platform !== 'darwin') {
+      asset = assets.find(a => a && /\.zip$/i.test(a.name || ''));
+    }
 
     const result = await showUpdateAvailablePrompt(latestVersion, installedVersion, release, repo, asset, config, force);
     if (result === 2) { shell.openExternal(release.html_url || `https://github.com/${repo}/releases/latest`); return; }
@@ -1019,8 +1042,19 @@ function runProcess(file, args, options = {}) {
 }
 async function expandZip(zipPath, extractDir) {
   fs.mkdirSync(extractDir, { recursive: true });
-  const ps = `Expand-Archive -LiteralPath '${String(zipPath).replace(/'/g,"''")}' -DestinationPath '${String(extractDir).replace(/'/g,"''")}' -Force`;
-  await runProcess('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps]);
+
+  if (process.platform === 'win32') {
+    const ps = `Expand-Archive -LiteralPath '${String(zipPath).replace(/'/g,"''")}' -DestinationPath '${String(extractDir).replace(/'/g,"''")}' -Force`;
+    await runProcess('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps]);
+    return;
+  }
+
+  if (process.platform === 'darwin') {
+    await runProcess('/usr/bin/ditto', ['-x', '-k', zipPath, extractDir]);
+    return;
+  }
+
+  await runProcess('unzip', ['-o', zipPath, '-d', extractDir]);
 }
 function findSourceApp(extractRoot) {
   const direct = path.join(extractRoot, 'package.json');
@@ -1146,36 +1180,47 @@ function spawnHiddenWindowsCommand(command, dir, label) {
 function relaunchPackagedAppAutoOpen() {
   const exePath = process.execPath;
   const workDir = path.dirname(process.execPath);
-  appendLog('V18 auto-open relaunch requested. exe=' + exePath + '; cwd=' + workDir);
+  appendLog('Auto-open relaunch requested. platform=' + process.platform + '; exe=' + exePath + '; cwd=' + workDir);
 
   try {
     app.relaunch({ execPath: exePath, args: [] });
-    appendLog('V18 Electron app.relaunch scheduled.');
+    appendLog('Electron app.relaunch scheduled.');
   } catch (err) {
-    appendLog('V18 app.relaunch failed: ' + (err && err.message || err));
+    appendLog('app.relaunch failed: ' + (err && err.message || err));
   }
 
-  // Fully hidden fallback: WScript has no console window and launches PowerShell hidden.
-  try {
-    const processName = path.basename(exePath, path.extname(exePath)).replace(/'/g, "''");
-    const ps = `Start-Sleep -Seconds 6; if (-not (Get-Process -Name '${processName}' -ErrorAction SilentlyContinue)) { Start-Process -FilePath '${psSingleQuote(exePath)}' -WorkingDirectory '${psSingleQuote(workDir)}' }`;
-    const command = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps].map(winCommandArg).join(' ');
-    spawnHiddenWindowsCommand(command, os.tmpdir(), 'relaunch');
-    appendLog('V18 hidden WScript fallback relaunch scheduled.');
-  } catch (err) {
-    appendLog('V18 hidden fallback relaunch failed: ' + (err && err.message || err));
+  if (process.platform === 'win32') {
+    try {
+      const processName = path.basename(exePath, path.extname(exePath)).replace(/'/g, "''");
+      const ps = `Start-Sleep -Seconds 6; if (-not (Get-Process -Name '${processName}' -ErrorAction SilentlyContinue)) { Start-Process -FilePath '${psSingleQuote(exePath)}' -WorkingDirectory '${psSingleQuote(workDir)}' }`;
+      const command = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps].map(winCommandArg).join(' ');
+      spawnHiddenWindowsCommand(command, os.tmpdir(), 'relaunch');
+      appendLog('Hidden Windows fallback relaunch scheduled.');
+    } catch (err) {
+      appendLog('Hidden Windows fallback relaunch failed: ' + (err && err.message || err));
+    }
   }
 
   setTimeout(() => {
-    appendLog('V18 exiting current process for relaunch.');
+    appendLog('Exiting current process for relaunch.');
     app.exit(0);
   }, 900);
 }
 function relaunchSourceAppHidden() {
-  const root = appRoot().replace(/'/g, "''");
-  const ps = `Start-Sleep -Seconds 1; Set-Location -LiteralPath '${root}'; npm install | Out-File -FilePath (Join-Path '${root}' 'launcher-install.log') -Append; npx electron .`;
-  const command = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps].map(winCommandArg).join(' ');
-  spawnHiddenWindowsCommand(command, os.tmpdir(), 'source-relaunch');
+  if (process.platform === 'win32') {
+    const root = appRoot().replace(/'/g, "''");
+    const ps = `Start-Sleep -Seconds 1; Set-Location -LiteralPath '${root}'; npm install | Out-File -FilePath (Join-Path '${root}' 'launcher-install.log') -Append; npx electron .`;
+    const command = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', ps].map(winCommandArg).join(' ');
+    spawnHiddenWindowsCommand(command, os.tmpdir(), 'source-relaunch');
+    return;
+  }
+
+  const child = spawn('/bin/sh', ['-lc', 'sleep 1; npm install >> launcher-install.log 2>&1; npx electron . >> launcher-install.log 2>&1'], {
+    cwd: appRoot(),
+    detached: true,
+    stdio: 'ignore'
+  });
+  child.unref();
 }
 async function installSourceModeUpdate(zipPath, latestVersion, tempDir) {
   const extractDir = path.join(tempDir, 'extracted');
@@ -1241,7 +1286,7 @@ async function installPackagedSourceUpdate(zipPath, latestVersion, tempDir) {
 async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
   const tempDir = path.join(os.tmpdir(), `LockReleaseUpdate_${Date.now()}`);
   fs.mkdirSync(tempDir, { recursive: true });
-  const zipPath = path.join(tempDir, 'Lock_Release_Windows.zip');
+  const zipPath = path.join(tempDir, 'Lock_Release_Update.zip');
   updateCancelRequested = false;
   activeUpdateRequest = null;
 
@@ -1277,6 +1322,10 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
 
     const didPackagedSourceUpdate = await installPackagedSourceUpdate(zipPath, latestVersion, tempDir);
     if (didPackagedSourceUpdate) return;
+
+    if (process.platform !== 'win32') {
+      throw new Error('The downloaded macOS update did not contain a source-update payload. Please install the latest Mac build manually.');
+    }
 
     updateProgress('Preparing installer', 84, 'Update downloaded. Preparing safe installer...');
     const scriptPath = path.join(tempDir, 'install-lock-release-update.ps1');

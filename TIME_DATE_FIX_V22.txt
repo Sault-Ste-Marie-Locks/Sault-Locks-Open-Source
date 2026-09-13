@@ -1,1 +1,0 @@
-V22 fixes desktop and mobile date logging by using local date strings (YYYY-MM-DD) instead of UTC ISO date slicing for entry dates. This prevents 8:00 PM Ontario/Sault entries from being logged as the next day.
