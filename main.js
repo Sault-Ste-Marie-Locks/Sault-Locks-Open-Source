@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, shell, Tray, Menu } = require('electron');
+const { app, BrowserWindow, dialog, shell, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -571,16 +571,27 @@ function updateTrayMenu() {
 }
 function createTray() {
   if (tray) return tray;
-  const ico = path.join(appRoot(), 'assets', 'lock-release.ico');
-  const png = path.join(appRoot(), 'assets', 'lock-release.png');
-  const icon = fs.existsSync(ico) ? ico : png;
-  tray = new Tray(icon);
-  tray.setToolTip(`${APP_NAME} - Running in background`);
-  tray.on('click', () => {
-    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) hideAppWindow();
-    else showApp(APP_URL);
-  });
-  updateTrayMenu();
+  try {
+    const ico = path.join(appRoot(), 'assets', 'lock-release.ico');
+    const png = path.join(appRoot(), 'assets', 'lock-release.png');
+    // Electron's Tray cannot reliably load .ico on macOS; prefer .png there.
+    const iconPath = (process.platform !== 'darwin' && fs.existsSync(ico)) ? ico : png;
+    let icon = nativeImage.createFromPath(iconPath);
+    if (process.platform === 'darwin' && !icon.isEmpty()) {
+      // Menu bar icons must be small (~22pt); the source art is a full-size app icon.
+      icon = icon.resize({ width: 22, height: 22 });
+    }
+    tray = new Tray(icon);
+    tray.setToolTip(`${APP_NAME} - Running in background`);
+    tray.on('click', () => {
+      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) hideAppWindow();
+      else showApp(APP_URL);
+    });
+    updateTrayMenu();
+  } catch (err) {
+    appendLog('createTray failed (non-fatal): ' + (err && err.stack || err));
+    tray = null;
+  }
   return tray;
 }
 
@@ -612,7 +623,13 @@ function createWindow() {
       updateTrayMenu();
     }
   });
-  mainWindow.on('show', () => updateTrayMenu());
+  mainWindow.on('show', () => {
+    updateTrayMenu();
+    try { if (process.platform === 'darwin' && app.dock) app.dock.show(); } catch (_) {}
+  });
+  mainWindow.on('hide', () => {
+    try { if (process.platform === 'darwin' && app.dock) app.dock.hide(); } catch (_) {}
+  });
   mainWindow.on('hide', () => updateTrayMenu());
   mainWindow.on('minimize', () => updateTrayMenu());
   mainWindow.on('closed', () => { mainWindow = null; updateTrayMenu(); });
@@ -1269,7 +1286,7 @@ if (!gotLock) {
     showApp(APP_URL);
   });
   app.whenReady().then(() => {
-    createTray();
+    try { createTray(); } catch (err) { appendLog('createTray threw (non-fatal): ' + (err && err.stack || err)); }
     return boot();
   });
 }
