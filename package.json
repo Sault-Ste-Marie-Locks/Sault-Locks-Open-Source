@@ -9,7 +9,8 @@
   "scripts": {
     "start": "electron .",
     "build-win": "electron-packager . \"Lock Release\" --platform=win32 --arch=x64 --overwrite --out=dist --no-asar",
-    "build-mac": "electron-packager . \"Lock Release\" --platform=darwin --arch=universal --overwrite --out=dist --no-asar"
+    "build-mac-arm64": "electron-packager . \"Lock Release\" --platform=darwin --arch=arm64 --overwrite --out=dist --no-asar",
+    "build-mac-x64": "electron-packager . \"Lock Release\" --platform=darwin --arch=x64 --overwrite --out=dist --no-asar"
   },
   "devDependencies": {
     "electron": "latest",
