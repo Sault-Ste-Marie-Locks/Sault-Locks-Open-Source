@@ -24,6 +24,12 @@ jobs:
       - name: Checkout private source
         uses: actions/checkout@v4
 
+      - name: Repair cross-platform updater
+        shell: bash
+        run: |
+          node tools/patch-mac-updater.cjs main.js
+          node --check main.js
+
       - name: Stamp build version
         shell: bash
         run: |
@@ -34,7 +40,7 @@ jobs:
         shell: bash
         run: |
           zip -qry Lock_Release_Update.zip . \
-            -x 'node_modules/*' 'dist/*' '.git/*' '.github/*' \
+            -x 'node_modules/*' 'dist/*' 'dist-x64/*' 'dist-arm64/*' 'dist-universal/*' '.git/*' '.github/*' \
                'database/*' 'data/*' 'data-backup/*' 'update-payload/*'
           test -s Lock_Release_Update.zip
 
@@ -59,6 +65,12 @@ jobs:
         with:
           node-version: '22.12.0'
           cache: npm
+
+      - name: Repair cross-platform updater
+        shell: pwsh
+        run: |
+          node tools/patch-mac-updater.cjs main.js
+          node --check main.js
 
       - name: Stamp build version
         shell: pwsh
@@ -85,7 +97,7 @@ jobs:
           if (-not (Test-Path (Join-Path $appDir "package.json"))) {
             throw "Packaged resources/app source was not created."
           }
-          foreach ($name in @("database","data","data-backup","dist","update-payload",".git",".github")) {
+          foreach ($name in @("database","data","data-backup","dist","dist-x64","dist-arm64","dist-universal","update-payload",".git",".github")) {
             Remove-Item (Join-Path $appDir $name) -Recurse -Force -ErrorAction SilentlyContinue
           }
           Compress-Archive -Path (Join-Path $packageDir "*") -DestinationPath "Lock_Release_Windows.zip" -Force
@@ -100,14 +112,6 @@ jobs:
   mac:
     needs: version
     runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: arm64
-            label: Apple_Silicon
-          - arch: x64
-            label: Intel
     env:
       BUILD_VERSION: ${{ needs.version.outputs.build_version }}
     steps:
@@ -120,6 +124,12 @@ jobs:
           node-version: '22.12.0'
           cache: npm
 
+      - name: Repair macOS updater
+        shell: bash
+        run: |
+          node tools/patch-mac-updater.cjs main.js
+          node --check main.js
+
       - name: Stamp build version
         shell: bash
         run: |
@@ -128,42 +138,71 @@ jobs:
 
       - name: Install build dependencies
         shell: bash
-        run: npm ci
+        run: |
+          npm ci
+          npm install --no-save @electron/universal
 
-      - name: Build macOS app
+      - name: Build universal macOS app
         shell: bash
         run: |
-          npx electron-packager . "Lock Release" --platform=darwin --arch=${{ matrix.arch }} --overwrite --out=dist --no-asar
-          APP="dist/Lock Release-darwin-${{ matrix.arch }}/Lock Release.app"
+          rm -rf dist-x64 dist-arm64 dist-universal dmg-root
+          npx electron-packager . "Lock Release" --platform=darwin --arch=x64 --overwrite --out=dist-x64 --no-asar
+          npx electron-packager . "Lock Release" --platform=darwin --arch=arm64 --overwrite --out=dist-arm64 --no-asar
+          mkdir -p dist-universal
+          node <<'NODE'
+          const path = require('path');
+          const { makeUniversalApp } = require('@electron/universal');
+          (async () => {
+            await makeUniversalApp({
+              x64AppPath: path.resolve('dist-x64/Lock Release-darwin-x64/Lock Release.app'),
+              arm64AppPath: path.resolve('dist-arm64/Lock Release-darwin-arm64/Lock Release.app'),
+              outAppPath: path.resolve('dist-universal/Lock Release.app'),
+              force: true
+            });
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
+          APP="dist-universal/Lock Release.app"
           test -d "$APP"
           APP_SOURCE="$APP/Contents/Resources/app"
           test -f "$APP_SOURCE/package.json"
-          for name in database data data-backup dist update-payload .git .github; do
+          node --check "$APP_SOURCE/main.js"
+          for name in database data data-backup dist dist-x64 dist-arm64 dist-universal update-payload .git .github; do
             rm -rf "$APP_SOURCE/$name"
           done
 
-      - name: Create macOS DMG and ZIP
+      - name: Verify updater repair is inside app
         shell: bash
         run: |
-          APP="dist/Lock Release-darwin-${{ matrix.arch }}/Lock Release.app"
-          DMG="Lock_Release_Mac_${{ matrix.label }}.dmg"
-          ZIP="Lock_Release_Mac_${{ matrix.label }}.zip"
-          rm -rf dmg-root
+          APP_SOURCE="dist-universal/Lock Release.app/Contents/Resources/app"
+          grep -q "/usr/bin/ditto" "$APP_SOURCE/main.js"
+          grep -q "process.platform === 'darwin'" "$APP_SOURCE/main.js"
+          grep -q "Lock_Release_Update.zip" "$APP_SOURCE/main.js"
+          if grep -n "const zipPath = path.join(tempDir, 'Lock_Release_Windows.zip')" "$APP_SOURCE/main.js"; then
+            echo "Broken Windows-only update path is still present" >&2
+            exit 1
+          fi
+
+      - name: Create universal macOS DMG and ZIP
+        shell: bash
+        run: |
+          APP="dist-universal/Lock Release.app"
+          DMG="Lock_Release_Mac_Universal.dmg"
+          ZIP="Lock_Release_Mac_Universal.zip"
           mkdir -p dmg-root
-          cp -R "$APP" dmg-root/
+          ditto "$APP" "dmg-root/Lock Release.app"
           ln -s /Applications dmg-root/Applications
           hdiutil create -volname "Lock Release" -srcfolder dmg-root -ov -format UDZO "$DMG"
           ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
           test -s "$DMG"
           test -s "$ZIP"
 
-      - name: Upload macOS release artifacts
+      - name: Upload universal macOS release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: release-mac-${{ matrix.arch }}
+          name: release-mac-universal
           path: |
-            Lock_Release_Mac_${{ matrix.label }}.dmg
-            Lock_Release_Mac_${{ matrix.label }}.zip
+            Lock_Release_Mac_Universal.dmg
+            Lock_Release_Mac_Universal.zip
           retention-days: 3
 
   release:
@@ -189,4 +228,4 @@ jobs:
           gh release create "v$BUILD_VERSION" release-artifacts/* \
             --repo OfficialUnrealNetwork/Locks-Dashboard-Manager-Updates \
             --title "Lock Release v$BUILD_VERSION" \
-            --notes "Cross-platform updater repair. Adds macOS builds, keeps the legacy Windows package for existing clients, and publishes a shared source-update payload for future Windows and Mac updates."
+            --notes "macOS updater repair. The universal Mac installer now uses native macOS update tools and the shared cross-platform update payload. Windows updating remains supported."
