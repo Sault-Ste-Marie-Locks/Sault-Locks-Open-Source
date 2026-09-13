@@ -13,17 +13,9 @@ jobs:
 
       - name: Set version
         run: |
+          set -euo pipefail
           echo "BUILD_VERSION=1.0.64" >> "$GITHUB_ENV"
           node -e "let p=require('./package.json');p.version='1.0.64';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
-
-      - name: Decode exact uploaded DMG icon
-        run: |
-          set -euo pipefail
-          mkdir -p dmg-art
-          /usr/bin/base64 -D < assets/dmg-volume-icon.png > dmg-art/uploaded-icon.png
-          test -s dmg-art/uploaded-icon.png
-          file dmg-art/uploaded-icon.png
-          sips -g pixelWidth -g pixelHeight -g format dmg-art/uploaded-icon.png
 
       - name: Build app icon
         run: |
@@ -42,107 +34,142 @@ jobs:
           sips -z 1024 1024 "$SRC" --out app.iconset/icon_512x512@2x.png >/dev/null
           iconutil -c icns app.iconset -o assets/lock-release.icns
 
-      - name: Build DMG volume icon
-        run: |
-          set -euo pipefail
-          rm -rf dmg-art/render dmg.iconset dmg-verify.iconset
-          mkdir -p dmg-art/render dmg.iconset
-          qlmanage -t -s 1024 -o dmg-art/render dmg-art/uploaded-icon.png >/dev/null 2>&1
-          CLEAN="$(find dmg-art/render -maxdepth 1 -name '*.png' | head -1)"
-          test -s "$CLEAN"
-          cp "$CLEAN" dmg-art/dmg-volume-preview.png
-          sips -z 16 16 "$CLEAN" --out dmg.iconset/icon_16x16.png >/dev/null
-          sips -z 32 32 "$CLEAN" --out dmg.iconset/icon_16x16@2x.png >/dev/null
-          sips -z 32 32 "$CLEAN" --out dmg.iconset/icon_32x32.png >/dev/null
-          sips -z 64 64 "$CLEAN" --out dmg.iconset/icon_32x32@2x.png >/dev/null
-          sips -z 128 128 "$CLEAN" --out dmg.iconset/icon_128x128.png >/dev/null
-          sips -z 256 256 "$CLEAN" --out dmg.iconset/icon_128x128@2x.png >/dev/null
-          sips -z 256 256 "$CLEAN" --out dmg.iconset/icon_256x256.png >/dev/null
-          sips -z 512 512 "$CLEAN" --out dmg.iconset/icon_256x256@2x.png >/dev/null
-          sips -z 512 512 "$CLEAN" --out dmg.iconset/icon_512x512.png >/dev/null
-          sips -z 1024 1024 "$CLEAN" --out dmg.iconset/icon_512x512@2x.png >/dev/null
-          iconutil -c icns dmg.iconset -o dmg-volume.icns
-          iconutil -c iconset dmg-volume.icns -o dmg-verify.iconset
-          cp dmg-verify.iconset/icon_512x512@2x.png dmg-art/icns-preview.png
-
       - name: Install dependencies
         run: |
           npm install --no-audit --no-fund
           npm install --no-save @electron/universal
-          brew install create-dmg
 
       - name: Build universal app
         run: |
           set -euo pipefail
-          rm -rf dist-x64 dist-arm64 dist-universal dmg-stage
+          rm -rf dist-x64 dist-arm64 dist-universal dmg-root
           npx electron-packager . "Lock Release" --platform=darwin --arch=x64 --overwrite --out=dist-x64 --ignore="^/dist" --ignore="^/update-payload"
           npx electron-packager . "Lock Release" --platform=darwin --arch=arm64 --overwrite --out=dist-arm64 --ignore="^/dist" --ignore="^/update-payload"
           mkdir -p dist-universal
           node <<'NODE'
           const path=require('path');
           const {makeUniversalApp}=require('@electron/universal');
-          makeUniversalApp({x64AppPath:path.resolve('dist-x64/Lock Release-darwin-x64/Lock Release.app'),arm64AppPath:path.resolve('dist-arm64/Lock Release-darwin-arm64/Lock Release.app'),outAppPath:path.resolve('dist-universal/Lock Release.app'),force:true}).catch(e=>{console.error(e);process.exit(1)});
+          makeUniversalApp({
+            x64AppPath:path.resolve('dist-x64/Lock Release-darwin-x64/Lock Release.app'),
+            arm64AppPath:path.resolve('dist-arm64/Lock Release-darwin-arm64/Lock Release.app'),
+            outAppPath:path.resolve('dist-universal/Lock Release.app'),
+            force:true
+          }).catch(e=>{console.error(e);process.exit(1)});
           NODE
           APP="dist-universal/Lock Release.app"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Lock Release" "$APP/Contents/Info.plist" || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName Lock Release" "$APP/Contents/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile lock-release.icns" "$APP/Contents/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string lock-release.icns" "$APP/Contents/Info.plist"
           cp assets/lock-release.icns "$APP/Contents/Resources/lock-release.icns"
           codesign --force --deep --sign - "$APP"
-          mkdir dmg-stage
-          ditto "$APP" "dmg-stage/Lock Release.app"
 
-      - name: Build DMG
+      - name: Create polished installer background
         run: |
           set -euo pipefail
-          DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_FINAL.dmg"
-          create-dmg --volname "Lock Release Installer Final" --volicon dmg-volume.icns --window-size 760 480 --icon-size 128 --icon "Lock Release.app" 190 240 --hide-extension "Lock Release.app" --app-drop-link 570 240 --no-internet-enable "$DMG" dmg-stage
+          mkdir -p dmg-root/.background
+          ditto "dist-universal/Lock Release.app" "dmg-root/Lock Release.app"
+          ln -s /Applications "dmg-root/Applications"
+          cat > "$RUNNER_TEMP/make-dmg-bg.swift" <<'SWIFT'
+          import AppKit
+
+          let canvas = NSSize(width: 760, height: 480)
+          let image = NSImage(size: canvas)
+          image.lockFocus()
+          NSColor(calibratedWhite: 0.985, alpha: 1).setFill()
+          NSBezierPath(rect: NSRect(origin: .zero, size: canvas)).fill()
+
+          let line = NSBezierPath()
+          line.move(to: NSPoint(x: 0, y: 392))
+          line.line(to: NSPoint(x: 760, y: 392))
+          line.lineWidth = 1
+          NSColor(calibratedWhite: 0.87, alpha: 1).setStroke()
+          line.stroke()
+
+          if let logo = NSImage(contentsOfFile: "assets/ssm-logo.png") {
+            let maxW: CGFloat = 250
+            let scale = min(maxW / logo.size.width, 64 / logo.size.height)
+            let sz = NSSize(width: logo.size.width * scale, height: logo.size.height * scale)
+            logo.draw(in: NSRect(x: 30, y: 404, width: sz.width, height: sz.height), from: .zero, operation: .sourceOver, fraction: 1)
+          }
+
+          let title = NSAttributedString(string: "Lock Release", attributes: [
+            .font: NSFont.systemFont(ofSize: 22, weight: .semibold),
+            .foregroundColor: NSColor(calibratedWhite: 0.15, alpha: 1)
+          ])
+          title.draw(at: NSPoint(x: 310, y: 424))
+
+          let sub = NSAttributedString(string: "Drag Lock Release to Applications", attributes: [
+            .font: NSFont.systemFont(ofSize: 13),
+            .foregroundColor: NSColor(calibratedWhite: 0.48, alpha: 1)
+          ])
+          let subSize = sub.size()
+          sub.draw(at: NSPoint(x: (760 - subSize.width) / 2, y: 365))
+
+          let arrow = NSAttributedString(string: "→", attributes: [
+            .font: NSFont.systemFont(ofSize: 72, weight: .light),
+            .foregroundColor: NSColor(calibratedRed: 0.23, green: 0.36, blue: 0.95, alpha: 1)
+          ])
+          let arrowSize = arrow.size()
+          arrow.draw(at: NSPoint(x: (760 - arrowSize.width) / 2, y: 184))
+
+          image.unlockFocus()
+          let rep = NSBitmapImageRep(data: image.tiffRepresentation!)!
+          let png = rep.representation(using: .png, properties: [:])!
+          try png.write(to: URL(fileURLWithPath: "dmg-root/.background/background.png"))
+          SWIFT
+          swift "$RUNNER_TEMP/make-dmg-bg.swift"
+
+      - name: Build polished Finder DMG
+        run: |
+          set -euo pipefail
+          RW_DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_RW.dmg"
+          DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_POLISHED.dmg"
+          hdiutil create -volname "Lock Release" -srcfolder dmg-root -fs HFS+ -ov -format UDRW "$RW_DMG"
+          ATTACH_OUTPUT="$(hdiutil attach -readwrite -noverify -noautoopen "$RW_DMG")"
+          DEVICE="$(printf '%s\n' "$ATTACH_OUTPUT" | awk '/^\/dev\// {print $1; exit}')"
+          MOUNT_POINT="$(printf '%s\n' "$ATTACH_OUTPUT" | sed -n 's#^.*\(/Volumes/.*\)$#\1#p' | tail -1)"
+          test -n "$DEVICE" && test -d "$MOUNT_POINT"
+          cp assets/lock-release.icns "$MOUNT_POINT/.VolumeIcon.icns"
+          if command -v SetFile >/dev/null 2>&1; then
+            SetFile -a C "$MOUNT_POINT" || true
+            SetFile -a V "$MOUNT_POINT/.VolumeIcon.icns" || true
+            SetFile -a V "$MOUNT_POINT/.background" || true
+          fi
+          osascript <<'APPLESCRIPT'
+          tell application "Finder"
+            tell disk "Lock Release"
+              open
+              set current view of container window to icon view
+              set toolbar visible of container window to false
+              set statusbar visible of container window to false
+              set pathbar visible of container window to false
+              set the bounds of container window to {120, 120, 880, 600}
+              set opts to the icon view options of container window
+              set arrangement of opts to not arranged
+              set icon size of opts to 128
+              set text size of opts to 14
+              set background picture of opts to file ".background:background.png"
+              set position of item "Lock Release.app" of container window to {190, 255}
+              set position of item "Applications" of container window to {570, 255}
+              update without registering applications
+              delay 2
+              close container window
+              open
+              delay 2
+            end tell
+          end tell
+          APPLESCRIPT
+          sync
+          hdiutil detach "$DEVICE"
+          hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG"
+          rm -f "$RW_DMG"
           hdiutil verify "$DMG"
           shasum -a 256 "$DMG" > "$DMG.sha256"
 
-      - name: Apply exact icon to DMG file and preserve it for download
-        run: |
-          set -euo pipefail
-          DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_FINAL.dmg"
-          ZIP="Lock_Release_Mac_Installer_${BUILD_VERSION}_WITH_ICON.zip"
-          DISTDIR="Lock Release Installer ${BUILD_VERSION}"
-
-          cat > "$RUNNER_TEMP/set-file-icon.swift" <<'SWIFT'
-          import AppKit
-          import Foundation
-          let args = CommandLine.arguments
-          guard args.count == 3 else { exit(2) }
-          guard let icon = NSImage(contentsOfFile: args[1]) else { exit(3) }
-          if !NSWorkspace.shared.setIcon(icon, forFile: args[2], options: []) { exit(4) }
-          SWIFT
-
-          swift "$RUNNER_TEMP/set-file-icon.swift" "$PWD/dmg-art/uploaded-icon.png" "$PWD/$DMG"
-          xattr "$DMG" | grep -q 'com.apple.ResourceFork'
-          xattr "$DMG" | grep -q 'com.apple.FinderInfo'
-
-          rm -rf "$DISTDIR" "$ZIP"
-          mkdir -p "$DISTDIR"
-          ditto "$DMG" "$DISTDIR/$DMG"
-          xattr "$DISTDIR/$DMG" | grep -q 'com.apple.ResourceFork'
-          xattr "$DISTDIR/$DMG" | grep -q 'com.apple.FinderInfo'
-
-          ditto -c -k --sequesterRsrc --keepParent "$DISTDIR" "$ZIP"
-          test -s "$ZIP"
-
-          VERIFY="$RUNNER_TEMP/icon-restore-check"
-          rm -rf "$VERIFY" && mkdir -p "$VERIFY"
-          ditto -x -k "$ZIP" "$VERIFY"
-          RESTORED="$VERIFY/$DISTDIR/$DMG"
-          test -s "$RESTORED"
-          xattr "$RESTORED" | grep -q 'com.apple.ResourceFork'
-          xattr "$RESTORED" | grep -q 'com.apple.FinderInfo'
-
       - uses: actions/upload-artifact@v4
         with:
-          name: Lock-Release-Mac-DMG-1.0.64-EXACT-ICON
+          name: Lock-Release-Mac-DMG-1.0.64-POLISHED
           path: |
-            Lock_Release_Mac_Installer_1.0.64_WITH_ICON.zip
-            Lock_Release_Mac_Installer_1.0.64_FINAL.dmg
-            Lock_Release_Mac_Installer_1.0.64_FINAL.dmg.sha256
-            dmg-art/uploaded-icon.png
-            dmg-art/dmg-volume-preview.png
-            dmg-art/icns-preview.png
+            Lock_Release_Mac_Installer_1.0.64_POLISHED.dmg
+            Lock_Release_Mac_Installer_1.0.64_POLISHED.dmg.sha256
           compression-level: 0
