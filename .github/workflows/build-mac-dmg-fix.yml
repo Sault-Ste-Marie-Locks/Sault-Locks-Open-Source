@@ -92,16 +92,26 @@ jobs:
           set -euo pipefail
           DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_FINAL.dmg"
           ZIP="Lock_Release_Mac_Installer_${BUILD_VERSION}_WITH_ICON.zip"
-          RFILE="$RUNNER_TEMP/dmg-file-icon.r"
-          ICON_ABS="$PWD/dmg-volume.icns"
 
-          cat > "$RFILE" <<EOF
-          read 'icns' (-16455) "$ICON_ABS";
-          EOF
+          cat > "$RUNNER_TEMP/set-file-icon.swift" <<'SWIFT'
+          import AppKit
+          import Foundation
+          let args = CommandLine.arguments
+          guard args.count == 3 else { exit(2) }
+          let iconPath = args[1]
+          let targetPath = args[2]
+          guard let icon = NSImage(contentsOfFile: iconPath) else {
+              fputs("Could not load icon\n", stderr)
+              exit(3)
+          }
+          let ok = NSWorkspace.shared.setIcon(icon, forFile: targetPath, options: [])
+          if !ok {
+              fputs("NSWorkspace setIcon failed\n", stderr)
+              exit(4)
+          }
+          SWIFT
 
-          xcrun Rez -append "$RFILE" -o "$DMG"
-          SETFILE="$(xcrun --find SetFile)"
-          "$SETFILE" -a C "$DMG"
+          swift "$RUNNER_TEMP/set-file-icon.swift" "$PWD/dmg-art/dmg-volume-preview.png" "$PWD/$DMG"
 
           echo "DMG Finder metadata before packaging:"
           xattr -l "$DMG"
