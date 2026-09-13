@@ -229,8 +229,9 @@ function updaterBrowserWindowOptions(width, height) {
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
   };
   if (isMac) {
-    common.titleBarStyle = 'hiddenInset';
-    common.trafficLightPosition = { x: 14, y: 14 };
+    // Use the native macOS title bar so all three traffic-light controls render normally.
+    common.titleBarStyle = 'default';
+    common.fullscreenable = false;
   } else {
     common.titleBarStyle = 'hidden';
     common.titleBarOverlay = { color: '#4d4b48', symbolColor: '#ffffff', height: 42 };
@@ -242,7 +243,7 @@ function createUpdateWindow(latestVersion) {
   updateCancelRequested = false;
   const isMac = process.platform === 'darwin';
   const logoSrc = updaterLogoSrc();
-  updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 600 : 850, isMac ? 242 : 310));
+  updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 500 : 610, isMac ? 154 : 224));
   updateWindow.setMenuBarVisibility(false);
 
   const platformClass = isMac ? 'mac' : 'windows';
@@ -252,28 +253,28 @@ function createUpdateWindow(latestVersion) {
 body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif' : '"Segoe UI Variable","Segoe UI",Arial,sans-serif'};background:#f4f4f4;color:#1d1d1f}
 .titlebar{-webkit-app-region:drag;user-select:none}.titlebar button,.actions button{-webkit-app-region:no-drag}
 .logo{object-fit:cover;display:block;background:#252525}
-.mac .titlebar{height:38px;border-bottom:1px solid #c8c8c8;background:#fafafa;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#4b4b4b}
-.mac .body{height:204px;background:#f7f7f7;padding:22px 20px 12px;display:grid;grid-template-columns:92px 1fr;grid-template-rows:auto 1fr auto;column-gap:18px}
-.mac .logo{width:92px;height:92px;border-radius:17px;grid-row:1/3}
-.mac h1{font-size:14px;line-height:20px;margin:10px 0 12px;font-weight:700}
+.mac .titlebar{display:none}
+.mac .body{height:154px;background:#f7f7f7;padding:18px 18px 12px;display:grid;grid-template-columns:72px 1fr;grid-template-rows:auto 1fr auto;column-gap:16px}
+.mac .logo{width:72px;height:72px;border-radius:14px;grid-row:1/3}
+.mac h1{font-size:14px;line-height:18px;margin:4px 0 9px;font-weight:700}
 .mac .status{font-size:13px;line-height:18px;color:#505050;margin:0 0 8px}
 .mac .bar{height:12px;border-radius:999px;background:#d0d0d0;overflow:hidden;margin-top:2px}
 .mac .fill{height:100%;width:0%;border-radius:999px;background:#5b9cf6;transition:width .18s linear}
 .mac .detail{font-size:13px;line-height:18px;color:#5a5a5a;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mac .actions{grid-column:2;display:flex;justify-content:flex-end;align-items:end}
-.mac button{min-width:118px;height:30px;padding:0 18px;border:1px solid #a9a9a9;border-radius:6px;background:linear-gradient(#fff,#f3f3f3);font-size:14px;color:#202020}
+.mac button{min-width:86px;height:28px;padding:0 14px;border:1px solid #a9a9a9;border-radius:6px;background:linear-gradient(#fff,#f3f3f3);font-size:13px;color:#202020}
 .mac button:disabled{opacity:.45}
 .windows .titlebar{height:42px;background:#4d4b48;color:#fff;display:flex;align-items:center;padding:0 16px;font-size:16px}
-.windows .body{height:198px;background:#fff;padding:18px 22px;display:grid;grid-template-columns:140px 1fr;column-gap:34px}
-.windows .logo{width:116px;height:116px;border-radius:17px;align-self:start}
+.windows .body{height:132px;background:#fff;padding:14px 18px;display:grid;grid-template-columns:90px 1fr;column-gap:22px}
+.windows .logo{width:82px;height:82px;border-radius:14px;align-self:start}
 .windows .content{padding-top:7px}
-.windows h1{font-size:20px;line-height:28px;font-weight:400;margin:0 0 22px}
-.windows .status{font-size:18px;line-height:24px;margin:0 0 8px}
-.windows .bar{height:38px;border:1px solid #c9c9c9;background:#f1f1f1;overflow:hidden}
+.windows h1{font-size:17px;line-height:22px;font-weight:400;margin:0 0 12px}
+.windows .status{font-size:14px;line-height:18px;margin:0 0 6px}
+.windows .bar{height:22px;border:1px solid #c9c9c9;background:#f1f1f1;overflow:hidden}
 .windows .fill{height:100%;width:0%;background:#3f7fd3;transition:width .18s linear}
-.windows .detail{font-size:16px;line-height:24px;margin-top:8px;color:#222}
-.windows .footer{height:70px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 22px}
-.windows button{width:152px;height:34px;border:2px solid #d2d2d2;background:#fff;font-size:17px;color:#202020}
+.windows .detail{font-size:13px;line-height:18px;margin-top:5px;color:#222}
+.windows .footer{height:50px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 18px}
+.windows button{width:96px;height:28px;border:1px solid #c7c7c7;background:#fff;font-size:13px;color:#202020}
 .windows button:disabled{color:#8a8a8a;background:#f7f7f7}
 .err .fill{background:#c83b32}.done .fill{background:#4a9b58}
 </style></head><body class="${platformClass}">
@@ -368,8 +369,8 @@ function showUpdaterPromptWindow(latestVersion, hasAsset) {
     }
     const isMac = process.platform === 'darwin';
     const logoSrc = updaterLogoSrc();
-    const width = isMac ? 700 : 850;
-    const height = isMac ? 252 : 255;
+    const width = isMac ? 520 : 610;
+    const height = isMac ? 164 : 202;
     updatePromptWindow = new BrowserWindow(updaterBrowserWindowOptions(width, height));
     updatePromptWindow.setMenuBarVisibility(false);
     let settled = false;
@@ -385,20 +386,20 @@ function showUpdaterPromptWindow(latestVersion, hasAsset) {
 body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif' : '"Segoe UI Variable","Segoe UI",Arial,sans-serif'};background:#f5f5f5;color:#111}
 .titlebar{-webkit-app-region:drag;user-select:none}
 .logo{object-fit:cover;display:block;background:#252525}
-.mac .titlebar{height:38px;border-bottom:1px solid #c8c8c8;background:#fafafa}
-.mac .body{height:214px;background:#f7f7f7;padding:20px 34px;display:grid;grid-template-columns:116px 1fr;grid-template-rows:1fr 42px;column-gap:26px}
-.mac .logo{width:112px;height:112px;border-radius:18px;align-self:start}
-.mac .text{padding-top:6px}.mac h1{font-size:25px;line-height:31px;margin:0 0 12px;font-weight:700;letter-spacing:-.2px}.mac p{font-size:18px;line-height:27px;margin:0;color:#171717}
+.mac .titlebar{display:none}
+.mac .body{height:164px;background:#f7f7f7;padding:18px 20px 14px;display:grid;grid-template-columns:78px 1fr;grid-template-rows:1fr 34px;column-gap:16px}
+.mac .logo{width:74px;height:74px;border-radius:14px;align-self:start}
+.mac .text{padding-top:2px}.mac h1{font-size:16px;line-height:21px;margin:0 0 7px;font-weight:700}.mac p{font-size:13px;line-height:18px;margin:0;color:#171717}
 .mac .actions{grid-column:2;display:flex;justify-content:flex-end;align-items:end;gap:12px}
-.mac button{height:34px;min-width:118px;padding:0 20px;border:1px solid #b8b8b8;border-radius:7px;background:linear-gradient(#fff,#f2f2f2);font-size:17px}
+.mac button{height:28px;min-width:86px;padding:0 14px;border:1px solid #b8b8b8;border-radius:6px;background:linear-gradient(#fff,#f2f2f2);font-size:13px}
 .mac .primary{border-color:#4387e8;background:linear-gradient(#6fa8ff,#347be2);color:#fff;box-shadow:inset 0 1px rgba(255,255,255,.35)}
 .windows .titlebar{height:42px;background:#4d4b48;color:#fff;display:flex;align-items:center;padding:0 16px;font-size:16px}
-.windows .body{height:142px;background:#fff;padding:17px 22px;display:grid;grid-template-columns:140px 1fr;column-gap:34px}
-.windows .logo{width:116px;height:116px;border-radius:17px}
-.windows .text{padding-top:7px}.windows h1{font-size:24px;line-height:30px;font-weight:400;margin:0 0 30px}
-.windows p{font-size:20px;line-height:28px;margin:0}
-.windows .footer{height:71px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 42px;gap:16px}
-.windows button{width:156px;height:35px;border:2px solid #d2d2d2;background:#fff;font-size:17px}
+.windows .body{height:110px;background:#fff;padding:14px 18px;display:grid;grid-template-columns:90px 1fr;column-gap:22px}
+.windows .logo{width:82px;height:82px;border-radius:14px}
+.windows .text{padding-top:3px}.windows h1{font-size:17px;line-height:22px;font-weight:400;margin:0 0 12px}
+.windows p{font-size:14px;line-height:19px;margin:0}
+.windows .footer{height:50px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 18px;gap:10px}
+.windows button{width:96px;height:28px;border:1px solid #c7c7c7;background:#fff;font-size:13px}
 </style></head><body class="${isMac ? 'mac' : 'windows'}">
 <div class="titlebar">${isMac ? '' : '<span>Locks Tracker</span>'}</div>
 <div class="body">
@@ -419,7 +420,12 @@ ${isMac ? '' : `<div class="footer"><button onclick="location.href='lockrelease-
     });
     updatePromptWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
     updatePromptWindow.once('ready-to-show', () => {
-      try { updatePromptWindow.show(); updatePromptWindow.focus(); } catch (_) {}
+      try {
+        if (process.platform === 'darwin' && app.dock) app.dock.show();
+        updatePromptWindow.show();
+        updatePromptWindow.moveTop();
+        updatePromptWindow.focus();
+      } catch (_) {}
     });
     updatePromptWindow.on('closed', () => {
       updatePromptWindow = null;
@@ -862,6 +868,10 @@ async function boot() {
 function startBackgroundUpdatePolling() {
   if (updatePollTimer) return;
   appendLog(`Background update polling enabled. Interval=${Math.round(UPDATE_CHECK_INTERVAL_MS / 1000)}s`);
+  // Run an independent startup check too, so updates are detected even if the main window stays hidden.
+  setTimeout(() => {
+    checkForUpdatesOnStartup({ source: 'background-startup' }).catch(err => appendLog('Background startup update check failed: ' + (err && err.stack || err)));
+  }, 2500);
   updatePollTimer = setInterval(() => {
     checkForUpdatesOnStartup({ source: 'background' }).catch(err => appendLog('Background update check failed: ' + (err && err.stack || err)));
   }, UPDATE_CHECK_INTERVAL_MS);
