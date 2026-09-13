@@ -50,10 +50,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m pip install --user --quiet pillow
+          python3 -m venv .dmg-icon-venv
+          source .dmg-icon-venv/bin/activate
+          python -m pip install --quiet pillow
           rm -rf dmg-volume.iconset dmg-volume-verify.iconset
           mkdir -p dmg-volume.iconset dmg-art
-          python3 <<'PY'
+          python <<'PY'
           from PIL import Image, ImageOps
           src = Image.open('assets/dmg-volume-icon.png').convert('RGBA')
           specs = [
