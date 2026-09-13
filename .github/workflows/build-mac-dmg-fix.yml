@@ -81,16 +81,52 @@ jobs:
 
       - name: Build DMG
         run: |
-          set -e
+          set -euo pipefail
           DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_FINAL.dmg"
           create-dmg --volname "Lock Release Installer Final" --volicon dmg-volume.icns --window-size 760 480 --icon-size 128 --icon "Lock Release.app" 190 240 --hide-extension "Lock Release.app" --app-drop-link 570 240 --no-internet-enable "$DMG" dmg-stage
           hdiutil verify "$DMG"
           shasum -a 256 "$DMG" > "$DMG.sha256"
 
+      - name: Apply Finder icon to DMG file and preserve it for download
+        run: |
+          set -euo pipefail
+          DMG="Lock_Release_Mac_Installer_${BUILD_VERSION}_FINAL.dmg"
+          ZIP="Lock_Release_Mac_Installer_${BUILD_VERSION}_WITH_ICON.zip"
+          RFILE="$RUNNER_TEMP/dmg-file-icon.r"
+          ICON_ABS="$PWD/dmg-volume.icns"
+
+          cat > "$RFILE" <<EOF
+          read 'icns' (-16455) "$ICON_ABS";
+          EOF
+
+          xcrun Rez -append "$RFILE" -o "$DMG"
+          SETFILE="$(xcrun --find SetFile)"
+          "$SETFILE" -a C "$DMG"
+
+          echo "DMG Finder metadata before packaging:"
+          xattr -l "$DMG"
+          xattr "$DMG" | grep -q 'com.apple.ResourceFork'
+          xattr "$DMG" | grep -q 'com.apple.FinderInfo'
+
+          rm -f "$ZIP"
+          ditto -c -k --sequesterRsrc --keepParent "$DMG" "$ZIP"
+          test -s "$ZIP"
+
+          rm -rf "$RUNNER_TEMP/icon-restore-check"
+          mkdir -p "$RUNNER_TEMP/icon-restore-check"
+          ditto -x -k "$ZIP" "$RUNNER_TEMP/icon-restore-check"
+          RESTORED="$RUNNER_TEMP/icon-restore-check/$DMG"
+          test -s "$RESTORED"
+          echo "Restored DMG Finder metadata after ZIP round-trip:"
+          xattr -l "$RESTORED"
+          xattr "$RESTORED" | grep -q 'com.apple.ResourceFork'
+          xattr "$RESTORED" | grep -q 'com.apple.FinderInfo'
+
       - uses: actions/upload-artifact@v4
         with:
-          name: Lock-Release-Mac-DMG-1.0.64-FINAL
+          name: Lock-Release-Mac-DMG-1.0.64-WITH-FINDER-ICON
           path: |
+            Lock_Release_Mac_Installer_1.0.64_WITH_ICON.zip
             Lock_Release_Mac_Installer_1.0.64_FINAL.dmg
             Lock_Release_Mac_Installer_1.0.64_FINAL.dmg.sha256
             dmg-art/dmg-volume-preview.png
