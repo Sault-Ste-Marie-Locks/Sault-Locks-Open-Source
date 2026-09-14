@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, shell, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, dialog, shell, Tray, Menu, nativeImage, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -213,6 +213,7 @@ function updaterLogoSrc() {
 function updaterBrowserWindowOptions(width, height) {
   const isMac = process.platform === 'darwin';
   const icon = path.join(appRoot(), 'assets', isMac ? 'lock-release.png' : 'lock-release.ico');
+  const dark = nativeTheme.shouldUseDarkColors;
   const common = {
     width,
     height,
@@ -222,7 +223,7 @@ function updaterBrowserWindowOptions(width, height) {
     minimizable: false,
     title: 'Locks Tracker',
     icon,
-    backgroundColor: '#f4f4f4',
+    backgroundColor: dark ? '#17181a' : '#f4f4f4',
     autoHideMenuBar: true,
     alwaysOnTop: true,
     show: false,
@@ -234,7 +235,7 @@ function updaterBrowserWindowOptions(width, height) {
     common.fullscreenable = false;
   } else {
     common.titleBarStyle = 'hidden';
-    common.titleBarOverlay = { color: '#4d4b48', symbolColor: '#ffffff', height: 42 };
+    common.titleBarOverlay = { color: dark ? '#202124' : '#4d4b48', symbolColor: '#ffffff', height: 42 };
   }
   return common;
 }
@@ -277,7 +278,19 @@ body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helv
 .windows button{width:96px;height:28px;border:1px solid #c7c7c7;background:#fff;font-size:13px;color:#202020}
 .windows button:disabled{color:#8a8a8a;background:#f7f7f7}
 .err .fill{background:#c83b32}.done .fill{background:#4a9b58}
-</style></head><body class="${platformClass}">
+@media (prefers-color-scheme: dark){
+html,body{background:#17181a!important;color:#f5f5f5!important}
+.mac .body,.windows .body{background:#202124!important;color:#f5f5f5!important}
+.windows .titlebar{background:#202124!important;color:#f5f5f5!important}
+.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
+.mac p,.mac .status,.mac .detail,.windows p,.windows .status,.windows .detail{color:#c9cdd2!important}
+.mac button,.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
+.mac button:hover,.windows button:hover{background:#35383c!important}
+.mac button:disabled,.windows button:disabled{background:#242629!important;color:#7f838a!important}
+.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
+.mac .bar,.windows .bar{background:#303236!important;border-color:#4b4e53!important}
+.logo{background:#111214!important}
+}</style></head><body class="${platformClass}">
 <div class="titlebar">${isMac ? '<span>Locks Tracker</span>' : '<span>Locks Tracker</span>'}</div>
 ${isMac ? `
 <div class="body" id="card">
@@ -400,7 +413,19 @@ body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helv
 .windows p{font-size:14px;line-height:19px;margin:0}
 .windows .footer{height:50px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 18px;gap:10px}
 .windows button{width:96px;height:28px;border:1px solid #c7c7c7;background:#fff;font-size:13px}
-</style></head><body class="${isMac ? 'mac' : 'windows'}">
+@media (prefers-color-scheme: dark){
+html,body{background:#17181a!important;color:#f5f5f5!important}
+.mac .body,.windows .body{background:#202124!important;color:#f5f5f5!important}
+.windows .titlebar{background:#202124!important;color:#f5f5f5!important}
+.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
+.mac p,.mac .status,.mac .detail,.windows p,.windows .status,.windows .detail{color:#c9cdd2!important}
+.mac button,.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
+.mac button:hover,.windows button:hover{background:#35383c!important}
+.mac button:disabled,.windows button:disabled{background:#242629!important;color:#7f838a!important}
+.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
+.mac .bar,.windows .bar{background:#303236!important;border-color:#4b4e53!important}
+.logo{background:#111214!important}
+}</style></head><body class="${isMac ? 'mac' : 'windows'}">
 <div class="titlebar">${isMac ? '' : '<span>Locks Tracker</span>'}</div>
 <div class="body">
   ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : '<div class="logo"></div>'}
