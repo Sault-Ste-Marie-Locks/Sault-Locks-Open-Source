@@ -188,10 +188,10 @@ body[data-report-density="comfortable"] #reportArea table td{
   padding-bottom:8px!important;
 }
 
-/* desktop scrollbar/titlebar edge integration */
+/* Desktop header stays inside the viewport; the root scrollbar track is transparent. */
 @media (min-width:901px){
   html.lock-release-desktop .topbar.topbar-single-row{
-    width:calc(100vw + 10px)!important;
-    max-width:none!important;
+    width:100vw!important;
+    max-width:100vw!important;
   }
 }
