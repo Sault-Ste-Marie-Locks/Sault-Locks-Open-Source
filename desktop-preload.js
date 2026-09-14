@@ -49,11 +49,9 @@ function injectStyle() {
 html.locks-desktop-window{--desktop-titlebar-height:32px}
 html.locks-desktop-window body{margin:0!important;padding-top:var(--desktop-titlebar-height)!important}
 html.locks-desktop-window .app-shell{min-height:calc(100vh - var(--desktop-titlebar-height))!important}
-html.locks-desktop-window .topbar{top:calc(var(--desktop-titlebar-height) + 8px)!important}
-html.locks-desktop-window::before{content:"";position:fixed;top:var(--desktop-titlebar-height);left:0;right:0;height:8px;z-index:2147483646;background:#151d26;pointer-events:none}
-html[data-desktop-theme="light"].locks-desktop-window::before{background:#ffffff}
-#${TITLEBAR_ID}{position:fixed;top:0;left:0;right:0;height:var(--desktop-titlebar-height);z-index:2147483647;display:flex;align-items:stretch;justify-content:space-between;-webkit-app-region:drag;user-select:none;background:#151d26;color:#e5e7eb;border-bottom:0}
-html[data-desktop-theme="light"] #${TITLEBAR_ID}{background:#ffffff;color:#201f1e;border-bottom:0}
+html.locks-desktop-window .topbar{top:var(--desktop-titlebar-height)!important}
+#${TITLEBAR_ID}{position:fixed;top:0;left:0;right:0;height:var(--desktop-titlebar-height);z-index:2147483647;display:flex;align-items:stretch;justify-content:space-between;-webkit-app-region:drag;user-select:none;background:#10161d;color:#e5e7eb;border-bottom:1px solid #202b37}
+html[data-desktop-theme="light"] #${TITLEBAR_ID}{background:#f3f2f1;color:#201f1e;border-bottom:1px solid #edebe9}
 #${TITLEBAR_ID} .locks-titlebar-left{flex:1;display:flex;align-items:center;min-width:0;padding:0 12px}
 #${TITLEBAR_ID} .locks-titlebar-spacer{flex:1}
 #${TITLEBAR_ID} .locks-window-controls{display:flex;align-items:stretch;margin-left:auto;-webkit-app-region:no-drag}
@@ -63,7 +61,7 @@ html[data-desktop-theme="light"] #${TITLEBAR_ID} .locks-window-control:hover{bac
 #${TITLEBAR_ID} .locks-window-close:hover{background:#da373c;color:#fff}
 #${TITLEBAR_ID} .locks-window-control:focus-visible{box-shadow:inset 0 0 0 2px #0f6cbd}
 #${TITLEBAR_ID} .locks-window-control svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
-@media print{#${TITLEBAR_ID},html.locks-desktop-window::before{display:none!important}html.locks-desktop-window body{padding-top:0!important}html.locks-desktop-window .topbar{top:12px!important}}
+@media print{#${TITLEBAR_ID}{display:none!important}html.locks-desktop-window body{padding-top:0!important}html.locks-desktop-window .topbar{top:12px!important}}
 `;
   (document.head || document.documentElement).appendChild(style);
 }
