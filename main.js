@@ -530,7 +530,7 @@ function readJsonSafe(file, fallback) {
 }
 function updateConfig() {
   return readJsonSafe(path.join(appRoot(), 'update-config.json'), {
-    githubRepo: 'Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Download',
+    githubRepo: 'Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Updates',
     checkOnStartup: true,
     allowPrerelease: false,
     assetName: 'Lock_Release_Update.zip',

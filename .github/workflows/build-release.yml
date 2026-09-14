@@ -213,13 +213,33 @@ jobs:
           path: release-artifacts
           merge-multiple: true
 
-      - name: Publish release to public updates repo
+      - name: Prepare split release assets
         shell: bash
         run: |
-          ls -lah release-artifacts
-          gh release view "v$BUILD_VERSION" --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Download >/dev/null 2>&1 && \
-            gh release delete "v$BUILD_VERSION" --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Download --yes --cleanup-tag || true
-          gh release create "v$BUILD_VERSION" release-artifacts/* \
-            --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Download \
-            --title "Lock Release v$BUILD_VERSION" \
-            --notes "Cross-platform Locks Tracker desktop release with the Windows setup installer, portable Windows build, macOS builds, and the shared automatic update payload."
+          mkdir -p updater-artifacts public-artifacts
+          cp release-artifacts/Lock_Release_Update.zip updater-artifacts/Lock_Release_Update.zip
+          cp release-artifacts/Locks_Tracker_Setup.exe public-artifacts/Locks_Tracker_Setup.exe
+          cp release-artifacts/Lock_Release_Windows.zip public-artifacts/Locks_Tracker_Windows_Portable.zip
+          cp release-artifacts/Lock_Release_Mac_Universal.dmg public-artifacts/Locks_Tracker_Mac_Universal.dmg
+          cp release-artifacts/Lock_Release_Mac_Universal.zip public-artifacts/Locks_Tracker_Mac_Universal.zip
+          ls -lah updater-artifacts public-artifacts
+
+      - name: Publish automatic updater payload
+        shell: bash
+        run: |
+          gh release view "v$BUILD_VERSION" --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Updates >/dev/null 2>&1 && \
+            gh release delete "v$BUILD_VERSION" --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Updates --yes --cleanup-tag || true
+          gh release create "v$BUILD_VERSION" updater-artifacts/Lock_Release_Update.zip \
+            --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Updates \
+            --title "Locks Tracker Update v$BUILD_VERSION" \
+            --notes "Automatic update payload for installed Locks Tracker desktop clients."
+
+      - name: Publish clean public downloads
+        shell: bash
+        run: |
+          gh release view "v$BUILD_VERSION" --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Releases >/dev/null 2>&1 && \
+            gh release delete "v$BUILD_VERSION" --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Releases --yes --cleanup-tag || true
+          gh release create "v$BUILD_VERSION" public-artifacts/* \
+            --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Releases \
+            --title "Locks Tracker v$BUILD_VERSION" \
+            --notes "Official Windows and macOS downloads for Locks Tracker."
