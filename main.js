@@ -817,6 +817,7 @@ async function showApp(url = APP_URL) {
 }
 function hideAppWindow() {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+  try { if (process.platform === 'darwin' && app.dock) app.dock.hide(); } catch (_) {}
   updateTrayMenu();
 }
 function quitFromTray() {
@@ -936,6 +937,7 @@ function createWindow() {
     if (!isQuitting) {
       event.preventDefault();
       mainWindow.hide();
+      try { if (process.platform === 'darwin' && app.dock) app.dock.hide(); } catch (_) {}
       appendLog('Main window hidden to tray/background.');
       updateTrayMenu();
     }
@@ -944,11 +946,24 @@ function createWindow() {
     updateTrayMenu();
     try { if (process.platform === 'darwin' && app.dock) app.dock.show(); } catch (_) {}
   });
-  mainWindow.on('hide', () => {
-    try { if (process.platform === 'darwin' && app.dock) app.dock.hide(); } catch (_) {}
-  });
   mainWindow.on('hide', () => updateTrayMenu());
-  mainWindow.on('minimize', () => updateTrayMenu());
+  mainWindow.on('minimize', () => {
+    try { if (process.platform === 'darwin' && app.dock) app.dock.show(); } catch (_) {}
+    updateTrayMenu();
+  });
+  mainWindow.on('restore', () => {
+    try { if (process.platform === 'darwin' && app.dock) app.dock.show(); } catch (_) {}
+    updateTrayMenu();
+  });
+  if (process.platform === 'darwin') {
+    const setMacFullscreenLayout = fullscreen => {
+      try { if (app.dock) app.dock.show(); } catch (_) {}
+      try { mainWindow.webContents.executeJavaScript(`document.documentElement.classList.toggle('mac-native-fullscreen', ${fullscreen ? 'true' : 'false'});`).catch(() => {}); } catch (_) {}
+      updateTrayMenu();
+    };
+    mainWindow.on('enter-full-screen', () => setMacFullscreenLayout(true));
+    mainWindow.on('leave-full-screen', () => setMacFullscreenLayout(false));
+  }
   mainWindow.on('closed', () => { mainWindow = null; updateTrayMenu(); });
 }
 async function boot() {

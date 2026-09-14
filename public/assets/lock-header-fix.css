@@ -267,3 +267,9 @@ body[data-report-density="comfortable"] #reportArea table td{
     padding:0!important;
   }
 }
+
+
+/* macOS native fullscreen removes the separate traffic-light strip. */
+@media (min-width:901px){
+  html.lock-release-desktop.mac-native-fullscreen{--desktop-titlebar-height:0px!important;}
+}
