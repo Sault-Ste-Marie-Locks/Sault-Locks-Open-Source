@@ -328,17 +328,17 @@ body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helv
 .windows .bar{height:22px;border:1px solid #c9c9c9;background:#f1f1f1;overflow:hidden}
 .windows .fill{height:100%;width:0%;background:#3f7fd3;transition:width .18s linear}
 .windows .detail{font-size:13px;line-height:18px;margin-top:5px;color:#222}
-.windows .footer{height:50px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 18px}
-.windows button{width:96px;height:28px;border:1px solid #c7c7c7;background:#fff;font-size:13px;color:#202020}
+.windows .footer{height:44px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 14px;gap:10px}
+.windows button{width:auto;min-width:96px;height:32px;padding:0 18px;border:1px solid #c7c7c7;border-radius:6px;background:#fff;font-size:13px;font-weight:600;color:#202020}
 .windows button:disabled{color:#8a8a8a;background:#f7f7f7}
 .err .fill{background:#c83b32}.done .fill{background:#4a9b58}
 body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
 .updater-dark.mac .body,.updater-dark.windows .body{background:#202124!important;color:#f5f5f5!important}
 .updater-dark .titlebar{background:#111820!important;color:#f5f7fa!important;border-bottom-color:#202b36!important}.updater-dark .titlebar-btn:hover{background:#202b36!important}.updater-dark .titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}
-.updater-dark.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
+.updater-dark.windows .footer{background:#1b1d22!important;border-top-color:#353941!important}
 .updater-dark.mac p,.updater-dark.mac .status,.updater-dark.mac .detail,.updater-dark.windows p,.updater-dark.windows .status,.updater-dark.windows .detail{color:#c9cdd2!important}
-.updater-dark.mac button,.updater-dark.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
-.updater-dark.mac button:hover,.updater-dark.windows button:hover{background:#35383c!important}
+.updater-dark.mac button,.updater-dark.windows button{background:#25282e!important;border-color:#46505b!important;color:#eef2f6!important}
+.updater-dark.mac button:hover,.updater-dark.windows button:hover{background:#30343b!important;border-color:#5a6572!important}
 .updater-dark.mac button:disabled,.updater-dark.windows button:disabled{background:#242629!important;color:#7f838a!important}
 .updater-dark.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
 .updater-dark.mac .bar,.updater-dark.windows .bar{background:#303236!important;border-color:#4b4e53!important}
@@ -463,15 +463,15 @@ body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helv
 .windows .logo{width:82px;height:82px;border-radius:14px}
 .windows .text{padding-top:3px}.windows h1{font-size:17px;line-height:22px;font-weight:400;margin:0 0 12px}
 .windows p{font-size:14px;line-height:19px;margin:0}
-.windows .footer{height:50px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 18px;gap:10px}
-.windows button{width:96px;height:28px;border:1px solid #c7c7c7;background:#fff;font-size:13px}
+.windows .footer{height:44px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 14px;gap:10px}
+.windows button{width:auto;min-width:96px;height:32px;padding:0 18px;border:1px solid #c7c7c7;border-radius:6px;background:#fff;font-size:13px;font-weight:600}
 body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
 .updater-dark.mac .body,.updater-dark.windows .body{background:#202124!important;color:#f5f5f5!important}
 .updater-dark .titlebar{background:#111820!important;color:#f5f7fa!important;border-bottom-color:#202b36!important}.updater-dark .titlebar-btn:hover{background:#202b36!important}.updater-dark .titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}
-.updater-dark.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
+.updater-dark.windows .footer{background:#1b1d22!important;border-top-color:#353941!important}
 .updater-dark.mac p,.updater-dark.mac .status,.updater-dark.mac .detail,.updater-dark.windows p,.updater-dark.windows .status,.updater-dark.windows .detail{color:#c9cdd2!important}
-.updater-dark.mac button,.updater-dark.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
-.updater-dark.mac button:hover,.updater-dark.windows button:hover{background:#35383c!important}
+.updater-dark.mac button,.updater-dark.windows button{background:#25282e!important;border-color:#46505b!important;color:#eef2f6!important}
+.updater-dark.mac button:hover,.updater-dark.windows button:hover{background:#30343b!important;border-color:#5a6572!important}
 .updater-dark.mac button:disabled,.updater-dark.windows button:disabled{background:#242629!important;color:#7f838a!important}
 .updater-dark.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
 .updater-dark.mac .bar,.updater-dark.windows .bar{background:#303236!important;border-color:#4b4e53!important}
