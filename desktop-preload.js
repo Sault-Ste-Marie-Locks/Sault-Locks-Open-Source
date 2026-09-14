@@ -6,10 +6,10 @@ const isMac = process.platform === 'darwin';
 let maximizeButton = null;
 
 function svgIcon(name) {
-  if (name === 'minimize') return '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8"/></svg>';
-  if (name === 'maximize') return '<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.25" y="2.25" width="7.5" height="7.5" rx=".4"/></svg>';
-  if (name === 'restore') return '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2.25h5.25v5.25M2.25 4h5.5v5.75h-5.5z"/></svg>';
-  return '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7m0-7l-7 7"/></svg>';
+  if (name === 'minimize') return '<svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg>';
+  if (name === 'maximize') return '<svg viewBox="0 0 12 12"><rect x="2.25" y="2.25" width="7.5" height="7.5" rx=".4"/></svg>';
+  if (name === 'restore') return '<svg viewBox="0 0 12 12"><path d="M4 2.25h5.25v5.25M2.25 4h5.5v5.75h-5.5z"/></svg>';
+  return '<svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7m0-7l-7 7"/></svg>';
 }
 
 function darkModeEnabled() {
@@ -17,9 +17,11 @@ function darkModeEnabled() {
     return document.body?.classList.contains('dark-mode') ||
       document.documentElement.classList.contains('app-dark') ||
       localStorage.getItem(THEME_KEY) === 'true';
-  } catch (_) {
-    return false;
-  }
+  } catch (_) { return false; }
+}
+
+function applyTheme() {
+  document.documentElement.dataset.desktopTheme = darkModeEnabled() ? 'dark' : 'light';
 }
 function setMaximized(maximized) {
   if (!maximizeButton) return;
@@ -39,75 +41,74 @@ function controlButton(action, title, icon) {
   return button;
 }
 
-function installEarlyLayout() {
+function injectStyle() {
+  if (document.getElementById('locks-desktop-titlebar-style')) return;
   document.documentElement.classList.add('locks-desktop-window');
-  document.documentElement.dataset.locksDesktopTheme = darkModeEnabled() ? 'dark' : 'light';
   const style = document.createElement('style');
-  style.id = 'locks-desktop-titlebar-style';
-  style.textContent = `
-html.locks-desktop-window{--locks-titlebar-height:38px}
-html.locks-desktop-window::before{content:"";position:fixed;inset:0 0 auto 0;height:var(--locks-titlebar-height);z-index:2147483646;background:#fff;border-bottom:1px solid #edebe9;pointer-events:none}
-html[data-locks-desktop-theme="dark"]::before{background:#111827;border-bottom-color:#273449}
-html.locks-desktop-window body{padding-top:var(--locks-titlebar-height)!important}
-html.locks-desktop-window .app-shell{min-height:calc(100vh - var(--locks-titlebar-height))!important}
-html.locks-desktop-window .topbar{top:calc(var(--locks-titlebar-height) + 12px)!important}
-#${TITLEBAR_ID}{position:fixed;inset:0 0 auto 0;height:var(--locks-titlebar-height);z-index:2147483647;display:flex;align-items:stretch;justify-content:flex-end;-webkit-app-region:drag;user-select:none;background:transparent;color:#201f1e}
-html[data-locks-desktop-theme="dark"] #${TITLEBAR_ID}{color:#e5e7eb}
-#${TITLEBAR_ID} .locks-window-controls{height:100%;display:flex;align-items:stretch;margin-left:auto;-webkit-app-region:no-drag}
-#${TITLEBAR_ID} .locks-window-control{width:46px;height:100%;display:grid;place-items:center;border:0;border-radius:0;padding:0;margin:0;background:transparent;color:inherit;outline:none;-webkit-app-region:no-drag}
-#${TITLEBAR_ID} .locks-window-control:hover{background:#f3f2f1}
-html[data-locks-desktop-theme="dark"] #${TITLEBAR_ID} .locks-window-control:hover{background:#1f2937}
-#${TITLEBAR_ID} .locks-window-close:hover,html[data-locks-desktop-theme="dark"] #${TITLEBAR_ID} .locks-window-close:hover{background:#c42b1c;color:#fff}
+  style.id = 'locks-desktop-titlebar-style';  style.textContent = `
+html.locks-desktop-window{--desktop-titlebar-height:32px}
+html.locks-desktop-window body{margin:0!important;padding-top:var(--desktop-titlebar-height)!important}
+html.locks-desktop-window .app-shell{min-height:calc(100vh - var(--desktop-titlebar-height))!important}
+html.locks-desktop-window .topbar{top:calc(var(--desktop-titlebar-height) + 12px)!important}
+#${TITLEBAR_ID}{position:fixed;top:0;left:0;right:0;height:var(--desktop-titlebar-height);z-index:2147483647;display:flex;align-items:stretch;justify-content:space-between;-webkit-app-region:drag;user-select:none;background:#313338;color:#dcddde;border-bottom:1px solid rgba(255,255,255,.06)}
+html[data-desktop-theme="light"] #${TITLEBAR_ID}{background:#f2f3f5;color:#2e3338;border-bottom-color:rgba(0,0,0,.08)}
+#${TITLEBAR_ID} .locks-titlebar-left{flex:1;display:flex;align-items:center;min-width:0;padding:0 12px}
+#${TITLEBAR_ID} .locks-titlebar-spacer{flex:1}
+#${TITLEBAR_ID} .locks-window-controls{display:flex;align-items:stretch;margin-left:auto;-webkit-app-region:no-drag}
+#${TITLEBAR_ID} .locks-window-control{width:46px;height:100%;border:0;background:transparent;color:inherit;display:grid;place-items:center;padding:0;margin:0;outline:none;-webkit-app-region:no-drag}
+#${TITLEBAR_ID} .locks-window-control:hover{background:rgba(255,255,255,.08)}
+html[data-desktop-theme="light"] #${TITLEBAR_ID} .locks-window-control:hover{background:rgba(0,0,0,.06)}
+#${TITLEBAR_ID} .locks-window-close:hover{background:#da373c;color:#fff}
 #${TITLEBAR_ID} .locks-window-control:focus-visible{box-shadow:inset 0 0 0 2px #0f6cbd}
 #${TITLEBAR_ID} .locks-window-control svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
-@media print{#${TITLEBAR_ID}{display:none!important}html.locks-desktop-window::before{display:none!important}html.locks-desktop-window body{padding-top:0!important}html.locks-desktop-window .topbar{top:12px!important}}
+@media print{#${TITLEBAR_ID}{display:none!important}html.locks-desktop-window body{padding-top:0!important}html.locks-desktop-window .topbar{top:12px!important}}
 `;
   (document.head || document.documentElement).appendChild(style);
 }
 
-function syncTheme() {
-  document.documentElement.dataset.locksDesktopTheme = darkModeEnabled() ? 'dark' : 'light';
-}
-
 function mountTitlebar() {
-  if (document.getElementById(TITLEBAR_ID)) return;
-  const bar = document.createElement('div');
+  if (isMac || document.getElementById(TITLEBAR_ID)) return;  const bar = document.createElement('div');
   bar.id = TITLEBAR_ID;
-  bar.className = isMac ? 'mac' : 'windows';
-  bar.setAttribute('aria-label', 'Window controls');
-  if (!isMac) {
-    const controls = document.createElement('div');
-    controls.className = 'locks-window-controls';
-    controls.append(
-      controlButton('minimize', 'Minimize', 'minimize'),
-      maximizeButton = controlButton('toggle-maximize', 'Maximize', 'maximize'),
-      controlButton('close', 'Close', 'close')
-    );
-    bar.appendChild(controls);
-    bar.addEventListener('dblclick', event => {
-      if (!event.target.closest('.locks-window-controls')) {
-        ipcRenderer.send('locks-window-control', 'toggle-maximize');
-      }
-    });
-    ipcRenderer.invoke('locks-window-is-maximized').then(setMaximized).catch(() => {});
-  }
+
+  const left = document.createElement('div');
+  left.className = 'locks-titlebar-left';
+  left.innerHTML = '<div class="locks-titlebar-spacer"></div>';
+
+  const controls = document.createElement('div');
+  controls.className = 'locks-window-controls';
+  const minimize = controlButton('minimize', 'Minimize', 'minimize');
+  maximizeButton = controlButton('toggle-maximize', 'Maximize', 'maximize');
+  const close = controlButton('close', 'Close', 'close');
+  controls.append(minimize, maximizeButton, close);
+  bar.append(left, controls);
+
+  bar.addEventListener('dblclick', event => {
+    if (!event.target.closest('.locks-window-controls')) {
+      ipcRenderer.send('locks-window-control', 'toggle-maximize');
+    }
+  });
 
   document.body.prepend(bar);
-  syncTheme();
-  const observer = new MutationObserver(syncTheme);
+  ipcRenderer.invoke('locks-window-is-maximized').then(setMaximized).catch(() => {});
+}
+function bootDesktopChrome() {
+  if (isMac) return;
+  applyTheme();
+  injectStyle();
+  mountTitlebar();
+
+  const observer = new MutationObserver(applyTheme);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('storage', event => {
-    if (event.key === THEME_KEY) syncTheme();
+    if (event.key === THEME_KEY) applyTheme();
   });
 }
-installEarlyLayout();
-ipcRenderer.on('locks-window-maximized', (_event, maximized) => {
-  setMaximized(Boolean(maximized));
-});
+
+ipcRenderer.on('locks-window-maximized', (_event, maximized) => setMaximized(Boolean(maximized)));
 
 if (document.readyState === 'loading') {
-  window.addEventListener('DOMContentLoaded', mountTitlebar, { once: true });
+  window.addEventListener('DOMContentLoaded', bootDesktopChrome, { once: true });
 } else {
-  mountTitlebar();
+  bootDesktopChrome();
 }
