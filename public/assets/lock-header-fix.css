@@ -206,3 +206,64 @@ body[data-report-density="comfortable"] #reportArea table td{
     border-bottom:0!important;
   }
 }
+
+/* Desktop shell: scroll only page content below the fixed app header. */
+@media (min-width:901px){
+  html.lock-release-desktop,
+  html.lock-release-desktop body{
+    height:100%!important;
+    overflow:hidden!important;
+    scrollbar-gutter:auto!important;
+  }
+  html.lock-release-desktop body{padding-top:0!important;}
+  html.lock-release-desktop .app-shell{
+    height:100vh!important;
+    min-height:100vh!important;
+    overflow:hidden!important;
+  }
+  html.lock-release-desktop .main{
+    position:fixed!important;
+    top:var(--desktop-titlebar-height)!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+  html.lock-release-desktop .topbar.topbar-single-row{
+    position:absolute!important;
+    top:0!important;
+    left:0!important;
+    right:0!important;
+    width:auto!important;
+    max-width:none!important;
+    margin:0!important;
+    z-index:1200!important;
+  }
+  html.lock-release-desktop .desktop-scroll-content{
+    position:absolute!important;
+    top:64px!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    scrollbar-gutter:stable!important;
+    padding:16px max(20px,calc((100vw - 1360px) / 2 + 20px)) 30px!important;
+    box-sizing:border-box!important;
+  }
+}
+@media print{
+  html.lock-release-desktop,
+  html.lock-release-desktop body{height:auto!important;overflow:visible!important;}
+  html.lock-release-desktop .main,
+  html.lock-release-desktop .desktop-scroll-content{
+    position:static!important;
+    overflow:visible!important;
+    padding:0!important;
+  }
+}

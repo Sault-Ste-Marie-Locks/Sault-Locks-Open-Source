@@ -784,10 +784,12 @@ function serveStatic(req,res){
     if(ext==='.html' && file.startsWith(desktopPages)){
       try{
         const topbar=fs.readFileSync(path.join(desktopRoot,'partials','topbar.html'),'utf8');
-        let html=data.toString('utf8').replace('{{DASHBOARD_TOPBAR}}',topbar);
+        const topbarMarkup=isDesktopShell ? topbar+'<div class="desktop-scroll-content">' : topbar;
+        let html=data.toString('utf8').replace('{{DASHBOARD_TOPBAR}}',topbarMarkup);
         if(isDesktopShell){
           const desktopHead=`<script>document.documentElement.classList.add('lock-release-desktop')</script><style id=\"lock-release-desktop-shell\">html.lock-release-desktop{--desktop-titlebar-height:32px}html.lock-release-desktop::before{content:"";position:fixed;top:0;left:0;right:0;height:var(--desktop-titlebar-height);z-index:2147483645;background:#f3f2f1;pointer-events:none}html.app-dark.lock-release-desktop::before{background:#10161d}html.lock-release-desktop::after{content:"";position:fixed;top:0;left:0;right:138px;height:var(--desktop-titlebar-height);z-index:2147483646;-webkit-app-region:drag;user-select:none;background:transparent}html.lock-release-desktop body{padding-top:var(--desktop-titlebar-height)!important}html.lock-release-desktop .main{padding-top:0!important}html.lock-release-desktop .app-shell{min-height:calc(100vh - var(--desktop-titlebar-height))!important}html.lock-release-desktop .topbar{top:var(--desktop-titlebar-height)!important;margin-top:0!important}@media (min-width:901px){html.lock-release-desktop .topbar.topbar-single-row{top:var(--desktop-titlebar-height)!important}}@media print{html.lock-release-desktop body{padding-top:0!important}html.lock-release-desktop .topbar,html.lock-release-desktop .topbar.topbar-single-row{top:0!important}}</style>`;
           html=html.replace(/<head([^>]*)>/i, match=>match+desktopHead);
+          html=html.replace(/<\/main>/i,'</div></main>');
         }
         output=Buffer.from(html,'utf8');
       }catch(includeErr){
