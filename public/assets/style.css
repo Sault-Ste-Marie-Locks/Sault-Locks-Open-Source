@@ -3429,3 +3429,53 @@ html.app-dark .topbar,body.dark-mode .topbar{background:#191919!important;border
 html.app-dark .page-nav,body.dark-mode .page-nav{background:#1d1d1d!important;border-bottom-color:#303030!important;}
 html.app-dark .searchbar,body.dark-mode .searchbar{background:#222!important;border-color:#383838!important;}
 html.app-dark #clock,body.dark-mode #clock{color:#c6c6c6!important;}
+
+/* =========================================================
+   2026-09-14 desktop scrollbar refresh
+   Slim Fluent-style scrollbar that follows app light/dark mode.
+========================================================= */
+:root{
+  --app-scrollbar-size:10px;
+  --app-scrollbar-track:#f3f2f1;
+  --app-scrollbar-thumb:#c8c6c4;
+  --app-scrollbar-thumb-hover:#a19f9d;
+  --app-scrollbar-thumb-active:#8a8886;
+}
+html.app-dark,
+body.dark-mode{
+  --app-scrollbar-track:#10161d;
+  --app-scrollbar-thumb:#2c3b4d;
+  --app-scrollbar-thumb-hover:#39506a;
+  --app-scrollbar-thumb-active:#4d6b8d;
+}
+*{
+  scrollbar-width:thin;
+  scrollbar-color:var(--app-scrollbar-thumb) var(--app-scrollbar-track);
+}
+*::-webkit-scrollbar{
+  width:var(--app-scrollbar-size);
+  height:var(--app-scrollbar-size);
+}
+*::-webkit-scrollbar-track{
+  background:var(--app-scrollbar-track);
+}
+*::-webkit-scrollbar-thumb{
+  background:var(--app-scrollbar-thumb);
+  border:2px solid var(--app-scrollbar-track);
+  border-radius:999px;
+  min-height:36px;
+}
+*::-webkit-scrollbar-thumb:hover{
+  background:var(--app-scrollbar-thumb-hover);
+}
+*::-webkit-scrollbar-thumb:active{
+  background:var(--app-scrollbar-thumb-active);
+}
+*::-webkit-scrollbar-corner{
+  background:var(--app-scrollbar-track);
+}
+*::-webkit-scrollbar-button{
+  width:0;
+  height:0;
+  display:none;
+}
