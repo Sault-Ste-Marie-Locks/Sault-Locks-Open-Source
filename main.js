@@ -285,14 +285,8 @@ function updaterBrowserWindowOptions(width, height, darkMode = updaterDarkMode) 
     show: false,
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
   };
-  if (isMac) {
-    // Use the native macOS title bar so all three traffic-light controls render normally.
-    common.titleBarStyle = 'default';
-    common.fullscreenable = false;
-  } else {
-    common.titleBarStyle = 'hidden';
-    common.titleBarOverlay = { color: dark ? '#202124' : '#4d4b48', symbolColor: '#ffffff', height: 42 };
-  }
+  common.frame = false;
+  common.fullscreenable = false;
   return common;
 }
 function createUpdateWindow(latestVersion, darkMode = updaterDarkMode) {
@@ -300,7 +294,7 @@ function createUpdateWindow(latestVersion, darkMode = updaterDarkMode) {
   updateCancelRequested = false;
   const isMac = process.platform === 'darwin';
   const logoSrc = updaterLogoSrc();
-  updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 500 : 610, isMac ? 154 : 224, darkMode));
+  updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 500 : 610, isMac ? 184 : 212, darkMode));
   if (process.platform === 'win32') applyWindowsTaskbarIdentity(updateWindow);
   updateWindow.setMenuBarVisibility(false);
 
@@ -309,9 +303,8 @@ function createUpdateWindow(latestVersion, darkMode = updaterDarkMode) {
 <style>
 * {box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
 body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif' : '"Segoe UI Variable","Segoe UI",Arial,sans-serif'};background:#f4f4f4;color:#1d1d1f}
-.titlebar{-webkit-app-region:drag;user-select:none}.titlebar button,.actions button{-webkit-app-region:no-drag}
+.titlebar{-webkit-app-region:drag;user-select:none;height:30px;display:flex;align-items:center;justify-content:space-between;padding-left:10px;background:#e8edf2;color:#26313d;font-size:12px;font-weight:600;border-bottom:1px solid #d2d9e0}.titlebar-controls{height:30px;display:flex;-webkit-app-region:no-drag}.titlebar-btn{width:38px;height:30px!important;min-width:38px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:inherit!important;font:18px/30px 'Segoe UI Symbol','Segoe UI',sans-serif!important}.titlebar-btn:hover{background:rgba(0,0,0,.08)!important}.titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}.actions button{-webkit-app-region:no-drag}
 .logo{object-fit:cover;display:block;background:#252525}
-.mac .titlebar{display:none}
 .mac .body{height:154px;background:#f7f7f7;padding:18px 18px 12px;display:grid;grid-template-columns:72px 1fr;grid-template-rows:auto 1fr auto;column-gap:16px}
 .mac .logo{width:72px;height:72px;border-radius:14px;grid-row:1/3}
 .mac h1{font-size:14px;line-height:18px;margin:4px 0 9px;font-weight:700}
@@ -322,7 +315,6 @@ body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helv
 .mac .actions{grid-column:2;display:flex;justify-content:flex-end;align-items:end}
 .mac button{min-width:86px;height:28px;padding:0 14px;border:1px solid #a9a9a9;border-radius:6px;background:linear-gradient(#fff,#f3f3f3);font-size:13px;color:#202020}
 .mac button:disabled{opacity:.45}
-.windows .titlebar{height:42px;background:#4d4b48;color:#fff;display:flex;align-items:center;padding:0 16px;font-size:16px}
 .windows .body{height:132px;background:#fff;padding:14px 18px;display:grid;grid-template-columns:90px 1fr;column-gap:22px}
 .windows .logo{width:82px;height:82px;border-radius:14px;align-self:start}
 .windows .content{padding-top:7px}
@@ -337,7 +329,7 @@ body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helv
 .err .fill{background:#c83b32}.done .fill{background:#4a9b58}
 body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
 .updater-dark.mac .body,.updater-dark.windows .body{background:#202124!important;color:#f5f5f5!important}
-.updater-dark.windows .titlebar{background:#202124!important;color:#f5f5f5!important}
+.updater-dark .titlebar{background:#111820!important;color:#f5f7fa!important;border-bottom-color:#202b36!important}.updater-dark .titlebar-btn:hover{background:#202b36!important}.updater-dark .titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}
 .updater-dark.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
 .updater-dark.mac p,.updater-dark.mac .status,.updater-dark.mac .detail,.updater-dark.windows p,.updater-dark.windows .status,.updater-dark.windows .detail{color:#c9cdd2!important}
 .updater-dark.mac button,.updater-dark.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
@@ -346,7 +338,7 @@ body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
 .updater-dark.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
 .updater-dark.mac .bar,.updater-dark.windows .bar{background:#303236!important;border-color:#4b4e53!important}
 .updater-dark .logo{background:#111214!important}</style></head><body class="${platformClass}">
-<div class="titlebar">${isMac ? '<span>Locks Tracker</span>' : '<span>Locks Tracker</span>'}</div>
+<div class="titlebar"><span>Lock Release Update</span><div class="titlebar-controls"><button class="titlebar-btn" aria-label="Minimize" onclick="location.href='lockrelease-update://minimize'">&#8722;</button><button class="titlebar-btn close" aria-label="Close" onclick="location.href='lockrelease-update://close'">&#215;</button></div></div>
 ${isMac ? `
 <div class="body" id="card">
   ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : '<div class="logo"></div>'}
@@ -395,7 +387,8 @@ window.setUpdateProgress=function(stage,pct,detail,state){
     event.preventDefault();
     let action = '';
     try { action = new URL(url).hostname; } catch (_) {}
-    if (action === 'cancel') {
+    if (action === 'minimize') { try { updateWindow.minimize(); } catch (_) {} return; }
+    if (action === 'cancel' || action === 'close') {
       updateCancelRequested = true;
       const err = new Error('Update cancelled by user.');
       err.code = 'LOCK_RELEASE_UPDATE_CANCELLED';
@@ -438,7 +431,7 @@ function showUpdaterPromptWindow(latestVersion, hasAsset, darkMode = updaterDark
     const isMac = process.platform === 'darwin';
     const logoSrc = updaterLogoSrc();
     const width = isMac ? 520 : 610;
-    const height = isMac ? 164 : 202;
+    const height = isMac ? 194 : 190;
     updatePromptWindow = new BrowserWindow(updaterBrowserWindowOptions(width, height, darkMode));
     if (process.platform === 'win32') applyWindowsTaskbarIdentity(updatePromptWindow);
     updatePromptWindow.setMenuBarVisibility(false);
@@ -453,16 +446,14 @@ function showUpdaterPromptWindow(latestVersion, hasAsset, darkMode = updaterDark
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
 body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif' : '"Segoe UI Variable","Segoe UI",Arial,sans-serif'};background:#f5f5f5;color:#111}
-.titlebar{-webkit-app-region:drag;user-select:none}
+.titlebar{-webkit-app-region:drag;user-select:none;height:30px;display:flex;align-items:center;justify-content:space-between;padding-left:10px;background:#e8edf2;color:#26313d;font-size:12px;font-weight:600;border-bottom:1px solid #d2d9e0}.titlebar-controls{height:30px;display:flex;-webkit-app-region:no-drag}.titlebar-btn{width:38px!important;height:30px!important;min-width:38px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:inherit!important;font:18px/30px 'Segoe UI Symbol','Segoe UI',sans-serif!important}.titlebar-btn:hover{background:rgba(0,0,0,.08)!important}.titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}
 .logo{object-fit:cover;display:block;background:#252525}
-.mac .titlebar{display:none}
 .mac .body{height:164px;background:#f7f7f7;padding:18px 20px 14px;display:grid;grid-template-columns:78px 1fr;grid-template-rows:1fr 34px;column-gap:16px}
 .mac .logo{width:74px;height:74px;border-radius:14px;align-self:start}
 .mac .text{padding-top:2px}.mac h1{font-size:16px;line-height:21px;margin:0 0 7px;font-weight:700}.mac p{font-size:13px;line-height:18px;margin:0;color:#171717}
 .mac .actions{grid-column:2;display:flex;justify-content:flex-end;align-items:end;gap:12px}
 .mac button{height:28px;min-width:86px;padding:0 14px;border:1px solid #b8b8b8;border-radius:6px;background:linear-gradient(#fff,#f2f2f2);font-size:13px}
 .mac .primary{border-color:#4387e8;background:linear-gradient(#6fa8ff,#347be2);color:#fff;box-shadow:inset 0 1px rgba(255,255,255,.35)}
-.windows .titlebar{height:42px;background:#4d4b48;color:#fff;display:flex;align-items:center;padding:0 16px;font-size:16px}
 .windows .body{height:110px;background:#fff;padding:14px 18px;display:grid;grid-template-columns:90px 1fr;column-gap:22px}
 .windows .logo{width:82px;height:82px;border-radius:14px}
 .windows .text{padding-top:3px}.windows h1{font-size:17px;line-height:22px;font-weight:400;margin:0 0 12px}
@@ -471,7 +462,7 @@ body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helv
 .windows button{width:96px;height:28px;border:1px solid #c7c7c7;background:#fff;font-size:13px}
 body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
 .updater-dark.mac .body,.updater-dark.windows .body{background:#202124!important;color:#f5f5f5!important}
-.updater-dark.windows .titlebar{background:#202124!important;color:#f5f5f5!important}
+.updater-dark .titlebar{background:#111820!important;color:#f5f7fa!important;border-bottom-color:#202b36!important}.updater-dark .titlebar-btn:hover{background:#202b36!important}.updater-dark .titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}
 .updater-dark.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
 .updater-dark.mac p,.updater-dark.mac .status,.updater-dark.mac .detail,.updater-dark.windows p,.updater-dark.windows .status,.updater-dark.windows .detail{color:#c9cdd2!important}
 .updater-dark.mac button,.updater-dark.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
@@ -480,7 +471,7 @@ body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
 .updater-dark.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
 .updater-dark.mac .bar,.updater-dark.windows .bar{background:#303236!important;border-color:#4b4e53!important}
 .updater-dark .logo{background:#111214!important}</style></head><body class="${(isMac ? 'mac' : 'windows') + (darkMode ? ' updater-dark' : '')}">
-<div class="titlebar">${isMac ? '' : '<span>Locks Tracker</span>'}</div>
+<div class="titlebar"><span>Lock Release Update</span><div class="titlebar-controls"><button class="titlebar-btn" aria-label="Minimize" onclick="location.href='lockrelease-update://minimize'">&#8722;</button><button class="titlebar-btn close" aria-label="Close" onclick="location.href='lockrelease-update://close'">&#215;</button></div></div>
 <div class="body">
   ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : '<div class="logo"></div>'}
   <div class="text"><h1>An Update is available on the web</h1><p>Do you want to update “Locks Tracker” to the latest version?</p></div>
@@ -493,6 +484,8 @@ ${isMac ? '' : `<div class="footer"><button onclick="location.href='lockrelease-
       event.preventDefault();
       let action = '';
       try { action = new URL(url).hostname; } catch (_) {}
+      if (action === 'minimize') { try { updatePromptWindow.minimize(); } catch (_) {} return; }
+      if (action === 'close') { finish(1); return; }
       if (action === 'update') finish(0);
       else if (action === 'github') finish(2);
       else finish(1);
