@@ -11,6 +11,7 @@ const APP_PORT = 6117;
 const APP_URL = `http://127.0.0.1:${APP_PORT}/index.html`;
 const APP_NAME = 'Lock Release';
 let mainWindow = null;
+let mainWindowDarkMode = true;
 let serverStarted = false;
 let booting = false;
 let updateCheckInProgress = false;
@@ -37,6 +38,7 @@ function appendLog(text) { try { fs.appendFileSync(logFile(), text + '\n'); } ca
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 function applyMainTitlebarTheme(win, dark) {
+  if (win === mainWindow) mainWindowDarkMode = Boolean(dark);
   if (!win || win.isDestroyed() || process.platform !== 'win32') return;
   try {
     if (typeof win.setTitleBarOverlay === 'function') {
@@ -916,9 +918,14 @@ function createWindow() {
   }
   mainWindow = new BrowserWindow(windowOptions);
   mainWindow.setMenuBarVisibility(false);
+  if (process.platform === 'win32') applyMainTitlebarTheme(mainWindow, mainWindowDarkMode);
   if (process.platform === 'win32') {
     const ua = mainWindow.webContents.getUserAgent();
     if (!/LockReleaseDesktop\//i.test(ua)) mainWindow.webContents.setUserAgent(ua + ' LockReleaseDesktop/1.0');
+  }
+  if (process.platform === 'win32') {
+    mainWindow.webContents.on('did-start-navigation', () => applyMainTitlebarTheme(mainWindow, mainWindowDarkMode));
+    mainWindow.webContents.on('did-navigate', () => applyMainTitlebarTheme(mainWindow, mainWindowDarkMode));
   }
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.webContents.once('did-finish-load', () => {

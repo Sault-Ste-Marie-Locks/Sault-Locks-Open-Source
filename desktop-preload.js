@@ -19,8 +19,6 @@ function syncTheme() {
   ipcRenderer.send('locks-app-theme', dark);
 }
 
-syncTheme();
-
 if (document.readyState === 'loading') {
   window.addEventListener('DOMContentLoaded', () => {
     syncTheme();
