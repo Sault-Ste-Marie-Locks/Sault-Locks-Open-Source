@@ -277,7 +277,7 @@ function updaterBrowserWindowOptions(width, height, darkMode = updaterDarkMode) 
     maximizable: false,
     minimizable: true,
     closable: true,
-    title: 'Locks Tracker',
+    title: 'Lock Release Update',
     icon,
     backgroundColor: dark ? '#17181a' : '#f4f4f4',
     autoHideMenuBar: true,
@@ -285,8 +285,13 @@ function updaterBrowserWindowOptions(width, height, darkMode = updaterDarkMode) 
     show: false,
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
   };
-  common.frame = false;
-  common.fullscreenable = false;
+  if (isMac) {
+    common.titleBarStyle = 'default';
+    common.fullscreenable = false;
+  } else {
+    common.frame = false;
+    common.fullscreenable = false;
+  }
   return common;
 }
 function createUpdateWindow(latestVersion, darkMode = updaterDarkMode) {
@@ -294,7 +299,7 @@ function createUpdateWindow(latestVersion, darkMode = updaterDarkMode) {
   updateCancelRequested = false;
   const isMac = process.platform === 'darwin';
   const logoSrc = updaterLogoSrc();
-  updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 500 : 610, isMac ? 184 : 212, darkMode));
+  updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 500 : 610, isMac ? 154 : 212, darkMode));
   if (process.platform === 'win32') applyWindowsTaskbarIdentity(updateWindow);
   updateWindow.setMenuBarVisibility(false);
 
@@ -303,7 +308,7 @@ function createUpdateWindow(latestVersion, darkMode = updaterDarkMode) {
 <style>
 * {box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
 body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif' : '"Segoe UI Variable","Segoe UI",Arial,sans-serif'};background:#f4f4f4;color:#1d1d1f}
-.titlebar{-webkit-app-region:drag;user-select:none;height:30px;display:flex;align-items:center;justify-content:space-between;padding-left:10px;background:#e8edf2;color:#26313d;font-size:12px;font-weight:600;border-bottom:1px solid #d2d9e0}.titlebar-controls{height:30px;display:flex;-webkit-app-region:no-drag}.titlebar-btn{width:38px;height:30px!important;min-width:38px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:inherit!important;font:18px/30px 'Segoe UI Symbol','Segoe UI',sans-serif!important}.titlebar-btn:hover{background:rgba(0,0,0,.08)!important}.titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}.actions button{-webkit-app-region:no-drag}
+.mac .titlebar{display:none}.titlebar{-webkit-app-region:drag;user-select:none;height:30px;display:flex;align-items:center;justify-content:space-between;padding-left:10px;background:#e8edf2;color:#26313d;font-size:12px;font-weight:600;border-bottom:1px solid #d2d9e0}.titlebar-controls{height:30px;display:flex;-webkit-app-region:no-drag}.titlebar-btn{width:38px;height:30px!important;min-width:38px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:inherit!important;font:18px/30px 'Segoe UI Symbol','Segoe UI',sans-serif!important}.titlebar-btn:hover{background:rgba(0,0,0,.08)!important}.titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}.actions button{-webkit-app-region:no-drag}
 .logo{object-fit:cover;display:block;background:#252525}
 .mac .body{height:154px;background:#f7f7f7;padding:18px 18px 12px;display:grid;grid-template-columns:72px 1fr;grid-template-rows:auto 1fr auto;column-gap:16px}
 .mac .logo{width:72px;height:72px;border-radius:14px;grid-row:1/3}
@@ -431,7 +436,7 @@ function showUpdaterPromptWindow(latestVersion, hasAsset, darkMode = updaterDark
     const isMac = process.platform === 'darwin';
     const logoSrc = updaterLogoSrc();
     const width = isMac ? 520 : 610;
-    const height = isMac ? 194 : 190;
+    const height = isMac ? 164 : 190;
     updatePromptWindow = new BrowserWindow(updaterBrowserWindowOptions(width, height, darkMode));
     if (process.platform === 'win32') applyWindowsTaskbarIdentity(updatePromptWindow);
     updatePromptWindow.setMenuBarVisibility(false);
@@ -446,7 +451,7 @@ function showUpdaterPromptWindow(latestVersion, hasAsset, darkMode = updaterDark
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
 body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif' : '"Segoe UI Variable","Segoe UI",Arial,sans-serif'};background:#f5f5f5;color:#111}
-.titlebar{-webkit-app-region:drag;user-select:none;height:30px;display:flex;align-items:center;justify-content:space-between;padding-left:10px;background:#e8edf2;color:#26313d;font-size:12px;font-weight:600;border-bottom:1px solid #d2d9e0}.titlebar-controls{height:30px;display:flex;-webkit-app-region:no-drag}.titlebar-btn{width:38px!important;height:30px!important;min-width:38px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:inherit!important;font:18px/30px 'Segoe UI Symbol','Segoe UI',sans-serif!important}.titlebar-btn:hover{background:rgba(0,0,0,.08)!important}.titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}
+.mac .titlebar{display:none}.titlebar{-webkit-app-region:drag;user-select:none;height:30px;display:flex;align-items:center;justify-content:space-between;padding-left:10px;background:#e8edf2;color:#26313d;font-size:12px;font-weight:600;border-bottom:1px solid #d2d9e0}.titlebar-controls{height:30px;display:flex;-webkit-app-region:no-drag}.titlebar-btn{width:38px!important;height:30px!important;min-width:38px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:inherit!important;font:18px/30px 'Segoe UI Symbol','Segoe UI',sans-serif!important}.titlebar-btn:hover{background:rgba(0,0,0,.08)!important}.titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}
 .logo{object-fit:cover;display:block;background:#252525}
 .mac .body{height:164px;background:#f7f7f7;padding:18px 20px 14px;display:grid;grid-template-columns:78px 1fr;grid-template-rows:1fr 34px;column-gap:16px}
 .mac .logo{width:74px;height:74px;border-radius:14px;align-self:start}
