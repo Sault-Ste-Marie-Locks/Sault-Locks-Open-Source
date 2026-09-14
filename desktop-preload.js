@@ -49,8 +49,8 @@ function injectStyle() {
 html.locks-desktop-window{--desktop-titlebar-height:32px}
 html.locks-desktop-window body{margin:0!important;padding-top:var(--desktop-titlebar-height)!important}
 html.locks-desktop-window .app-shell{min-height:calc(100vh - var(--desktop-titlebar-height))!important}
-html.locks-desktop-window .topbar{top:calc(var(--desktop-titlebar-height) + 16px)!important}
-html.locks-desktop-window::before{content:"";position:fixed;top:var(--desktop-titlebar-height);left:0;right:0;height:16px;z-index:2147483646;background:#151d26;pointer-events:none}
+html.locks-desktop-window .topbar{top:calc(var(--desktop-titlebar-height) + 8px)!important}
+html.locks-desktop-window::before{content:"";position:fixed;top:var(--desktop-titlebar-height);left:0;right:0;height:8px;z-index:2147483646;background:#151d26;pointer-events:none}
 html[data-desktop-theme="light"].locks-desktop-window::before{background:#ffffff}
 #${TITLEBAR_ID}{position:fixed;top:0;left:0;right:0;height:var(--desktop-titlebar-height);z-index:2147483647;display:flex;align-items:stretch;justify-content:space-between;-webkit-app-region:drag;user-select:none;background:#151d26;color:#e5e7eb;border-bottom:0}
 html[data-desktop-theme="light"] #${TITLEBAR_ID}{background:#ffffff;color:#201f1e;border-bottom:0}
