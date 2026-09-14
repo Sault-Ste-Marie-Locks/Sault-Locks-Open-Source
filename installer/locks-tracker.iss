@@ -71,9 +71,9 @@ var
   OptionsHint: TNewStaticText;
   DesktopShortcutCheck: TNewCheckBox;
 
-function ShouldCreateDesktopShortcut(Param: String): Boolean;
+function ShouldCreateDesktopShortcut: Boolean;
 begin
-  Result := Assigned(DesktopShortcutCheck) and DesktopShortcutCheck.Checked;
+  Result := DesktopShortcutCheck.Checked;
 end;
 
 procedure BuildOptionsPage;
