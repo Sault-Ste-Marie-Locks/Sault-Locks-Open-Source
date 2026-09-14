@@ -187,3 +187,11 @@ body[data-report-density="comfortable"] #reportArea table td{
   padding-top:8px!important;
   padding-bottom:8px!important;
 }
+
+/* desktop scrollbar/titlebar edge integration */
+@media (min-width:901px){
+  html.lock-release-desktop .topbar.topbar-single-row{
+    width:calc(100vw + 10px)!important;
+    max-width:none!important;
+  }
+}

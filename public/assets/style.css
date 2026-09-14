@@ -3479,3 +3479,7 @@ body.dark-mode{
   height:0;
   display:none;
 }
+
+/* Root scrollbar seam fix */
+html::-webkit-scrollbar-track,body::-webkit-scrollbar-track{background:transparent;}
+html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{border-color:transparent;background-clip:padding-box;}
