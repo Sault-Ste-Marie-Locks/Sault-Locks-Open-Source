@@ -914,12 +914,12 @@ function createWindow() {
     windowOptions.titleBarOverlay = { color: '#10161d', symbolColor: '#e5e7eb', height: 32 };
   } else if (process.platform === 'darwin') {
     windowOptions.titleBarStyle = 'hiddenInset';
-    windowOptions.trafficLightPosition = { x: 14, y: 11 };
+    windowOptions.trafficLightPosition = { x: 14, y: 9 };
   }
   mainWindow = new BrowserWindow(windowOptions);
   mainWindow.setMenuBarVisibility(false);
   if (process.platform === 'win32') applyMainTitlebarTheme(mainWindow, mainWindowDarkMode);
-  if (process.platform === 'win32') {
+  if (process.platform === 'win32' || process.platform === 'darwin') {
     const ua = mainWindow.webContents.getUserAgent();
     if (!/LockReleaseDesktop\//i.test(ua)) mainWindow.webContents.setUserAgent(ua + ' LockReleaseDesktop/1.0');
   }
