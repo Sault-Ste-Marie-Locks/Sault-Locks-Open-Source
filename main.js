@@ -37,6 +37,26 @@ function logFile() { return path.join(logDir(), 'electron-app.log'); }
 function appendLog(text) { try { fs.appendFileSync(logFile(), text + '\n'); } catch (_) {} }
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
+function applyWindowsTaskbarIdentity(win) {
+  if (!win || win.isDestroyed() || process.platform !== 'win32') return;
+  try {
+    const iconPath = path.join(appRoot(), 'assets', 'lock-release.ico');
+    if (typeof win.setAppDetails === 'function') {
+      win.setAppDetails({
+        appId: 'com.lockrelease.desktop',
+        appIconPath: iconPath,
+        appIconIndex: 0,
+        relaunchCommand: `"${process.execPath}"`,
+        relaunchDisplayName: APP_NAME
+      });
+    }
+    if (typeof win.setIcon === 'function' && fs.existsSync(iconPath)) win.setIcon(iconPath);
+    if (typeof win.setThumbnailToolTip === 'function') win.setThumbnailToolTip(APP_NAME);
+    appendLog('Windows taskbar identity applied: ' + APP_NAME);
+  } catch (err) {
+    appendLog('Windows taskbar identity failed: ' + (err && err.stack || err));
+  }
+}
 function applyMainTitlebarTheme(win, dark) {
   if (win === mainWindow) mainWindowDarkMode = Boolean(dark);
   if (!win || win.isDestroyed() || process.platform !== 'win32') return;
@@ -918,6 +938,7 @@ function createWindow() {
     windowOptions.trafficLightPosition = { x: 14, y: 9 };
   }
   mainWindow = new BrowserWindow(windowOptions);
+  if (process.platform === 'win32') applyWindowsTaskbarIdentity(mainWindow);
   mainWindow.setMenuBarVisibility(false);
   if (process.platform === 'win32') applyMainTitlebarTheme(mainWindow, mainWindowDarkMode);
   if (process.platform === 'win32' || process.platform === 'darwin') {
