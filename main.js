@@ -26,7 +26,7 @@ let isQuitting = false;
 let phoneServerRunning = false;
 let lastPhoneServerUrl = '';
 const PHONE_LINK_URL = `http://127.0.0.1:${APP_PORT}/phone-link.html`;
-const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const UPDATE_CHECK_INTERVAL_MS = 2 * 60 * 1000;
 const UPDATE_PROMPT_REMINDER_MS = 30 * 60 * 1000;
 
 function appRoot() { return __dirname; }
@@ -418,15 +418,29 @@ ${isMac ? '' : `<div class="footer"><button onclick="location.href='lockrelease-
       else if (action === 'github') finish(2);
       else finish(1);
     });
-    updatePromptWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
-    updatePromptWindow.once('ready-to-show', () => {
+    const revealUpdatePrompt = () => {
       try {
+        if (!updatePromptWindow || updatePromptWindow.isDestroyed()) return;
         if (process.platform === 'darwin' && app.dock) app.dock.show();
+        updatePromptWindow.setAlwaysOnTop(true);
+        updatePromptWindow.setSkipTaskbar(false);
+        if (updatePromptWindow.isMinimized()) updatePromptWindow.restore();
         updatePromptWindow.show();
         updatePromptWindow.moveTop();
         updatePromptWindow.focus();
-      } catch (_) {}
-    });
+        try { updatePromptWindow.flashFrame(true); } catch (_) {}
+        setTimeout(() => {
+          try { if (updatePromptWindow && !updatePromptWindow.isDestroyed()) updatePromptWindow.flashFrame(false); } catch (_) {}
+        }, 1500);
+        appendLog(`Update prompt shown for ${latestVersion}.`);
+      } catch (err) {
+        appendLog('Could not show update prompt: ' + (err && err.stack || err));
+      }
+    };
+    updatePromptWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+    updatePromptWindow.once('ready-to-show', revealUpdatePrompt);
+    updatePromptWindow.webContents.once('did-finish-load', revealUpdatePrompt);
+    setTimeout(revealUpdatePrompt, 900);
     updatePromptWindow.on('closed', () => {
       updatePromptWindow = null;
       if (!settled) { settled = true; resolve(1); }
@@ -499,6 +513,8 @@ function getJson(url, headers = {}) {
       headers: {
         'User-Agent': `${APP_NAME.replace(/\s+/g, '-')}/${currentVersion()}`,
         'Accept': 'application/vnd.github+json',
+        'Cache-Control': 'no-cache, no-store, max-age=0',
+        'Pragma': 'no-cache',
         ...headers
       }
     }, res => {
@@ -963,7 +979,7 @@ async function checkForUpdatesOnStartup(options = {}) {
       }
       return;
     }
-    const api = `https://api.github.com/repos/${repo}/releases/latest`;
+    const api = `https://api.github.com/repos/${repo}/releases/latest?cacheBust=${Date.now()}`;
     appendLog(`Checking for updates: ${api}; source=${source}; force=${force}`);
     let release;
     try { release = await getJson(api, githubHeaders(config)); }
