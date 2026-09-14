@@ -50,8 +50,8 @@ html.locks-desktop-window{--desktop-titlebar-height:32px}
 html.locks-desktop-window body{margin:0!important;padding-top:var(--desktop-titlebar-height)!important}
 html.locks-desktop-window .app-shell{min-height:calc(100vh - var(--desktop-titlebar-height))!important}
 html.locks-desktop-window .topbar{top:calc(var(--desktop-titlebar-height) + 12px)!important}
-#${TITLEBAR_ID}{position:fixed;top:0;left:0;right:0;height:var(--desktop-titlebar-height);z-index:2147483647;display:flex;align-items:stretch;justify-content:space-between;-webkit-app-region:drag;user-select:none;background:#313338;color:#dcddde;border-bottom:1px solid rgba(255,255,255,.06)}
-html[data-desktop-theme="light"] #${TITLEBAR_ID}{background:#f2f3f5;color:#2e3338;border-bottom-color:rgba(0,0,0,.08)}
+#${TITLEBAR_ID}{position:fixed;top:0;left:0;right:0;height:var(--desktop-titlebar-height);z-index:2147483647;display:flex;align-items:stretch;justify-content:space-between;-webkit-app-region:drag;user-select:none;background:#191919;color:#e5e7eb;border-bottom:1px solid #2f2f2f}
+html[data-desktop-theme="light"] #${TITLEBAR_ID}{background:#ffffff;color:#201f1e;border-bottom-color:#edebe9}
 #${TITLEBAR_ID} .locks-titlebar-left{flex:1;display:flex;align-items:center;min-width:0;padding:0 12px}
 #${TITLEBAR_ID} .locks-titlebar-spacer{flex:1}
 #${TITLEBAR_ID} .locks-window-controls{display:flex;align-items:stretch;margin-left:auto;-webkit-app-region:no-drag}
