@@ -711,6 +711,7 @@ function serveStatic(req,res){
   const desktopRoot=path.join(root,'public');
   const desktopPages=path.join(desktopRoot,'pages');
   const mobileRoot=path.join(root,'mobile','public');
+  const isDesktopShell=/LockReleaseDesktop\//i.test(String(req.headers['user-agent']||''));
 
   const redirects={
     '/index.html':'/',
@@ -783,7 +784,12 @@ function serveStatic(req,res){
     if(ext==='.html' && file.startsWith(desktopPages)){
       try{
         const topbar=fs.readFileSync(path.join(desktopRoot,'partials','topbar.html'),'utf8');
-        output=Buffer.from(data.toString('utf8').replace('{{DASHBOARD_TOPBAR}}',topbar),'utf8');
+        let html=data.toString('utf8').replace('{{DASHBOARD_TOPBAR}}',topbar);
+        if(isDesktopShell){
+          const desktopHead=`<script>document.documentElement.classList.add('lock-release-desktop')</script><style id=\"lock-release-desktop-shell\">html.lock-release-desktop{--desktop-titlebar-height:32px}html.lock-release-desktop::before{content:"";position:fixed;top:0;left:0;right:138px;height:var(--desktop-titlebar-height);z-index:2147483646;-webkit-app-region:drag;user-select:none}html.lock-release-desktop body{padding-top:var(--desktop-titlebar-height)!important}html.lock-release-desktop .app-shell{min-height:calc(100vh - var(--desktop-titlebar-height))!important}html.lock-release-desktop .topbar{top:var(--desktop-titlebar-height)!important}@media (min-width:901px){html.lock-release-desktop .topbar.topbar-single-row{top:var(--desktop-titlebar-height)!important}}@media print{html.lock-release-desktop body{padding-top:0!important}html.lock-release-desktop .topbar,html.lock-release-desktop .topbar.topbar-single-row{top:0!important}}</style>`;
+          html=html.replace(/<head([^>]*)>/i, match=>match+desktopHead);
+        }
+        output=Buffer.from(html,'utf8');
       }catch(includeErr){
         console.error('Dashboard topbar include failed:', includeErr && includeErr.message || includeErr);
         res.writeHead(500,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'});

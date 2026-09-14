@@ -36,17 +36,27 @@ function logFile() { return path.join(logDir(), 'electron-app.log'); }
 function appendLog(text) { try { fs.appendFileSync(logFile(), text + '\n'); } catch (_) {} }
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-ipcMain.on('locks-window-control', (event, action) => {
+function applyMainTitlebarTheme(win, dark) {
+  if (!win || win.isDestroyed() || process.platform !== 'win32') return;
+  try {
+    if (typeof win.setTitleBarOverlay === 'function') {
+      win.setTitleBarOverlay({
+        color: dark ? '#10161d' : '#f3f2f1',
+        symbolColor: dark ? '#e5e7eb' : '#201f1e',
+        height: 32
+      });
+    }
+    win.setBackgroundColor(dark ? '#10161d' : '#f3f2f1');
+  } catch (err) {
+    appendLog('Title bar theme update failed: ' + (err && err.message || err));
+  }
+}
+
+ipcMain.on('locks-app-theme', (event, dark) => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win || win.isDestroyed() || win !== mainWindow) return;
-  if (action === 'minimize') win.minimize();
-  else if (action === 'toggle-maximize') win.isMaximized() ? win.unmaximize() : win.maximize();
-  else if (action === 'close') win.close();
+  if (win && win === mainWindow) applyMainTitlebarTheme(win, Boolean(dark));
 });
-ipcMain.handle('locks-window-is-maximized', event => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  return !!(win && !win.isDestroyed() && win === mainWindow && win.isMaximized());
-});
+
 function helperLog(text) {
   try {
     const target = path.join(os.tmpdir(), 'LockReleaseExeUpdateHelper.log');
@@ -890,7 +900,6 @@ function createWindow() {
     backgroundColor: '#f6f7f9',
     show: false,
     autoHideMenuBar: true,
-    frame: process.platform !== 'win32',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -898,12 +907,19 @@ function createWindow() {
       preload: path.join(__dirname, 'desktop-preload.js')
     }
   };
-  if (process.platform === 'darwin') {
+  if (process.platform === 'win32') {
+    windowOptions.titleBarStyle = 'hidden';
+    windowOptions.titleBarOverlay = { color: '#10161d', symbolColor: '#e5e7eb', height: 32 };
+  } else if (process.platform === 'darwin') {
     windowOptions.titleBarStyle = 'hiddenInset';
     windowOptions.trafficLightPosition = { x: 14, y: 11 };
   }
   mainWindow = new BrowserWindow(windowOptions);
   mainWindow.setMenuBarVisibility(false);
+  if (process.platform === 'win32') {
+    const ua = mainWindow.webContents.getUserAgent();
+    if (!/LockReleaseDesktop\//i.test(ua)) mainWindow.webContents.setUserAgent(ua + ' LockReleaseDesktop/1.0');
+  }
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.webContents.once('did-finish-load', () => {
     setTimeout(() => checkForUpdatesOnStartup({ source: 'startup' }).catch(err => appendLog('UPDATE CHECK ERROR: ' + (err && err.stack || err))), 1200);
@@ -926,12 +942,6 @@ function createWindow() {
   });
   mainWindow.on('hide', () => updateTrayMenu());
   mainWindow.on('minimize', () => updateTrayMenu());
-  mainWindow.on('maximize', () => {
-    try { mainWindow.webContents.send('locks-window-maximized', true); } catch (_) {}
-  });
-  mainWindow.on('unmaximize', () => {
-    try { mainWindow.webContents.send('locks-window-maximized', false); } catch (_) {}
-  });
   mainWindow.on('closed', () => { mainWindow = null; updateTrayMenu(); });
 }
 async function boot() {
