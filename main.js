@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, shell, Tray, Menu, nativeImage, nativeTheme } = require('electron');
+const { app, BrowserWindow, dialog, shell, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -21,6 +21,7 @@ let updateWindow = null;
 let updatePromptWindow = null;
 let activeUpdateRequest = null;
 let updateCancelRequested = false;
+let updaterDarkMode = false;
 let tray = null;
 let isQuitting = false;
 let phoneServerRunning = false;
@@ -210,10 +211,21 @@ function updaterLogoSrc() {
     return '';
   }
 }
-function updaterBrowserWindowOptions(width, height) {
+async function readAppDarkMode() {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      const dark = await mainWindow.webContents.executeJavaScript("localStorage.getItem('ssmCanalDashboard.darkMode') === 'true'", true);
+      updaterDarkMode = !!dark;
+    }
+  } catch (err) {
+    appendLog('Could not read app dark mode for updater: ' + (err && err.stack || err));
+  }
+  return updaterDarkMode;
+}
+function updaterBrowserWindowOptions(width, height, darkMode = updaterDarkMode) {
   const isMac = process.platform === 'darwin';
   const icon = path.join(appRoot(), 'assets', isMac ? 'lock-release.png' : 'lock-release.ico');
-  const dark = nativeTheme.shouldUseDarkColors;
+  const dark = !!darkMode;
   const common = {
     width,
     height,
@@ -239,15 +251,15 @@ function updaterBrowserWindowOptions(width, height) {
   }
   return common;
 }
-function createUpdateWindow(latestVersion) {
+function createUpdateWindow(latestVersion, darkMode = updaterDarkMode) {
   if (updateWindow && !updateWindow.isDestroyed()) return updateWindow;
   updateCancelRequested = false;
   const isMac = process.platform === 'darwin';
   const logoSrc = updaterLogoSrc();
-  updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 500 : 610, isMac ? 154 : 224));
+  updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 500 : 610, isMac ? 154 : 224, darkMode));
   updateWindow.setMenuBarVisibility(false);
 
-  const platformClass = isMac ? 'mac' : 'windows';
+  const platformClass = (isMac ? 'mac' : 'windows') + (darkMode ? ' updater-dark' : '');
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>Locks Tracker</title>
 <style>
 * {box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
@@ -278,19 +290,17 @@ body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helv
 .windows button{width:96px;height:28px;border:1px solid #c7c7c7;background:#fff;font-size:13px;color:#202020}
 .windows button:disabled{color:#8a8a8a;background:#f7f7f7}
 .err .fill{background:#c83b32}.done .fill{background:#4a9b58}
-@media (prefers-color-scheme: dark){
-html,body{background:#17181a!important;color:#f5f5f5!important}
-.mac .body,.windows .body{background:#202124!important;color:#f5f5f5!important}
-.windows .titlebar{background:#202124!important;color:#f5f5f5!important}
-.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
-.mac p,.mac .status,.mac .detail,.windows p,.windows .status,.windows .detail{color:#c9cdd2!important}
-.mac button,.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
-.mac button:hover,.windows button:hover{background:#35383c!important}
-.mac button:disabled,.windows button:disabled{background:#242629!important;color:#7f838a!important}
-.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
-.mac .bar,.windows .bar{background:#303236!important;border-color:#4b4e53!important}
-.logo{background:#111214!important}
-}</style></head><body class="${platformClass}">
+body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
+.updater-dark.mac .body,.updater-dark.windows .body{background:#202124!important;color:#f5f5f5!important}
+.updater-dark.windows .titlebar{background:#202124!important;color:#f5f5f5!important}
+.updater-dark.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
+.updater-dark.mac p,.updater-dark.mac .status,.updater-dark.mac .detail,.updater-dark.windows p,.updater-dark.windows .status,.updater-dark.windows .detail{color:#c9cdd2!important}
+.updater-dark.mac button,.updater-dark.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
+.updater-dark.mac button:hover,.updater-dark.windows button:hover{background:#35383c!important}
+.updater-dark.mac button:disabled,.updater-dark.windows button:disabled{background:#242629!important;color:#7f838a!important}
+.updater-dark.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
+.updater-dark.mac .bar,.updater-dark.windows .bar{background:#303236!important;border-color:#4b4e53!important}
+.updater-dark .logo{background:#111214!important}</style></head><body class="${platformClass}">
 <div class="titlebar">${isMac ? '<span>Locks Tracker</span>' : '<span>Locks Tracker</span>'}</div>
 ${isMac ? `
 <div class="body" id="card">
@@ -373,7 +383,7 @@ function updateProgress(stage, percent, detail, state) {
   updateWindow.webContents.executeJavaScript(script).catch(() => {});
 }
 
-function showUpdaterPromptWindow(latestVersion, hasAsset) {
+function showUpdaterPromptWindow(latestVersion, hasAsset, darkMode = updaterDarkMode) {
   return new Promise(resolve => {
     if (updatePromptWindow && !updatePromptWindow.isDestroyed()) {
       try { updatePromptWindow.focus(); } catch (_) {}
@@ -384,7 +394,7 @@ function showUpdaterPromptWindow(latestVersion, hasAsset) {
     const logoSrc = updaterLogoSrc();
     const width = isMac ? 520 : 610;
     const height = isMac ? 164 : 202;
-    updatePromptWindow = new BrowserWindow(updaterBrowserWindowOptions(width, height));
+    updatePromptWindow = new BrowserWindow(updaterBrowserWindowOptions(width, height, darkMode));
     updatePromptWindow.setMenuBarVisibility(false);
     let settled = false;
     const finish = (choice) => {
@@ -413,19 +423,17 @@ body{font-family:${isMac ? '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helv
 .windows p{font-size:14px;line-height:19px;margin:0}
 .windows .footer{height:50px;border-top:1px solid #d4d4d4;background:#f2f2f2;display:flex;justify-content:flex-end;align-items:center;padding:0 18px;gap:10px}
 .windows button{width:96px;height:28px;border:1px solid #c7c7c7;background:#fff;font-size:13px}
-@media (prefers-color-scheme: dark){
-html,body{background:#17181a!important;color:#f5f5f5!important}
-.mac .body,.windows .body{background:#202124!important;color:#f5f5f5!important}
-.windows .titlebar{background:#202124!important;color:#f5f5f5!important}
-.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
-.mac p,.mac .status,.mac .detail,.windows p,.windows .status,.windows .detail{color:#c9cdd2!important}
-.mac button,.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
-.mac button:hover,.windows button:hover{background:#35383c!important}
-.mac button:disabled,.windows button:disabled{background:#242629!important;color:#7f838a!important}
-.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
-.mac .bar,.windows .bar{background:#303236!important;border-color:#4b4e53!important}
-.logo{background:#111214!important}
-}</style></head><body class="${isMac ? 'mac' : 'windows'}">
+body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
+.updater-dark.mac .body,.updater-dark.windows .body{background:#202124!important;color:#f5f5f5!important}
+.updater-dark.windows .titlebar{background:#202124!important;color:#f5f5f5!important}
+.updater-dark.windows .footer{background:#18191b!important;border-top-color:#3b3d40!important}
+.updater-dark.mac p,.updater-dark.mac .status,.updater-dark.mac .detail,.updater-dark.windows p,.updater-dark.windows .status,.updater-dark.windows .detail{color:#c9cdd2!important}
+.updater-dark.mac button,.updater-dark.windows button{background:#2b2d30!important;border-color:#51545a!important;color:#f5f5f5!important}
+.updater-dark.mac button:hover,.updater-dark.windows button:hover{background:#35383c!important}
+.updater-dark.mac button:disabled,.updater-dark.windows button:disabled{background:#242629!important;color:#7f838a!important}
+.updater-dark.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
+.updater-dark.mac .bar,.updater-dark.windows .bar{background:#303236!important;border-color:#4b4e53!important}
+.updater-dark .logo{background:#111214!important}</style></head><body class="${(isMac ? 'mac' : 'windows') + (darkMode ? ' updater-dark' : '')}">
 <div class="titlebar">${isMac ? '' : '<span>Locks Tracker</span>'}</div>
 <div class="body">
   ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : '<div class="logo"></div>'}
@@ -968,7 +976,9 @@ async function showUpdateAvailablePrompt(latestVersion, installedVersion, releas
   }
   bringAppForwardForUpdatePrompt();
   const hasAsset = !!(asset && (asset.browser_download_url || asset.url));
-  return await showUpdaterPromptWindow(latestVersion, hasAsset);
+  const darkMode = await readAppDarkMode();
+  appendLog(`Updater theme from app setting: ${darkMode ? 'dark' : 'light'}`);
+  return await showUpdaterPromptWindow(latestVersion, hasAsset, darkMode);
 }
 
 async function checkForUpdatesOnStartup(options = {}) {
@@ -1332,7 +1342,7 @@ async function downloadAndInstallUpdate(downloadUrl, latestVersion, config) {
   activeUpdateRequest = null;
 
   try {
-    createUpdateWindow(latestVersion);
+    createUpdateWindow(latestVersion, updaterDarkMode);
     updateProgress('Preparing update', 4, 'Creating temporary update folder...');
     await wait(350);
 
