@@ -73,6 +73,10 @@ jobs:
         shell: pwsh
         run: npm ci
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
       - name: Build full Windows app
         shell: pwsh
         run: |
@@ -89,12 +93,20 @@ jobs:
             Remove-Item (Join-Path $appDir $name) -Recurse -Force -ErrorAction SilentlyContinue
           }
           Compress-Archive -Path (Join-Path $packageDir "*") -DestinationPath "Lock_Release_Windows.zip" -Force
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup compiler was not found." }
+          & $iscc "/DAppVersion=$env:BUILD_VERSION" "installer\locks-tracker.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE" }
+          if (-not (Test-Path "Locks_Tracker_Setup.exe")) { throw "Locks_Tracker_Setup.exe was not created." }
 
       - name: Upload Windows release artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-windows
-          path: Lock_Release_Windows.zip
+          path: |
+            Lock_Release_Windows.zip
+            Locks_Tracker_Setup.exe
           retention-days: 3
 
   mac:
@@ -210,4 +222,4 @@ jobs:
           gh release create "v$BUILD_VERSION" release-artifacts/* \
             --repo Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Download \
             --title "Lock Release v$BUILD_VERSION" \
-            --notes "Cross-platform Lock Release desktop build with Windows, macOS, and the shared automatic update payload."
+            --notes "Cross-platform Locks Tracker desktop release with the Windows setup installer, portable Windows build, macOS builds, and the shared automatic update payload."
