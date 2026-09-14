@@ -22,6 +22,6 @@ Writable live data is stored under the Electron user-data folder rather than ins
 
 ## Releases
 
-Every push to `main` triggers the release workflow. It publishes Windows, universal macOS, and `Lock_Release_Update.zip` assets to `Sault-Ste-Marie-Locks/Locks-Dashboard-Manager-Updates`.
+Every push to `main` triggers the release workflow. It publishes Windows, universal macOS, and `Lock_Release_Update.zip` assets to `Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Download`.
 
 Do not commit generated builds, release archives, logs, or temporary import files.

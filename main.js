@@ -439,7 +439,7 @@ function readJsonSafe(file, fallback) {
 }
 function updateConfig() {
   return readJsonSafe(path.join(appRoot(), 'update-config.json'), {
-    githubRepo: 'Sault-Ste-Marie-Locks/Locks-Dashboard-Manager-Updates',
+    githubRepo: 'Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Download',
     checkOnStartup: true,
     allowPrerelease: false,
     assetName: 'Lock_Release_Update.zip',
@@ -455,7 +455,7 @@ function writeTokenHelp(config) {
   const dir = app.getPath('userData');
   fs.mkdirSync(dir, { recursive: true });
   const helpPath = path.join(dir, 'PRIVATE-GITHUB-UPDATES.txt');
-  const repo = String(config.githubRepo || 'jacpelletie07/Locks-Dashboard-Manager');
+  const repo = String(config.githubRepo || 'Sault-Ste-Marie-Locks/Sault-Locks-Open-Source');
   fs.writeFileSync(helpPath, `Private GitHub updates are enabled for ${repo}.\n\nTo let Lock Release check private releases, create a GitHub fine-grained personal access token with read access to this repo, then save it in one of these places:\n\n1) Environment variable:\n${config.tokenEnvName || 'LOCK_RELEASE_GITHUB_TOKEN'}\n\n2) Token file:\n${tokenPath(config)}\n\nThe file should contain only the token text. Restart Lock Release after adding it.\n`, 'utf8');
   return helpPath;
 }
