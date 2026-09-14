@@ -8,7 +8,7 @@
 #define AppId "{A28D5EA8-7060-4AA5-BF86-51E06D1B6517}"
 
 [Setup]
-AppId={#AppId}
+AppId=SaultSteMarieLocks.LocksTracker
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
