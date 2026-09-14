@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, shell, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, dialog, shell, Tray, Menu, nativeImage, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -35,6 +35,18 @@ function logDir() { const dir = path.join(app.getPath('userData'), 'logs'); fs.m
 function logFile() { return path.join(logDir(), 'electron-app.log'); }
 function appendLog(text) { try { fs.appendFileSync(logFile(), text + '\n'); } catch (_) {} }
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+ipcMain.on('locks-window-control', (event, action) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || win.isDestroyed()) return;
+  if (action === 'minimize') win.minimize();
+  else if (action === 'toggle-maximize') win.isMaximized() ? win.unmaximize() : win.maximize();
+  else if (action === 'close') win.close();
+});
+ipcMain.handle('locks-window-is-maximized', event => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  return !!(win && !win.isDestroyed() && win.isMaximized());
+});
 
 function helperLog(text) {
   try {
@@ -869,7 +881,7 @@ function createTray() {
 
 function createWindow() {
   const icon = path.join(appRoot(), 'assets', 'lock-release.ico');
-  mainWindow = new BrowserWindow({
+  const windowOptions = {
     width: 1420,
     height: 920,
     minWidth: 1050,
@@ -879,8 +891,19 @@ function createWindow() {
     backgroundColor: '#0f172a',
     show: false,
     autoHideMenuBar: true,
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
-  });
+    frame: process.platform === 'darwin',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: path.join(__dirname, 'desktop-preload.js')
+    }
+  };
+  if (process.platform === 'darwin') {
+    windowOptions.titleBarStyle = 'hiddenInset';
+    windowOptions.trafficLightPosition = { x: 14, y: 12 };
+  }
+  mainWindow = new BrowserWindow(windowOptions);
   mainWindow.setMenuBarVisibility(false);
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.webContents.once('did-finish-load', () => {
@@ -904,6 +927,12 @@ function createWindow() {
   });
   mainWindow.on('hide', () => updateTrayMenu());
   mainWindow.on('minimize', () => updateTrayMenu());
+  mainWindow.on('maximize', () => {
+    try { mainWindow.webContents.send('locks-window-maximized', true); } catch (_) {}
+  });
+  mainWindow.on('unmaximize', () => {
+    try { mainWindow.webContents.send('locks-window-maximized', false); } catch (_) {}
+  });
   mainWindow.on('closed', () => { mainWindow = null; updateTrayMenu(); });
 }
 
