@@ -275,7 +275,8 @@ function updaterBrowserWindowOptions(width, height, darkMode = updaterDarkMode) 
     useContentSize: true,
     resizable: false,
     maximizable: false,
-    minimizable: false,
+    minimizable: true,
+    closable: true,
     title: 'Locks Tracker',
     icon,
     backgroundColor: dark ? '#17181a' : '#f4f4f4',
@@ -300,6 +301,7 @@ function createUpdateWindow(latestVersion, darkMode = updaterDarkMode) {
   const isMac = process.platform === 'darwin';
   const logoSrc = updaterLogoSrc();
   updateWindow = new BrowserWindow(updaterBrowserWindowOptions(isMac ? 500 : 610, isMac ? 154 : 224, darkMode));
+  if (process.platform === 'win32') applyWindowsTaskbarIdentity(updateWindow);
   updateWindow.setMenuBarVisibility(false);
 
   const platformClass = (isMac ? 'mac' : 'windows') + (darkMode ? ' updater-dark' : '');
@@ -421,7 +423,7 @@ function updateProgress(stage, percent, detail, state) {
   appendLog(`UPDATE PROGRESS ${Math.round(percent || 0)}% ${stage || ''} ${detail || ''}`);
   if (!updateWindow || updateWindow.isDestroyed()) return;
   const pct = Number(percent) || 0;
-  try { updateWindow.setClosable(!!state || pct < 80); } catch (_) {}
+  try { updateWindow.setClosable(true); updateWindow.setMinimizable(true); } catch (_) {}
   const script = `window.setUpdateProgress(${JSON.stringify(stage || 'Working...')}, ${pct}, ${JSON.stringify(detail || '')}, ${JSON.stringify(state || '')})`;
   updateWindow.webContents.executeJavaScript(script).catch(() => {});
 }
@@ -438,6 +440,7 @@ function showUpdaterPromptWindow(latestVersion, hasAsset, darkMode = updaterDark
     const width = isMac ? 520 : 610;
     const height = isMac ? 164 : 202;
     updatePromptWindow = new BrowserWindow(updaterBrowserWindowOptions(width, height, darkMode));
+    if (process.platform === 'win32') applyWindowsTaskbarIdentity(updatePromptWindow);
     updatePromptWindow.setMenuBarVisibility(false);
     let settled = false;
     const finish = (choice) => {
