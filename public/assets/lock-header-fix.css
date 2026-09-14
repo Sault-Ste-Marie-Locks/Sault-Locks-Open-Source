@@ -156,7 +156,7 @@ body.dark-mode .topbar-single-row .topbar-nav a.active{
 }
 
 /* single-row final positioning */
-html{overflow-y:auto!important;scrollbar-gutter:auto!important;}
+html{overflow-y:scroll!important;scrollbar-gutter:stable!important;}
 @media (min-width:901px){.main{padding-top:0!important;}.topbar.topbar-single-row{top:0!important;margin-top:0!important;height:64px!important;min-height:64px!important;padding-top:0!important;padding-bottom:0!important;}}
 
 /* header height final */
