@@ -132,7 +132,7 @@ begin
   OptionsTitle.Caption := 'Choose Installation Options';
   OptionsTitle.Font.Size := 20;
   OptionsTitle.Font.Style := [fsBold];
-  OptionsTitle.Transparent := True;
+  OptionsTitle.Color := clWhite;
 
   OptionsIntro := TNewStaticText.Create(OptionsOverlay);
   OptionsIntro.Parent := OptionsOverlay;
@@ -144,7 +144,7 @@ begin
   OptionsIntro.WordWrap := True;
   OptionsIntro.Caption := 'Choose any extra shortcuts you want Setup to create for Locks Tracker.';
   OptionsIntro.Font.Size := 11;
-  OptionsIntro.Transparent := True;
+  OptionsIntro.Color := clWhite;
 
   OptionsGroup := TNewStaticText.Create(OptionsOverlay);
   OptionsGroup.Parent := OptionsOverlay;
@@ -154,7 +154,7 @@ begin
   OptionsGroup.Caption := 'Additional shortcuts';
   OptionsGroup.Font.Size := 12;
   OptionsGroup.Font.Style := [fsBold];
-  OptionsGroup.Transparent := True;
+  OptionsGroup.Color := clWhite;
 
   DesktopShortcutCheck := TNewCheckBox.Create(OptionsOverlay);
   DesktopShortcutCheck.Parent := OptionsOverlay;
@@ -177,7 +177,7 @@ begin
   OptionsHint.Caption := 'You can create or remove shortcuts later without reinstalling Locks Tracker.';
   OptionsHint.Font.Size := 9;
   OptionsHint.Font.Color := clGray;
-  OptionsHint.Transparent := True;
+  OptionsHint.Color := clWhite;
 end;
 
 procedure BuildReadyPage;
@@ -227,7 +227,7 @@ begin
   ReadyBrand.Caption := 'Locks Tracker';
   ReadyBrand.Font.Size := 16;
   ReadyBrand.Font.Style := [fsBold];
-  ReadyBrand.Transparent := True;
+  ReadyBrand.Color := ReadySidebar.Color;
 
   ReadyVersion := TNewStaticText.Create(ReadySidebar);
   ReadyVersion.Parent := ReadySidebar;
@@ -238,7 +238,6 @@ begin
   ReadyVersion.Caption := 'Installer v{#AppVersion}';
   ReadyVersion.Font.Size := 10;
   ReadyVersion.Font.Color := $00707070;
-  ReadyVersion.Transparent := True;
 
   ReadyStep1 := TNewStaticText.Create(ReadySidebar);
   ReadyStep1.Parent := ReadySidebar;
@@ -248,7 +247,7 @@ begin
   ReadyStep1.Caption := '1. Ready to Install';
   ReadyStep1.Font.Size := 11;
   ReadyStep1.Font.Style := [fsBold];
-  ReadyStep1.Transparent := True;
+  ReadyStep1.Color := ReadySidebar.Color;
 
   ReadyStep2 := TNewStaticText.Create(ReadySidebar);
   ReadyStep2.Parent := ReadySidebar;
@@ -258,7 +257,6 @@ begin
   ReadyStep2.Caption := '2. Installing Files';
   ReadyStep2.Font.Size := 10;
   ReadyStep2.Font.Color := $00909090;
-  ReadyStep2.Transparent := True;
 
   ReadyStep3 := TNewStaticText.Create(ReadySidebar);
   ReadyStep3.Parent := ReadySidebar;
@@ -268,7 +266,6 @@ begin
   ReadyStep3.Caption := '3. Complete';
   ReadyStep3.Font.Size := 10;
   ReadyStep3.Font.Color := $00A0A0A0;
-  ReadyStep3.Transparent := True;
 
   ContentLeft := SidebarWidth + ScaleX(28);
   ContentWidth := ReadyOverlay.Width - ContentLeft - ScaleX(28);
@@ -281,7 +278,7 @@ begin
   ReadyTitle.Caption := 'Ready to Install';
   ReadyTitle.Font.Size := 22;
   ReadyTitle.Font.Style := [fsBold];
-  ReadyTitle.Transparent := True;
+  ReadyTitle.Color := clWhite;
 
   ReadyIntro := TNewStaticText.Create(ReadyOverlay);
   ReadyIntro.Parent := ReadyOverlay;
@@ -293,7 +290,7 @@ begin
   ReadyIntro.WordWrap := True;
   ReadyIntro.Caption := 'Setup is now ready to install Locks Tracker on your computer.';
   ReadyIntro.Font.Size := 11;
-  ReadyIntro.Transparent := True;
+  ReadyIntro.Color := clWhite;
 
   ReadyInstruction := TNewStaticText.Create(ReadyOverlay);
   ReadyInstruction.Parent := ReadyOverlay;
@@ -302,7 +299,7 @@ begin
   ReadyInstruction.Width := ContentWidth;
   ReadyInstruction.Caption := 'Click Install to continue with the installation.';
   ReadyInstruction.Font.Size := 11;
-  ReadyInstruction.Transparent := True;
+  ReadyInstruction.Color := clWhite;
 
   ReadySummary := TPanel.Create(ReadyOverlay);
   ReadySummary.Parent := ReadyOverlay;
@@ -321,7 +318,7 @@ begin
   ReadySummaryTitle.Caption := 'Installation Summary';
   ReadySummaryTitle.Font.Size := 12;
   ReadySummaryTitle.Font.Style := [fsBold];
-  ReadySummaryTitle.Transparent := True;
+  ReadySummaryTitle.Color := ReadySummary.Color;
 
   ReadyDestination := TNewStaticText.Create(ReadySummary);
   ReadyDestination.Parent := ReadySummary;
@@ -331,7 +328,7 @@ begin
   ReadyDestination.AutoSize := False;
   ReadyDestination.Height := ScaleY(22);
   ReadyDestination.Font.Size := 10;
-  ReadyDestination.Transparent := True;
+  ReadyDestination.Color := ReadySummary.Color;
 
   ReadyVersionLine := TNewStaticText.Create(ReadySummary);
   ReadyVersionLine.Parent := ReadySummary;
@@ -340,7 +337,7 @@ begin
   ReadyVersionLine.Width := ReadyDestination.Width;
   ReadyVersionLine.Caption := 'Version to install: v{#AppVersion}';
   ReadyVersionLine.Font.Size := 10;
-  ReadyVersionLine.Transparent := True;
+  ReadyVersionLine.Color := ReadySummary.Color;
 
   ReadyTimeLine := TNewStaticText.Create(ReadySummary);
   ReadyTimeLine.Parent := ReadySummary;
@@ -349,7 +346,7 @@ begin
   ReadyTimeLine.Width := ReadyDestination.Width;
   ReadyTimeLine.Caption := 'Estimated time: About 2 minutes';
   ReadyTimeLine.Font.Size := 10;
-  ReadyTimeLine.Transparent := True;
+  ReadyTimeLine.Color := ReadySummary.Color;
 end;
 
 procedure InitializeWizard;
