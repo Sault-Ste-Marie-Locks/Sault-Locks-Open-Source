@@ -71,6 +71,24 @@ var
   OptionsHint: TNewStaticText;
   DesktopShortcutCheck: TNewCheckBox;
 
+  WelcomeOverlay: TPanel;
+  WelcomeSidebar: TPanel;
+  WelcomeLogo: TBitmapImage;
+  WelcomeBrand: TNewStaticText;
+  WelcomeVersion: TNewStaticText;
+  WelcomeStep1: TNewStaticText;
+  WelcomeStep2: TNewStaticText;
+  WelcomeStep3: TNewStaticText;
+  WelcomeStep4: TNewStaticText;
+  WelcomeTitle: TNewStaticText;
+  WelcomeIntro: TNewStaticText;
+  WelcomeInfo: TPanel;
+  WelcomeInfoTitle: TNewStaticText;
+  WelcomeInfo1: TNewStaticText;
+  WelcomeInfo2: TNewStaticText;
+  WelcomeInfo3: TNewStaticText;
+  WelcomeContinue: TNewStaticText;
+
   ReadyOverlay: TPanel;
   ReadySidebar: TPanel;
   ReadyLogo: TBitmapImage;
@@ -88,6 +106,186 @@ var
   ReadyVersionLine: TNewStaticText;
   ReadyTimeLine: TNewStaticText;
 
+procedure BuildWelcomePage;
+var
+  SidebarWidth: Integer;
+  ContentLeft: Integer;
+  ContentWidth: Integer;
+begin
+  ExtractTemporaryFile('installer-logo.bmp');
+
+  WelcomeOverlay := TPanel.Create(WizardForm);
+  WelcomeOverlay.Parent := WizardForm;
+  WelcomeOverlay.Left := 0;
+  WelcomeOverlay.Top := 0;
+  WelcomeOverlay.Width := WizardForm.ClientWidth;
+  WelcomeOverlay.Height := WizardForm.Bevel.Top;
+  WelcomeOverlay.BevelOuter := bvNone;
+  WelcomeOverlay.Color := clWhite;
+  WelcomeOverlay.Visible := False;
+
+  SidebarWidth := ScaleX(210);
+  WelcomeSidebar := TPanel.Create(WelcomeOverlay);
+  WelcomeSidebar.Parent := WelcomeOverlay;
+  WelcomeSidebar.Left := 0;
+  WelcomeSidebar.Top := 0;
+  WelcomeSidebar.Width := SidebarWidth;
+  WelcomeSidebar.Height := WelcomeOverlay.Height;
+  WelcomeSidebar.BevelOuter := bvNone;
+  WelcomeSidebar.Color := $00F5F7FA;
+
+  WelcomeLogo := TBitmapImage.Create(WelcomeSidebar);
+  WelcomeLogo.Parent := WelcomeSidebar;
+  WelcomeLogo.Width := ScaleX(98);
+  WelcomeLogo.Height := ScaleY(98);
+  WelcomeLogo.Left := (SidebarWidth - WelcomeLogo.Width) div 2;
+  WelcomeLogo.Top := ScaleY(46);
+  WelcomeLogo.Stretch := True;
+  WelcomeLogo.Bitmap.LoadFromFile(ExpandConstant('{tmp}\installer-logo.bmp'));
+
+  WelcomeBrand := TNewStaticText.Create(WelcomeSidebar);
+  WelcomeBrand.Parent := WelcomeSidebar;
+  WelcomeBrand.Left := ScaleX(16);
+  WelcomeBrand.Top := WelcomeLogo.Top + WelcomeLogo.Height + ScaleY(14);
+  WelcomeBrand.Width := SidebarWidth - ScaleX(32);
+  WelcomeBrand.Alignment := taCenter;
+  WelcomeBrand.Caption := 'Locks Tracker';
+  WelcomeBrand.Font.Size := 16;
+  WelcomeBrand.Font.Style := [fsBold];
+  WelcomeBrand.Color := WelcomeSidebar.Color;
+
+  WelcomeVersion := TNewStaticText.Create(WelcomeSidebar);
+  WelcomeVersion.Parent := WelcomeSidebar;
+  WelcomeVersion.Left := ScaleX(16);
+  WelcomeVersion.Top := WelcomeBrand.Top + ScaleY(30);
+  WelcomeVersion.Width := SidebarWidth - ScaleX(32);
+  WelcomeVersion.Alignment := taCenter;
+  WelcomeVersion.Caption := 'Installer v{#AppVersion}';
+  WelcomeVersion.Font.Size := 10;
+  WelcomeVersion.Font.Color := $00707070;
+  WelcomeVersion.Color := WelcomeSidebar.Color;
+
+  WelcomeStep1 := TNewStaticText.Create(WelcomeSidebar);
+  WelcomeStep1.Parent := WelcomeSidebar;
+  WelcomeStep1.Left := ScaleX(36);
+  WelcomeStep1.Top := ScaleY(246);
+  WelcomeStep1.Width := SidebarWidth - ScaleX(50);
+  WelcomeStep1.Caption := '1. Welcome';
+  WelcomeStep1.Font.Size := 11;
+  WelcomeStep1.Font.Style := [fsBold];
+  WelcomeStep1.Color := WelcomeSidebar.Color;
+
+  WelcomeStep2 := TNewStaticText.Create(WelcomeSidebar);
+  WelcomeStep2.Parent := WelcomeSidebar;
+  WelcomeStep2.Left := WelcomeStep1.Left;
+  WelcomeStep2.Top := WelcomeStep1.Top + ScaleY(34);
+  WelcomeStep2.Width := WelcomeStep1.Width;
+  WelcomeStep2.Caption := '2. Options';
+  WelcomeStep2.Font.Size := 10;
+  WelcomeStep2.Font.Color := $00909090;
+  WelcomeStep2.Color := WelcomeSidebar.Color;
+
+  WelcomeStep3 := TNewStaticText.Create(WelcomeSidebar);
+  WelcomeStep3.Parent := WelcomeSidebar;
+  WelcomeStep3.Left := WelcomeStep1.Left;
+  WelcomeStep3.Top := WelcomeStep2.Top + ScaleY(34);
+  WelcomeStep3.Width := WelcomeStep1.Width;
+  WelcomeStep3.Caption := '3. Install';
+  WelcomeStep3.Font.Size := 10;
+  WelcomeStep3.Font.Color := $00909090;
+  WelcomeStep3.Color := WelcomeSidebar.Color;
+
+  WelcomeStep4 := TNewStaticText.Create(WelcomeSidebar);
+  WelcomeStep4.Parent := WelcomeSidebar;
+  WelcomeStep4.Left := WelcomeStep1.Left;
+  WelcomeStep4.Top := WelcomeStep3.Top + ScaleY(34);
+  WelcomeStep4.Width := WelcomeStep1.Width;
+  WelcomeStep4.Caption := '4. Complete';
+  WelcomeStep4.Font.Size := 10;
+  WelcomeStep4.Font.Color := $00A0A0A0;
+  WelcomeStep4.Color := WelcomeSidebar.Color;
+
+  ContentLeft := SidebarWidth + ScaleX(30);
+  ContentWidth := WelcomeOverlay.Width - ContentLeft - ScaleX(30);
+
+  WelcomeTitle := TNewStaticText.Create(WelcomeOverlay);
+  WelcomeTitle.Parent := WelcomeOverlay;
+  WelcomeTitle.Left := ContentLeft;
+  WelcomeTitle.Top := ScaleY(44);
+  WelcomeTitle.Width := ContentWidth;
+  WelcomeTitle.Caption := 'Welcome to Locks Tracker';
+  WelcomeTitle.Font.Size := 22;
+  WelcomeTitle.Font.Style := [fsBold];
+  WelcomeTitle.Color := clWhite;
+
+  WelcomeIntro := TNewStaticText.Create(WelcomeOverlay);
+  WelcomeIntro.Parent := WelcomeOverlay;
+  WelcomeIntro.Left := ContentLeft;
+  WelcomeIntro.Top := WelcomeTitle.Top + ScaleY(52);
+  WelcomeIntro.Width := ContentWidth;
+  WelcomeIntro.AutoSize := False;
+  WelcomeIntro.Height := ScaleY(60);
+  WelcomeIntro.WordWrap := True;
+  WelcomeIntro.Caption := 'This setup wizard will install Locks Tracker on your computer and prepare it for automatic updates.';
+  WelcomeIntro.Font.Size := 11;
+  WelcomeIntro.Color := clWhite;
+
+  WelcomeInfo := TPanel.Create(WelcomeOverlay);
+  WelcomeInfo.Parent := WelcomeOverlay;
+  WelcomeInfo.Left := ContentLeft;
+  WelcomeInfo.Top := WelcomeIntro.Top + ScaleY(76);
+  WelcomeInfo.Width := ContentWidth;
+  WelcomeInfo.Height := ScaleY(146);
+  WelcomeInfo.Color := $00FAFAFA;
+  WelcomeInfo.BevelOuter := bvLowered;
+
+  WelcomeInfoTitle := TNewStaticText.Create(WelcomeInfo);
+  WelcomeInfoTitle.Parent := WelcomeInfo;
+  WelcomeInfoTitle.Left := ScaleX(18);
+  WelcomeInfoTitle.Top := ScaleY(14);
+  WelcomeInfoTitle.Width := WelcomeInfo.Width - ScaleX(36);
+  WelcomeInfoTitle.Caption := 'Setup will:';
+  WelcomeInfoTitle.Font.Size := 12;
+  WelcomeInfoTitle.Font.Style := [fsBold];
+  WelcomeInfoTitle.Color := WelcomeInfo.Color;
+
+  WelcomeInfo1 := TNewStaticText.Create(WelcomeInfo);
+  WelcomeInfo1.Parent := WelcomeInfo;
+  WelcomeInfo1.Left := ScaleX(26);
+  WelcomeInfo1.Top := ScaleY(50);
+  WelcomeInfo1.Width := WelcomeInfo.Width - ScaleX(52);
+  WelcomeInfo1.Caption := '- Install the Locks Tracker desktop app';
+  WelcomeInfo1.Font.Size := 10;
+  WelcomeInfo1.Color := WelcomeInfo.Color;
+
+  WelcomeInfo2 := TNewStaticText.Create(WelcomeInfo);
+  WelcomeInfo2.Parent := WelcomeInfo;
+  WelcomeInfo2.Left := WelcomeInfo1.Left;
+  WelcomeInfo2.Top := WelcomeInfo1.Top + ScaleY(28);
+  WelcomeInfo2.Width := WelcomeInfo1.Width;
+  WelcomeInfo2.Caption := '- Keep automatic updates enabled';
+  WelcomeInfo2.Font.Size := 10;
+  WelcomeInfo2.Color := WelcomeInfo.Color;
+
+  WelcomeInfo3 := TNewStaticText.Create(WelcomeInfo);
+  WelcomeInfo3.Parent := WelcomeInfo;
+  WelcomeInfo3.Left := WelcomeInfo1.Left;
+  WelcomeInfo3.Top := WelcomeInfo2.Top + ScaleY(28);
+  WelcomeInfo3.Width := WelcomeInfo1.Width;
+  WelcomeInfo3.Caption := '- Let you choose whether to create a desktop shortcut';
+  WelcomeInfo3.Font.Size := 10;
+  WelcomeInfo3.Color := WelcomeInfo.Color;
+
+  WelcomeContinue := TNewStaticText.Create(WelcomeOverlay);
+  WelcomeContinue.Parent := WelcomeOverlay;
+  WelcomeContinue.Left := ContentLeft;
+  WelcomeContinue.Top := WelcomeInfo.Top + WelcomeInfo.Height + ScaleY(24);
+  WelcomeContinue.Width := ContentWidth;
+  WelcomeContinue.Caption := 'Click Next to continue.';
+  WelcomeContinue.Font.Size := 10;
+  WelcomeContinue.Font.Color := $00707070;
+  WelcomeContinue.Color := clWhite;
+end;
 function ShouldCreateDesktopShortcut: Boolean;
 begin
   Result := DesktopShortcutCheck.Checked;
@@ -238,6 +436,7 @@ begin
   ReadyVersion.Caption := 'Installer v{#AppVersion}';
   ReadyVersion.Font.Size := 10;
   ReadyVersion.Font.Color := $00707070;
+  ReadyVersion.Color := ReadySidebar.Color;
 
   ReadyStep1 := TNewStaticText.Create(ReadySidebar);
   ReadyStep1.Parent := ReadySidebar;
@@ -257,6 +456,7 @@ begin
   ReadyStep2.Caption := '2. Installing Files';
   ReadyStep2.Font.Size := 10;
   ReadyStep2.Font.Color := $00909090;
+  ReadyStep2.Color := ReadySidebar.Color;
 
   ReadyStep3 := TNewStaticText.Create(ReadySidebar);
   ReadyStep3.Parent := ReadySidebar;
@@ -266,6 +466,7 @@ begin
   ReadyStep3.Caption := '3. Complete';
   ReadyStep3.Font.Size := 10;
   ReadyStep3.Font.Color := $00A0A0A0;
+  ReadyStep3.Color := ReadySidebar.Color;
 
   ContentLeft := SidebarWidth + ScaleX(28);
   ContentWidth := ReadyOverlay.Width - ContentLeft - ScaleX(28);
@@ -351,12 +552,19 @@ end;
 
 procedure InitializeWizard;
 begin
+  BuildWelcomePage;
   BuildOptionsPage;
   BuildReadyPage;
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
+  if Assigned(WelcomeOverlay) then
+  begin
+    WelcomeOverlay.Visible := (CurPageID = wpWelcome);
+    if WelcomeOverlay.Visible then
+      WelcomeOverlay.BringToFront;
+  end;
   if Assigned(OptionsOverlay) then
   begin
     OptionsOverlay.Visible := (CurPageID = OptionsPage.ID);
