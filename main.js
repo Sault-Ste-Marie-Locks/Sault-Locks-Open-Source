@@ -592,6 +592,27 @@ function compareVersions(a, b) {
   }
   return 0;
 }
+function highestVersionRelease(releases, allowPrerelease) {
+  const valid = (Array.isArray(releases) ? releases : []).filter(release => {
+    if (!release || release.draft) return false;
+    if (!allowPrerelease && release.prerelease) return false;
+    return normalizeVersion(release.tag_name || release.name || '0.0.0') !== '0.0.0';
+  });
+  valid.sort((a, b) => compareVersions(
+    b.tag_name || b.name || '0.0.0',
+    a.tag_name || a.name || '0.0.0'
+  ));
+  return valid[0] || null;
+}
+
+async function getHighestVersionRelease(repo, config) {
+  const api = 'https://api.github.com/repos/' + repo + '/releases?per_page=100&cacheBust=' + Date.now();
+  appendLog('Checking all recent releases for highest version: ' + api);
+  const releases = await getJson(api, githubHeaders(config));
+  const release = highestVersionRelease(releases, !!config.allowPrerelease);
+  if (!release) throw new Error('No usable GitHub release was found.');
+  return release;
+}
 function getJson(url, headers = {}) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
@@ -1114,10 +1135,9 @@ async function checkForUpdatesOnStartup(options = {}) {
       }
       return;
     }
-    const api = `https://api.github.com/repos/${repo}/releases/latest?cacheBust=${Date.now()}`;
-    appendLog(`Checking for updates: ${api}; source=${source}; force=${force}`);
+    appendLog(`Checking for newest available version; source=${source}; force=${force}`);
     let release;
-    try { release = await getJson(api, githubHeaders(config)); }
+    try { release = await getHighestVersionRelease(repo, config); }
     catch (err) {
       appendLog('Update check failed: ' + (err && err.stack || err));
       if (force && config.privateRepo && (err.statusCode === 401 || err.statusCode === 403 || err.statusCode === 404)) {
@@ -1132,7 +1152,6 @@ async function checkForUpdatesOnStartup(options = {}) {
       }
       return;
     }
-    if (!config.allowPrerelease && release.prerelease) return;
     const latestVersion = normalizeVersion(release.tag_name || release.name || '0.0.0');
     const installedVersion = normalizeVersion(currentVersion());
     appendLog(`Installed version: ${installedVersion}; latest release: ${latestVersion}; appRoot=${appRoot()}; source=${source}`);
