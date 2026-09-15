@@ -397,7 +397,7 @@ begin
   ReadyOverlay.Color := clWhite;
   ReadyOverlay.Visible := False;
 
-  SidebarWidth := ScaleX(210);
+  SidebarWidth := (ReadyOverlay.Width * 28) div 100;
 
   ReadySidebar := TPanel.Create(ReadyOverlay);
   ReadySidebar.Parent := ReadyOverlay;
@@ -410,144 +410,144 @@ begin
 
   ReadyLogo := TBitmapImage.Create(ReadySidebar);
   ReadyLogo.Parent := ReadySidebar;
-  ReadyLogo.Width := ScaleX(98);
-  ReadyLogo.Height := ScaleY(98);
+  ReadyLogo.Width := (SidebarWidth * 58) div 100;
+  ReadyLogo.Height := ReadyLogo.Width;
   ReadyLogo.Left := (SidebarWidth - ReadyLogo.Width) div 2;
-  ReadyLogo.Top := ScaleY(48);
+  ReadyLogo.Top := ScaleY(26);
   ReadyLogo.Stretch := True;
   ReadyLogo.Bitmap.LoadFromFile(ExpandConstant('{tmp}\installer-logo.bmp'));
 
   ReadyBrand := TNewStaticText.Create(ReadySidebar);
   ReadyBrand.Parent := ReadySidebar;
   ReadyBrand.Left := ScaleX(16);
-  ReadyBrand.Top := ReadyLogo.Top + ReadyLogo.Height + ScaleY(14);
+  ReadyBrand.Top := ReadyLogo.Top + ReadyLogo.Height + ScaleY(10);
   ReadyBrand.Width := SidebarWidth - ScaleX(32);
   ReadyBrand.Alignment := taCenter;
   ReadyBrand.Caption := 'Locks Tracker';
-  ReadyBrand.Font.Size := 16;
+  ReadyBrand.Font.Size := 13;
   ReadyBrand.Font.Style := [fsBold];
   ReadyBrand.Color := ReadySidebar.Color;
 
   ReadyVersion := TNewStaticText.Create(ReadySidebar);
   ReadyVersion.Parent := ReadySidebar;
   ReadyVersion.Left := ScaleX(16);
-  ReadyVersion.Top := ReadyBrand.Top + ScaleY(30);
+  ReadyVersion.Top := ReadyBrand.Top + ScaleY(25);
   ReadyVersion.Width := SidebarWidth - ScaleX(32);
   ReadyVersion.Alignment := taCenter;
   ReadyVersion.Caption := 'Installer v{#AppVersion}';
-  ReadyVersion.Font.Size := 10;
+  ReadyVersion.Font.Size := 9;
   ReadyVersion.Font.Color := $00707070;
   ReadyVersion.Color := ReadySidebar.Color;
 
   ReadyStep1 := TNewStaticText.Create(ReadySidebar);
   ReadyStep1.Parent := ReadySidebar;
-  ReadyStep1.Left := ScaleX(36);
-  ReadyStep1.Top := ScaleY(248);
+  ReadyStep1.Left := ScaleX(28);
+  ReadyStep1.Top := (ReadySidebar.Height * 58) div 100;
   ReadyStep1.Width := SidebarWidth - ScaleX(50);
   ReadyStep1.Caption := '1. Ready to Install';
-  ReadyStep1.Font.Size := 11;
+  ReadyStep1.Font.Size := 9;
   ReadyStep1.Font.Style := [fsBold];
   ReadyStep1.Color := ReadySidebar.Color;
 
   ReadyStep2 := TNewStaticText.Create(ReadySidebar);
   ReadyStep2.Parent := ReadySidebar;
   ReadyStep2.Left := ReadyStep1.Left;
-  ReadyStep2.Top := ReadyStep1.Top + ScaleY(36);
+  ReadyStep2.Top := ReadyStep1.Top + ScaleY(32);
   ReadyStep2.Width := ReadyStep1.Width;
   ReadyStep2.Caption := '2. Installing Files';
-  ReadyStep2.Font.Size := 10;
+  ReadyStep2.Font.Size := 9;
   ReadyStep2.Font.Color := $00909090;
   ReadyStep2.Color := ReadySidebar.Color;
 
   ReadyStep3 := TNewStaticText.Create(ReadySidebar);
   ReadyStep3.Parent := ReadySidebar;
   ReadyStep3.Left := ReadyStep1.Left;
-  ReadyStep3.Top := ReadyStep2.Top + ScaleY(36);
+  ReadyStep3.Top := ReadyStep2.Top + ScaleY(32);
   ReadyStep3.Width := ReadyStep1.Width;
   ReadyStep3.Caption := '3. Complete';
-  ReadyStep3.Font.Size := 10;
+  ReadyStep3.Font.Size := 9;
   ReadyStep3.Font.Color := $00A0A0A0;
   ReadyStep3.Color := ReadySidebar.Color;
 
-  ContentLeft := SidebarWidth + ScaleX(28);
-  ContentWidth := ReadyOverlay.Width - ContentLeft - ScaleX(28);
+  ContentLeft := SidebarWidth + ScaleX(24);
+  ContentWidth := ReadyOverlay.Width - ContentLeft - ScaleX(24);
 
   ReadyTitle := TNewStaticText.Create(ReadyOverlay);
   ReadyTitle.Parent := ReadyOverlay;
   ReadyTitle.Left := ContentLeft;
-  ReadyTitle.Top := ScaleY(42);
+  ReadyTitle.Top := ScaleY(24);
   ReadyTitle.Width := ContentWidth;
   ReadyTitle.Caption := 'Ready to Install';
-  ReadyTitle.Font.Size := 22;
+  ReadyTitle.Font.Size := 18;
   ReadyTitle.Font.Style := [fsBold];
   ReadyTitle.Color := clWhite;
 
   ReadyIntro := TNewStaticText.Create(ReadyOverlay);
   ReadyIntro.Parent := ReadyOverlay;
   ReadyIntro.Left := ContentLeft;
-  ReadyIntro.Top := ReadyTitle.Top + ScaleY(48);
+  ReadyIntro.Top := ReadyTitle.Top + ScaleY(42);
   ReadyIntro.Width := ContentWidth;
   ReadyIntro.AutoSize := False;
-  ReadyIntro.Height := ScaleY(52);
+  ReadyIntro.Height := ScaleY(42);
   ReadyIntro.WordWrap := True;
   ReadyIntro.Caption := 'Setup is now ready to install Locks Tracker on your computer.';
-  ReadyIntro.Font.Size := 11;
+  ReadyIntro.Font.Size := 10;
   ReadyIntro.Color := clWhite;
 
   ReadyInstruction := TNewStaticText.Create(ReadyOverlay);
   ReadyInstruction.Parent := ReadyOverlay;
   ReadyInstruction.Left := ContentLeft;
-  ReadyInstruction.Top := ReadyIntro.Top + ScaleY(64);
+  ReadyInstruction.Top := ReadyIntro.Top + ScaleY(52);
   ReadyInstruction.Width := ContentWidth;
   ReadyInstruction.Caption := 'Click Install to continue with the installation.';
-  ReadyInstruction.Font.Size := 11;
+  ReadyInstruction.Font.Size := 10;
   ReadyInstruction.Color := clWhite;
 
   ReadySummary := TPanel.Create(ReadyOverlay);
   ReadySummary.Parent := ReadyOverlay;
   ReadySummary.Left := ContentLeft;
-  ReadySummary.Top := ReadyInstruction.Top + ScaleY(48);
+  ReadySummary.Top := ReadyInstruction.Top + ScaleY(38);
   ReadySummary.Width := ContentWidth;
-  ReadySummary.Height := ScaleY(142);
+  ReadySummary.Height := ScaleY(126);
   ReadySummary.Color := $00FAFAFA;
   ReadySummary.BevelOuter := bvLowered;
 
   ReadySummaryTitle := TNewStaticText.Create(ReadySummary);
   ReadySummaryTitle.Parent := ReadySummary;
   ReadySummaryTitle.Left := ScaleX(18);
-  ReadySummaryTitle.Top := ScaleY(14);
+  ReadySummaryTitle.Top := ScaleY(12);
   ReadySummaryTitle.Width := ReadySummary.Width - ScaleX(36);
   ReadySummaryTitle.Caption := 'Installation Summary';
-  ReadySummaryTitle.Font.Size := 12;
+  ReadySummaryTitle.Font.Size := 10;
   ReadySummaryTitle.Font.Style := [fsBold];
   ReadySummaryTitle.Color := ReadySummary.Color;
 
   ReadyDestination := TNewStaticText.Create(ReadySummary);
   ReadyDestination.Parent := ReadySummary;
-  ReadyDestination.Left := ScaleX(26);
-  ReadyDestination.Top := ScaleY(50);
+  ReadyDestination.Left := ScaleX(24);
+  ReadyDestination.Top := ScaleY(44);
   ReadyDestination.Width := ReadySummary.Width - ScaleX(52);
   ReadyDestination.AutoSize := False;
   ReadyDestination.Height := ScaleY(22);
-  ReadyDestination.Font.Size := 10;
+  ReadyDestination.Font.Size := 9;
   ReadyDestination.Color := ReadySummary.Color;
 
   ReadyVersionLine := TNewStaticText.Create(ReadySummary);
   ReadyVersionLine.Parent := ReadySummary;
   ReadyVersionLine.Left := ReadyDestination.Left;
-  ReadyVersionLine.Top := ReadyDestination.Top + ScaleY(28);
+  ReadyVersionLine.Top := ReadyDestination.Top + ScaleY(25);
   ReadyVersionLine.Width := ReadyDestination.Width;
   ReadyVersionLine.Caption := 'Version to install: v{#AppVersion}';
-  ReadyVersionLine.Font.Size := 10;
+  ReadyVersionLine.Font.Size := 9;
   ReadyVersionLine.Color := ReadySummary.Color;
 
   ReadyTimeLine := TNewStaticText.Create(ReadySummary);
   ReadyTimeLine.Parent := ReadySummary;
   ReadyTimeLine.Left := ReadyDestination.Left;
-  ReadyTimeLine.Top := ReadyVersionLine.Top + ScaleY(28);
+  ReadyTimeLine.Top := ReadyVersionLine.Top + ScaleY(25);
   ReadyTimeLine.Width := ReadyDestination.Width;
   ReadyTimeLine.Caption := 'Estimated time: About 2 minutes';
-  ReadyTimeLine.Font.Size := 10;
+  ReadyTimeLine.Font.Size := 9;
   ReadyTimeLine.Color := ReadySummary.Color;
 end;
 
