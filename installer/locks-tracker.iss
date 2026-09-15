@@ -125,7 +125,8 @@ begin
   WelcomeOverlay.Color := clWhite;
   WelcomeOverlay.Visible := False;
 
-  SidebarWidth := ScaleX(210);
+  SidebarWidth := (WelcomeOverlay.Width * 29) div 100;
+
   WelcomeSidebar := TPanel.Create(WelcomeOverlay);
   WelcomeSidebar.Parent := WelcomeOverlay;
   WelcomeSidebar.Left := 0;
@@ -133,47 +134,51 @@ begin
   WelcomeSidebar.Width := SidebarWidth;
   WelcomeSidebar.Height := WelcomeOverlay.Height;
   WelcomeSidebar.BevelOuter := bvNone;
-  WelcomeSidebar.Color := $00F5F7FA;
+  WelcomeSidebar.Color := $00FAF7F3;
 
   WelcomeLogo := TBitmapImage.Create(WelcomeSidebar);
   WelcomeLogo.Parent := WelcomeSidebar;
-  WelcomeLogo.Width := ScaleX(98);
-  WelcomeLogo.Height := ScaleY(98);
+  WelcomeLogo.Width := (SidebarWidth * 52) div 100;
+  WelcomeLogo.Height := WelcomeLogo.Width;
   WelcomeLogo.Left := (SidebarWidth - WelcomeLogo.Width) div 2;
-  WelcomeLogo.Top := ScaleY(46);
+  WelcomeLogo.Top := ScaleY(34);
   WelcomeLogo.Stretch := True;
   WelcomeLogo.Bitmap.LoadFromFile(ExpandConstant('{tmp}\installer-logo.bmp'));
 
   WelcomeBrand := TNewStaticText.Create(WelcomeSidebar);
   WelcomeBrand.Parent := WelcomeSidebar;
-  WelcomeBrand.Left := ScaleX(16);
-  WelcomeBrand.Top := WelcomeLogo.Top + WelcomeLogo.Height + ScaleY(14);
-  WelcomeBrand.Width := SidebarWidth - ScaleX(32);
+  WelcomeBrand.Left := ScaleX(14);
+  WelcomeBrand.Top := WelcomeLogo.Top + WelcomeLogo.Height + ScaleY(12);
+  WelcomeBrand.Width := SidebarWidth - ScaleX(28);
   WelcomeBrand.Alignment := taCenter;
   WelcomeBrand.Caption := 'Locks Tracker';
-  WelcomeBrand.Font.Size := 16;
+  WelcomeBrand.Font.Name := 'Segoe UI';
+  WelcomeBrand.Font.Size := 17;
   WelcomeBrand.Font.Style := [fsBold];
   WelcomeBrand.Color := WelcomeSidebar.Color;
 
   WelcomeVersion := TNewStaticText.Create(WelcomeSidebar);
   WelcomeVersion.Parent := WelcomeSidebar;
-  WelcomeVersion.Left := ScaleX(16);
-  WelcomeVersion.Top := WelcomeBrand.Top + ScaleY(30);
-  WelcomeVersion.Width := SidebarWidth - ScaleX(32);
+  WelcomeVersion.Left := ScaleX(14);
+  WelcomeVersion.Top := WelcomeBrand.Top + ScaleY(31);
+  WelcomeVersion.Width := SidebarWidth - ScaleX(28);
   WelcomeVersion.Alignment := taCenter;
   WelcomeVersion.Caption := 'Installer v{#AppVersion}';
-  WelcomeVersion.Font.Size := 10;
-  WelcomeVersion.Font.Color := $00707070;
+  WelcomeVersion.Font.Name := 'Segoe UI';
+  WelcomeVersion.Font.Size := 9;
+  WelcomeVersion.Font.Color := $00747B84;
   WelcomeVersion.Color := WelcomeSidebar.Color;
 
   WelcomeStep1 := TNewStaticText.Create(WelcomeSidebar);
   WelcomeStep1.Parent := WelcomeSidebar;
-  WelcomeStep1.Left := ScaleX(36);
-  WelcomeStep1.Top := ScaleY(246);
-  WelcomeStep1.Width := SidebarWidth - ScaleX(50);
-  WelcomeStep1.Caption := '1. Welcome';
-  WelcomeStep1.Font.Size := 11;
+  WelcomeStep1.Left := ScaleX(27);
+  WelcomeStep1.Top := (WelcomeSidebar.Height * 57) div 100;
+  WelcomeStep1.Width := SidebarWidth - ScaleX(40);
+  WelcomeStep1.Caption := '●  1. Welcome';
+  WelcomeStep1.Font.Name := 'Segoe UI';
+  WelcomeStep1.Font.Size := 10;
   WelcomeStep1.Font.Style := [fsBold];
+  WelcomeStep1.Font.Color := $00E98B17;
   WelcomeStep1.Color := WelcomeSidebar.Color;
 
   WelcomeStep2 := TNewStaticText.Create(WelcomeSidebar);
@@ -181,9 +186,10 @@ begin
   WelcomeStep2.Left := WelcomeStep1.Left;
   WelcomeStep2.Top := WelcomeStep1.Top + ScaleY(34);
   WelcomeStep2.Width := WelcomeStep1.Width;
-  WelcomeStep2.Caption := '2. Options';
-  WelcomeStep2.Font.Size := 10;
-  WelcomeStep2.Font.Color := $00909090;
+  WelcomeStep2.Caption := '○  2. Installation Options';
+  WelcomeStep2.Font.Name := 'Segoe UI';
+  WelcomeStep2.Font.Size := 9;
+  WelcomeStep2.Font.Color := $00969CA4;
   WelcomeStep2.Color := WelcomeSidebar.Color;
 
   WelcomeStep3 := TNewStaticText.Create(WelcomeSidebar);
@@ -191,9 +197,10 @@ begin
   WelcomeStep3.Left := WelcomeStep1.Left;
   WelcomeStep3.Top := WelcomeStep2.Top + ScaleY(34);
   WelcomeStep3.Width := WelcomeStep1.Width;
-  WelcomeStep3.Caption := '3. Install';
-  WelcomeStep3.Font.Size := 10;
-  WelcomeStep3.Font.Color := $00909090;
+  WelcomeStep3.Caption := '○  3. Ready to Install';
+  WelcomeStep3.Font.Name := 'Segoe UI';
+  WelcomeStep3.Font.Size := 9;
+  WelcomeStep3.Font.Color := $00969CA4;
   WelcomeStep3.Color := WelcomeSidebar.Color;
 
   WelcomeStep4 := TNewStaticText.Create(WelcomeSidebar);
@@ -201,21 +208,25 @@ begin
   WelcomeStep4.Left := WelcomeStep1.Left;
   WelcomeStep4.Top := WelcomeStep3.Top + ScaleY(34);
   WelcomeStep4.Width := WelcomeStep1.Width;
-  WelcomeStep4.Caption := '4. Complete';
-  WelcomeStep4.Font.Size := 10;
-  WelcomeStep4.Font.Color := $00A0A0A0;
+  WelcomeStep4.Caption := '○  4. Complete';
+  WelcomeStep4.Font.Name := 'Segoe UI';
+  WelcomeStep4.Font.Size := 9;
+  WelcomeStep4.Font.Color := $00969CA4;
   WelcomeStep4.Color := WelcomeSidebar.Color;
 
-  ContentLeft := SidebarWidth + ScaleX(30);
-  ContentWidth := WelcomeOverlay.Width - ContentLeft - ScaleX(30);
+  ContentLeft := SidebarWidth + ScaleX(32);
+  ContentWidth := WelcomeOverlay.Width - ContentLeft - ScaleX(28);
 
   WelcomeTitle := TNewStaticText.Create(WelcomeOverlay);
   WelcomeTitle.Parent := WelcomeOverlay;
   WelcomeTitle.Left := ContentLeft;
-  WelcomeTitle.Top := ScaleY(44);
+  WelcomeTitle.Top := ScaleY(38);
   WelcomeTitle.Width := ContentWidth;
-  WelcomeTitle.Caption := 'Welcome to Locks Tracker';
-  WelcomeTitle.Font.Size := 22;
+  WelcomeTitle.AutoSize := False;
+  WelcomeTitle.Height := ScaleY(42);
+  WelcomeTitle.Caption := 'Welcome to the Locks Tracker Installer';
+  WelcomeTitle.Font.Name := 'Segoe UI';
+  WelcomeTitle.Font.Size := 20;
   WelcomeTitle.Font.Style := [fsBold];
   WelcomeTitle.Color := clWhite;
 
@@ -225,27 +236,42 @@ begin
   WelcomeIntro.Top := WelcomeTitle.Top + ScaleY(52);
   WelcomeIntro.Width := ContentWidth;
   WelcomeIntro.AutoSize := False;
-  WelcomeIntro.Height := ScaleY(60);
+  WelcomeIntro.Height := ScaleY(58);
   WelcomeIntro.WordWrap := True;
-  WelcomeIntro.Caption := 'This setup wizard will install Locks Tracker on your computer and prepare it for automatic updates.';
+  WelcomeIntro.Caption := 'This setup wizard will guide you through installing Locks Tracker on your computer.';
+  WelcomeIntro.Font.Name := 'Segoe UI';
   WelcomeIntro.Font.Size := 11;
   WelcomeIntro.Color := clWhite;
+
+  WelcomeContinue := TNewStaticText.Create(WelcomeOverlay);
+  WelcomeContinue.Parent := WelcomeOverlay;
+  WelcomeContinue.Left := ContentLeft;
+  WelcomeContinue.Top := WelcomeIntro.Top + ScaleY(48);
+  WelcomeContinue.Width := ContentWidth;
+  WelcomeContinue.AutoSize := False;
+  WelcomeContinue.Height := ScaleY(34);
+  WelcomeContinue.Caption := 'It only takes a few moments to complete the installation.';
+  WelcomeContinue.Font.Name := 'Segoe UI';
+  WelcomeContinue.Font.Size := 10;
+  WelcomeContinue.Font.Color := $00545A62;
+  WelcomeContinue.Color := clWhite;
 
   WelcomeInfo := TPanel.Create(WelcomeOverlay);
   WelcomeInfo.Parent := WelcomeOverlay;
   WelcomeInfo.Left := ContentLeft;
-  WelcomeInfo.Top := WelcomeIntro.Top + ScaleY(76);
+  WelcomeInfo.Top := WelcomeContinue.Top + ScaleY(48);
   WelcomeInfo.Width := ContentWidth;
-  WelcomeInfo.Height := ScaleY(146);
-  WelcomeInfo.Color := $00FAFAFA;
+  WelcomeInfo.Height := ScaleY(150);
+  WelcomeInfo.Color := $00FCFBFA;
   WelcomeInfo.BevelOuter := bvLowered;
 
   WelcomeInfoTitle := TNewStaticText.Create(WelcomeInfo);
   WelcomeInfoTitle.Parent := WelcomeInfo;
-  WelcomeInfoTitle.Left := ScaleX(18);
-  WelcomeInfoTitle.Top := ScaleY(14);
-  WelcomeInfoTitle.Width := WelcomeInfo.Width - ScaleX(36);
-  WelcomeInfoTitle.Caption := 'Setup will:';
+  WelcomeInfoTitle.Left := ScaleX(20);
+  WelcomeInfoTitle.Top := ScaleY(16);
+  WelcomeInfoTitle.Width := WelcomeInfo.Width - ScaleX(40);
+  WelcomeInfoTitle.Caption := 'What this installer will do:';
+  WelcomeInfoTitle.Font.Name := 'Segoe UI';
   WelcomeInfoTitle.Font.Size := 12;
   WelcomeInfoTitle.Font.Style := [fsBold];
   WelcomeInfoTitle.Color := WelcomeInfo.Color;
@@ -253,39 +279,32 @@ begin
   WelcomeInfo1 := TNewStaticText.Create(WelcomeInfo);
   WelcomeInfo1.Parent := WelcomeInfo;
   WelcomeInfo1.Left := ScaleX(26);
-  WelcomeInfo1.Top := ScaleY(50);
+  WelcomeInfo1.Top := ScaleY(52);
   WelcomeInfo1.Width := WelcomeInfo.Width - ScaleX(52);
-  WelcomeInfo1.Caption := '- Install the Locks Tracker desktop app';
+  WelcomeInfo1.Caption := '•  Install the latest version of Locks Tracker';
+  WelcomeInfo1.Font.Name := 'Segoe UI';
   WelcomeInfo1.Font.Size := 10;
   WelcomeInfo1.Color := WelcomeInfo.Color;
 
   WelcomeInfo2 := TNewStaticText.Create(WelcomeInfo);
   WelcomeInfo2.Parent := WelcomeInfo;
   WelcomeInfo2.Left := WelcomeInfo1.Left;
-  WelcomeInfo2.Top := WelcomeInfo1.Top + ScaleY(28);
+  WelcomeInfo2.Top := WelcomeInfo1.Top + ScaleY(29);
   WelcomeInfo2.Width := WelcomeInfo1.Width;
-  WelcomeInfo2.Caption := '- Keep automatic updates enabled';
+  WelcomeInfo2.Caption := '•  Create optional shortcuts for quick access';
+  WelcomeInfo2.Font.Name := 'Segoe UI';
   WelcomeInfo2.Font.Size := 10;
   WelcomeInfo2.Color := WelcomeInfo.Color;
 
   WelcomeInfo3 := TNewStaticText.Create(WelcomeInfo);
   WelcomeInfo3.Parent := WelcomeInfo;
   WelcomeInfo3.Left := WelcomeInfo1.Left;
-  WelcomeInfo3.Top := WelcomeInfo2.Top + ScaleY(28);
+  WelcomeInfo3.Top := WelcomeInfo2.Top + ScaleY(29);
   WelcomeInfo3.Width := WelcomeInfo1.Width;
-  WelcomeInfo3.Caption := '- Let you choose whether to create a desktop shortcut';
+  WelcomeInfo3.Caption := '•  Keep the app ready for future automatic updates';
+  WelcomeInfo3.Font.Name := 'Segoe UI';
   WelcomeInfo3.Font.Size := 10;
   WelcomeInfo3.Color := WelcomeInfo.Color;
-
-  WelcomeContinue := TNewStaticText.Create(WelcomeOverlay);
-  WelcomeContinue.Parent := WelcomeOverlay;
-  WelcomeContinue.Left := ContentLeft;
-  WelcomeContinue.Top := WelcomeInfo.Top + WelcomeInfo.Height + ScaleY(24);
-  WelcomeContinue.Width := ContentWidth;
-  WelcomeContinue.Caption := 'Click Next to continue.';
-  WelcomeContinue.Font.Size := 10;
-  WelcomeContinue.Font.Color := $00707070;
-  WelcomeContinue.Color := clWhite;
 end;
 function ShouldCreateDesktopShortcut: Boolean;
 begin
@@ -397,7 +416,7 @@ begin
   ReadyOverlay.Color := clWhite;
   ReadyOverlay.Visible := False;
 
-  SidebarWidth := (ReadyOverlay.Width * 28) div 100;
+  SidebarWidth := (ReadyOverlay.Width * 29) div 100;
 
   ReadySidebar := TPanel.Create(ReadyOverlay);
   ReadySidebar.Parent := ReadyOverlay;
@@ -406,92 +425,102 @@ begin
   ReadySidebar.Width := SidebarWidth;
   ReadySidebar.Height := ReadyOverlay.Height;
   ReadySidebar.BevelOuter := bvNone;
-  ReadySidebar.Color := $00F5F7FA;
+  ReadySidebar.Color := $00FAF7F3;
 
   ReadyLogo := TBitmapImage.Create(ReadySidebar);
   ReadyLogo.Parent := ReadySidebar;
-  ReadyLogo.Width := (SidebarWidth * 58) div 100;
+  ReadyLogo.Width := (SidebarWidth * 52) div 100;
   ReadyLogo.Height := ReadyLogo.Width;
   ReadyLogo.Left := (SidebarWidth - ReadyLogo.Width) div 2;
-  ReadyLogo.Top := ScaleY(26);
+  ReadyLogo.Top := ScaleY(34);
   ReadyLogo.Stretch := True;
   ReadyLogo.Bitmap.LoadFromFile(ExpandConstant('{tmp}\installer-logo.bmp'));
 
   ReadyBrand := TNewStaticText.Create(ReadySidebar);
   ReadyBrand.Parent := ReadySidebar;
-  ReadyBrand.Left := ScaleX(16);
-  ReadyBrand.Top := ReadyLogo.Top + ReadyLogo.Height + ScaleY(10);
-  ReadyBrand.Width := SidebarWidth - ScaleX(32);
+  ReadyBrand.Left := ScaleX(14);
+  ReadyBrand.Top := ReadyLogo.Top + ReadyLogo.Height + ScaleY(12);
+  ReadyBrand.Width := SidebarWidth - ScaleX(28);
   ReadyBrand.Alignment := taCenter;
   ReadyBrand.Caption := 'Locks Tracker';
-  ReadyBrand.Font.Size := 13;
+  ReadyBrand.Font.Name := 'Segoe UI';
+  ReadyBrand.Font.Size := 17;
   ReadyBrand.Font.Style := [fsBold];
   ReadyBrand.Color := ReadySidebar.Color;
 
   ReadyVersion := TNewStaticText.Create(ReadySidebar);
   ReadyVersion.Parent := ReadySidebar;
-  ReadyVersion.Left := ScaleX(16);
-  ReadyVersion.Top := ReadyBrand.Top + ScaleY(25);
-  ReadyVersion.Width := SidebarWidth - ScaleX(32);
+  ReadyVersion.Left := ScaleX(14);
+  ReadyVersion.Top := ReadyBrand.Top + ScaleY(31);
+  ReadyVersion.Width := SidebarWidth - ScaleX(28);
   ReadyVersion.Alignment := taCenter;
   ReadyVersion.Caption := 'Installer v{#AppVersion}';
+  ReadyVersion.Font.Name := 'Segoe UI';
   ReadyVersion.Font.Size := 9;
-  ReadyVersion.Font.Color := $00707070;
+  ReadyVersion.Font.Color := $00747B84;
   ReadyVersion.Color := ReadySidebar.Color;
 
   ReadyStep1 := TNewStaticText.Create(ReadySidebar);
   ReadyStep1.Parent := ReadySidebar;
-  ReadyStep1.Left := ScaleX(28);
-  ReadyStep1.Top := (ReadySidebar.Height * 58) div 100;
-  ReadyStep1.Width := SidebarWidth - ScaleX(50);
-  ReadyStep1.Caption := '1. Ready to Install';
-  ReadyStep1.Font.Size := 9;
+  ReadyStep1.Left := ScaleX(27);
+  ReadyStep1.Top := (ReadySidebar.Height * 59) div 100;
+  ReadyStep1.Width := SidebarWidth - ScaleX(40);
+  ReadyStep1.Caption := '●  1. Ready to Install';
+  ReadyStep1.Font.Name := 'Segoe UI';
+  ReadyStep1.Font.Size := 10;
   ReadyStep1.Font.Style := [fsBold];
+  ReadyStep1.Font.Color := $00E98B17;
   ReadyStep1.Color := ReadySidebar.Color;
 
   ReadyStep2 := TNewStaticText.Create(ReadySidebar);
   ReadyStep2.Parent := ReadySidebar;
   ReadyStep2.Left := ReadyStep1.Left;
-  ReadyStep2.Top := ReadyStep1.Top + ScaleY(32);
+  ReadyStep2.Top := ReadyStep1.Top + ScaleY(38);
   ReadyStep2.Width := ReadyStep1.Width;
-  ReadyStep2.Caption := '2. Installing Files';
+  ReadyStep2.Caption := '○  2. Installing Files';
+  ReadyStep2.Font.Name := 'Segoe UI';
   ReadyStep2.Font.Size := 9;
-  ReadyStep2.Font.Color := $00909090;
+  ReadyStep2.Font.Color := $00969CA4;
   ReadyStep2.Color := ReadySidebar.Color;
 
   ReadyStep3 := TNewStaticText.Create(ReadySidebar);
   ReadyStep3.Parent := ReadySidebar;
   ReadyStep3.Left := ReadyStep1.Left;
-  ReadyStep3.Top := ReadyStep2.Top + ScaleY(32);
+  ReadyStep3.Top := ReadyStep2.Top + ScaleY(38);
   ReadyStep3.Width := ReadyStep1.Width;
-  ReadyStep3.Caption := '3. Complete';
+  ReadyStep3.Caption := '○  3. Complete';
+  ReadyStep3.Font.Name := 'Segoe UI';
   ReadyStep3.Font.Size := 9;
-  ReadyStep3.Font.Color := $00A0A0A0;
+  ReadyStep3.Font.Color := $00969CA4;
   ReadyStep3.Color := ReadySidebar.Color;
 
-  ContentLeft := SidebarWidth + ScaleX(24);
-  ContentWidth := ReadyOverlay.Width - ContentLeft - ScaleX(24);
+  ContentLeft := SidebarWidth + ScaleX(32);
+  ContentWidth := ReadyOverlay.Width - ContentLeft - ScaleX(28);
 
   ReadyTitle := TNewStaticText.Create(ReadyOverlay);
   ReadyTitle.Parent := ReadyOverlay;
   ReadyTitle.Left := ContentLeft;
-  ReadyTitle.Top := ScaleY(24);
+  ReadyTitle.Top := ScaleY(38);
   ReadyTitle.Width := ContentWidth;
+  ReadyTitle.AutoSize := False;
+  ReadyTitle.Height := ScaleY(42);
   ReadyTitle.Caption := 'Ready to Install';
-  ReadyTitle.Font.Size := 18;
+  ReadyTitle.Font.Name := 'Segoe UI';
+  ReadyTitle.Font.Size := 22;
   ReadyTitle.Font.Style := [fsBold];
   ReadyTitle.Color := clWhite;
 
   ReadyIntro := TNewStaticText.Create(ReadyOverlay);
   ReadyIntro.Parent := ReadyOverlay;
   ReadyIntro.Left := ContentLeft;
-  ReadyIntro.Top := ReadyTitle.Top + ScaleY(42);
+  ReadyIntro.Top := ReadyTitle.Top + ScaleY(52);
   ReadyIntro.Width := ContentWidth;
   ReadyIntro.AutoSize := False;
-  ReadyIntro.Height := ScaleY(42);
+  ReadyIntro.Height := ScaleY(58);
   ReadyIntro.WordWrap := True;
   ReadyIntro.Caption := 'Setup is now ready to install Locks Tracker on your computer.';
-  ReadyIntro.Font.Size := 10;
+  ReadyIntro.Font.Name := 'Segoe UI';
+  ReadyIntro.Font.Size := 11;
   ReadyIntro.Color := clWhite;
 
   ReadyInstruction := TNewStaticText.Create(ReadyOverlay);
@@ -499,54 +528,62 @@ begin
   ReadyInstruction.Left := ContentLeft;
   ReadyInstruction.Top := ReadyIntro.Top + ScaleY(52);
   ReadyInstruction.Width := ContentWidth;
-  ReadyInstruction.Caption := 'Click Install to continue with the installation.';
+  ReadyInstruction.AutoSize := False;
+  ReadyInstruction.Height := ScaleY(30);
+  ReadyInstruction.Caption := 'Click "Install" to continue with the installation.';
+  ReadyInstruction.Font.Name := 'Segoe UI';
   ReadyInstruction.Font.Size := 10;
   ReadyInstruction.Color := clWhite;
 
   ReadySummary := TPanel.Create(ReadyOverlay);
   ReadySummary.Parent := ReadyOverlay;
   ReadySummary.Left := ContentLeft;
-  ReadySummary.Top := ReadyInstruction.Top + ScaleY(38);
+  ReadySummary.Top := ReadyInstruction.Top + ScaleY(42);
   ReadySummary.Width := ContentWidth;
-  ReadySummary.Height := ScaleY(126);
-  ReadySummary.Color := $00FAFAFA;
+  ReadySummary.Height := ScaleY(158);
+  ReadySummary.Color := $00FCFBFA;
   ReadySummary.BevelOuter := bvLowered;
 
   ReadySummaryTitle := TNewStaticText.Create(ReadySummary);
   ReadySummaryTitle.Parent := ReadySummary;
-  ReadySummaryTitle.Left := ScaleX(18);
-  ReadySummaryTitle.Top := ScaleY(12);
-  ReadySummaryTitle.Width := ReadySummary.Width - ScaleX(36);
-  ReadySummaryTitle.Caption := 'Installation Summary';
-  ReadySummaryTitle.Font.Size := 10;
+  ReadySummaryTitle.Left := ScaleX(20);
+  ReadySummaryTitle.Top := ScaleY(16);
+  ReadySummaryTitle.Width := ReadySummary.Width - ScaleX(40);
+  ReadySummaryTitle.Caption := 'Installation Summary:';
+  ReadySummaryTitle.Font.Name := 'Segoe UI';
+  ReadySummaryTitle.Font.Size := 13;
   ReadySummaryTitle.Font.Style := [fsBold];
   ReadySummaryTitle.Color := ReadySummary.Color;
 
   ReadyDestination := TNewStaticText.Create(ReadySummary);
   ReadyDestination.Parent := ReadySummary;
-  ReadyDestination.Left := ScaleX(24);
-  ReadyDestination.Top := ScaleY(44);
-  ReadyDestination.Width := ReadySummary.Width - ScaleX(52);
+  ReadyDestination.Left := ScaleX(28);
+  ReadyDestination.Top := ScaleY(54);
+  ReadyDestination.Width := ReadySummary.Width - ScaleX(56);
   ReadyDestination.AutoSize := False;
-  ReadyDestination.Height := ScaleY(22);
+  ReadyDestination.Height := ScaleY(40);
+  ReadyDestination.WordWrap := True;
+  ReadyDestination.Font.Name := 'Segoe UI';
   ReadyDestination.Font.Size := 9;
   ReadyDestination.Color := ReadySummary.Color;
 
   ReadyVersionLine := TNewStaticText.Create(ReadySummary);
   ReadyVersionLine.Parent := ReadySummary;
   ReadyVersionLine.Left := ReadyDestination.Left;
-  ReadyVersionLine.Top := ReadyDestination.Top + ScaleY(25);
+  ReadyVersionLine.Top := ScaleY(96);
   ReadyVersionLine.Width := ReadyDestination.Width;
-  ReadyVersionLine.Caption := 'Version to install: v{#AppVersion}';
+  ReadyVersionLine.Caption := '•  Version to install: v{#AppVersion}';
+  ReadyVersionLine.Font.Name := 'Segoe UI';
   ReadyVersionLine.Font.Size := 9;
   ReadyVersionLine.Color := ReadySummary.Color;
 
   ReadyTimeLine := TNewStaticText.Create(ReadySummary);
   ReadyTimeLine.Parent := ReadySummary;
   ReadyTimeLine.Left := ReadyDestination.Left;
-  ReadyTimeLine.Top := ReadyVersionLine.Top + ScaleY(25);
+  ReadyTimeLine.Top := ScaleY(122);
   ReadyTimeLine.Width := ReadyDestination.Width;
-  ReadyTimeLine.Caption := 'Estimated time: About 2 minutes';
+  ReadyTimeLine.Caption := '•  Estimated time: About 2 minutes';
+  ReadyTimeLine.Font.Name := 'Segoe UI';
   ReadyTimeLine.Font.Size := 9;
   ReadyTimeLine.Color := ReadySummary.Color;
 end;
