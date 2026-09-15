@@ -124,7 +124,9 @@ procedure BuildSidebar(AOverlay: TPanel; ActiveStep: Integer;
 var
   W, Y, SW: Integer;
   Bg: TColor;
-begin  Bg := $00FAF7F3;
+  L: TNewStaticText;
+begin
+  Bg := $00FAF7F3;
   W := (AOverlay.Width * 29) div 100;
   ASidebar := AddPanel(AOverlay, 0, 0, W, AOverlay.Height, Bg);
 
