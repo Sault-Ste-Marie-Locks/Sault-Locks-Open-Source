@@ -363,7 +363,7 @@ begin
   FinishedCard.BevelOuter := bvNone;
   AddText(FinishedCard, ScaleX(20), ScaleY(18),
     FinishedCard.Width - ScaleX(40), ScaleY(30), 12,
-    'You're all set', True, clBlack, FinishedCard.Color);
+    'You''re all set', True, clBlack, FinishedCard.Color);
   AddText(FinishedCard, ScaleX(22), ScaleY(54),
     FinishedCard.Width - ScaleX(44), ScaleY(44), 9,
     'Automatic updates are enabled, so future releases can install directly from the app.',
