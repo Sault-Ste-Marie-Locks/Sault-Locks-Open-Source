@@ -15,6 +15,7 @@ AppVerName={#AppName} {#AppVersion}
 DefaultDirName={localappdata}\LockReleaseDesktop\Lock Release-win32-x64
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
+DisableDirPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -104,12 +105,7 @@ end;
 
 function StepText(Step, ActiveStep: Integer; const LabelText: String): String;
 begin
-  if Step < ActiveStep then
-    Result := '✓  ' + IntToStr(Step) + '. ' + LabelText
-  else if Step = ActiveStep then
-    Result := '●  ' + IntToStr(Step) + '. ' + LabelText
-  else
-    Result := '○  ' + IntToStr(Step) + '. ' + LabelText;
+  Result := IntToStr(Step) + '. ' + LabelText;
 end;
 
 function StepColor(Step, ActiveStep: Integer): TColor;
@@ -149,7 +145,7 @@ begin
   AddText(ASidebar, ScaleX(22), Y, W - ScaleX(32), ScaleY(26), 10,
     StepText(1, ActiveStep, 'Welcome'), ActiveStep = 1, StepColor(1, ActiveStep), Bg);
   AddText(ASidebar, ScaleX(22), Y + ScaleY(34), W - ScaleX(32), ScaleY(30), 10,
-    StepText(2, ActiveStep, 'Installation Options'), ActiveStep = 2, StepColor(2, ActiveStep), Bg);
+    StepText(2, ActiveStep, 'Options'), ActiveStep = 2, StepColor(2, ActiveStep), Bg);
   AddText(ASidebar, ScaleX(22), Y + ScaleY(70), W - ScaleX(32), ScaleY(26), 10,
     StepText(3, ActiveStep, InstallLabel), ActiveStep = 3, StepColor(3, ActiveStep), Bg);
   AddText(ASidebar, ScaleX(22), Y + ScaleY(106), W - ScaleX(32), ScaleY(26), 10,
@@ -187,7 +183,7 @@ begin
     $00666D75, Bg);
 
   Card := AddPanel(WelcomeOverlay, Left, ScaleY(198), W, ScaleY(154), $00FCFBFA);
-  Card.BevelOuter := bvLowered;
+  Card.BevelOuter := bvNone;
   AddText(Card, ScaleX(20), ScaleY(16), Card.Width - ScaleX(40), ScaleY(30), 12,
     'What this installer will do', True, clBlack, Card.Color);
   AddText(Card, ScaleX(24), ScaleY(56), Card.Width - ScaleX(48), ScaleY(25), 10,
@@ -210,11 +206,11 @@ var
   Bg: TColor;
 begin
   Bg := clWhite;
-  OptionsPage := CreateCustomPage(wpSelectDir, '', '');
+  OptionsPage := CreateCustomPage(wpWelcome, '', '');
   OptionsOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
     WizardForm.Bevel.Top, Bg);
   OptionsOverlay.Visible := False;
-  BuildSidebar(OptionsOverlay, 2, 'Install', OptionsSidebar, OptionsLogo);
+  BuildSidebar(OptionsOverlay, 2, 'Ready to Install', OptionsSidebar, OptionsLogo);
 
   Left := OptionsSidebar.Width + ScaleX(34);
   W := OptionsOverlay.Width - Left - ScaleX(30);
@@ -228,7 +224,7 @@ begin
     False, $003F454C, Bg);
 
   Card := AddPanel(OptionsOverlay, Left, ScaleY(172), W, ScaleY(170), $00FCFBFA);
-  Card.BevelOuter := bvLowered;
+  Card.BevelOuter := bvNone;
   AddText(Card, ScaleX(20), ScaleY(18), Card.Width - ScaleX(40), ScaleY(30), 12,
     'Additional shortcuts', True, clBlack, Card.Color);
 
@@ -237,7 +233,7 @@ begin
   DesktopShortcutCheck.SetBounds(ScaleX(24), ScaleY(62),
     Card.Width - ScaleX(48), ScaleY(30));
   DesktopShortcutCheck.Caption := 'Create a desktop shortcut';
-  DesktopShortcutCheck.Checked := False;
+  DesktopShortcutCheck.Checked := True;
   DesktopShortcutCheck.Font.Name := 'Segoe UI';
   DesktopShortcutCheck.Font.Size := 10;
 
@@ -272,7 +268,7 @@ begin
     'Click Install to continue.', False, $00666D75, Bg);
 
   Card := AddPanel(ReadyOverlay, Left, ScaleY(190), W, ScaleY(170), $00FCFBFA);
-  Card.BevelOuter := bvLowered;
+  Card.BevelOuter := bvNone;
   AddText(Card, ScaleX(20), ScaleY(16), Card.Width - ScaleX(40), ScaleY(30), 12,
     'Installation Summary', True, clBlack, Card.Color);
   AddText(Card, ScaleX(24), ScaleY(58), ScaleX(110), ScaleY(24), 9,
@@ -308,7 +304,7 @@ begin
     False, $003F454C, Bg);
 
   InstallingCard := AddPanel(InstallingOverlay, Left, ScaleY(164), W, ScaleY(184), $00FCFBFA);
-  InstallingCard.BevelOuter := bvLowered;
+  InstallingCard.BevelOuter := bvNone;
 
   WizardForm.StatusLabel.Parent := InstallingCard;
   WizardForm.StatusLabel.SetBounds(ScaleX(22), ScaleY(22),
@@ -350,7 +346,7 @@ begin
   FinishedOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
     WizardForm.Bevel.Top, Bg);
   FinishedOverlay.Visible := False;
-  BuildSidebar(FinishedOverlay, 4, 'Install', FinishedSidebar, FinishedLogo);
+  BuildSidebar(FinishedOverlay, 4, 'Installing Files', FinishedSidebar, FinishedLogo);
 
   Left := FinishedSidebar.Width + ScaleX(34);
   W := FinishedOverlay.Width - Left - ScaleX(30);
@@ -364,7 +360,7 @@ begin
     False, $003F454C, Bg);
 
   FinishedCard := AddPanel(FinishedOverlay, Left, ScaleY(168), W, ScaleY(172), $00FCFBFA);
-  FinishedCard.BevelOuter := bvLowered;
+  FinishedCard.BevelOuter := bvNone;
   AddText(FinishedCard, ScaleX(20), ScaleY(18),
     FinishedCard.Width - ScaleX(40), ScaleY(30), 12,
     'You’re all set', True, clBlack, FinishedCard.Color);
