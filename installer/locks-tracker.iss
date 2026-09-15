@@ -142,13 +142,13 @@ begin
   L.Alignment := taCenter;
 
   Y := (ASidebar.Height * 50) div 100;
-  AddText(ASidebar, ScaleX(22), Y, W - ScaleX(32), ScaleY(26), 10,
+  AddText(ASidebar, ScaleX(18), Y, W - ScaleX(24), ScaleY(24), 9,
     StepText(1, ActiveStep, 'Welcome'), ActiveStep = 1, StepColor(1, ActiveStep), Bg);
-  AddText(ASidebar, ScaleX(22), Y + ScaleY(34), W - ScaleX(32), ScaleY(30), 10,
+  AddText(ASidebar, ScaleX(18), Y + ScaleY(32), W - ScaleX(24), ScaleY(24), 9,
     StepText(2, ActiveStep, 'Options'), ActiveStep = 2, StepColor(2, ActiveStep), Bg);
-  AddText(ASidebar, ScaleX(22), Y + ScaleY(70), W - ScaleX(32), ScaleY(26), 10,
+  AddText(ASidebar, ScaleX(18), Y + ScaleY(64), W - ScaleX(24), ScaleY(24), 9,
     StepText(3, ActiveStep, InstallLabel), ActiveStep = 3, StepColor(3, ActiveStep), Bg);
-  AddText(ASidebar, ScaleX(22), Y + ScaleY(106), W - ScaleX(32), ScaleY(26), 10,
+  AddText(ASidebar, ScaleX(18), Y + ScaleY(96), W - ScaleX(24), ScaleY(24), 9,
     StepText(4, ActiveStep, 'Complete'), ActiveStep = 4, StepColor(4, ActiveStep), Bg);
 
   AddText(ASidebar, ScaleX(22), ASidebar.Height - ScaleY(52),
@@ -187,11 +187,11 @@ begin
   AddText(Card, ScaleX(20), ScaleY(16), Card.Width - ScaleX(40), ScaleY(30), 12,
     'What this installer will do', True, clBlack, Card.Color);
   AddText(Card, ScaleX(24), ScaleY(56), Card.Width - ScaleX(48), ScaleY(25), 10,
-    '•  Install the latest version of Locks Tracker', False, $00484F58, Card.Color);
+    '-  Install the latest version of Locks Tracker', False, $00484F58, Card.Color);
   AddText(Card, ScaleX(24), ScaleY(86), Card.Width - ScaleX(48), ScaleY(25), 10,
-    '•  Create an optional desktop shortcut', False, $00484F58, Card.Color);
+    '-  Create an optional desktop shortcut', False, $00484F58, Card.Color);
   AddText(Card, ScaleX(24), ScaleY(116), Card.Width - ScaleX(48), ScaleY(25), 10,
-    '•  Keep the app ready for future automatic updates', False, $00484F58, Card.Color);
+    '-  Keep the app ready for future automatic updates', False, $00484F58, Card.Color);
 end;
 
 function ShouldCreateDesktopShortcut: Boolean;
@@ -210,7 +210,7 @@ begin
   OptionsOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
     WizardForm.Bevel.Top, Bg);
   OptionsOverlay.Visible := False;
-  BuildSidebar(OptionsOverlay, 2, 'Ready to Install', OptionsSidebar, OptionsLogo);
+  BuildSidebar(OptionsOverlay, 2, 'Install', OptionsSidebar, OptionsLogo);
 
   Left := OptionsSidebar.Width + ScaleX(34);
   W := OptionsOverlay.Width - Left - ScaleX(30);
@@ -252,7 +252,7 @@ begin
   ReadyOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
     WizardForm.Bevel.Top, Bg);
   ReadyOverlay.Visible := False;
-  BuildSidebar(ReadyOverlay, 3, 'Ready to Install', ReadySidebar, ReadyLogo);
+  BuildSidebar(ReadyOverlay, 3, 'Install', ReadySidebar, ReadyLogo);
 
   Left := ReadySidebar.Width + ScaleX(34);
   W := ReadyOverlay.Width - Left - ScaleX(30);
@@ -290,7 +290,7 @@ begin
   InstallingOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
     WizardForm.Bevel.Top, Bg);
   InstallingOverlay.Visible := False;
-  BuildSidebar(InstallingOverlay, 3, 'Installing Files', InstallingSidebar, InstallingLogo);
+  BuildSidebar(InstallingOverlay, 3, 'Installing', InstallingSidebar, InstallingLogo);
 
   Left := InstallingSidebar.Width + ScaleX(34);
   W := InstallingOverlay.Width - Left - ScaleX(30);
@@ -322,11 +322,11 @@ begin
   WizardForm.FilenameLabel.Font.Color := $00646C76;
   WizardForm.FilenameLabel.Color := InstallingCard.Color;
 
-  WizardForm.ProgressGauge.Visible := False;
-  InstallProgressTrack := AddPanel(InstallingCard, ScaleX(22), ScaleY(112),
-    InstallingCard.Width - ScaleX(44), ScaleY(12), $00ECE7E1);
-  InstallProgressFill := AddPanel(InstallProgressTrack, 0, 0, 1,
-    InstallProgressTrack.Height, $00E98B17);
+  WizardForm.ProgressGauge.Parent := InstallingCard;
+  WizardForm.ProgressGauge.SetBounds(ScaleX(22), ScaleY(108),
+    InstallingCard.Width - ScaleX(44), ScaleY(18));
+  WizardForm.ProgressGauge.Visible := True;
+  WizardForm.ProgressGauge.BringToFront;
   InstallProgressLabel := AddText(InstallingCard, ScaleX(22), ScaleY(132),
     InstallingCard.Width - ScaleX(44), ScaleY(22), 8, '0% complete', False,
     $00707882, InstallingCard.Color);
@@ -346,7 +346,7 @@ begin
   FinishedOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
     WizardForm.Bevel.Top, Bg);
   FinishedOverlay.Visible := False;
-  BuildSidebar(FinishedOverlay, 4, 'Installing Files', FinishedSidebar, FinishedLogo);
+  BuildSidebar(FinishedOverlay, 4, 'Installing', FinishedSidebar, FinishedLogo);
 
   Left := FinishedSidebar.Width + ScaleX(34);
   W := FinishedOverlay.Width - Left - ScaleX(30);
@@ -363,7 +363,7 @@ begin
   FinishedCard.BevelOuter := bvNone;
   AddText(FinishedCard, ScaleX(20), ScaleY(18),
     FinishedCard.Width - ScaleX(40), ScaleY(30), 12,
-    'You’re all set', True, clBlack, FinishedCard.Color);
+    'You're all set', True, clBlack, FinishedCard.Color);
   AddText(FinishedCard, ScaleX(22), ScaleY(54),
     FinishedCard.Width - ScaleX(44), ScaleY(44), 9,
     'Automatic updates are enabled, so future releases can install directly from the app.',
@@ -416,7 +416,8 @@ begin
     InstallingOverlay.BringToFront;
     WizardForm.StatusLabel.BringToFront;
     WizardForm.FilenameLabel.BringToFront;
-    WizardForm.ProgressGauge.Visible := False;
+    WizardForm.ProgressGauge.Visible := True;
+    WizardForm.ProgressGauge.BringToFront;
   end
   else if CurPageID = wpFinished then
   begin
@@ -428,14 +429,11 @@ end;
 
 procedure CurInstallProgressChanged(CurProgress, MaxProgress: Integer);
 var
-  Pct, NewWidth: Integer;
+  Pct: Integer;
 begin
-  if (MaxProgress > 0) and (InstallProgressTrack <> nil) and (InstallProgressFill <> nil) then
+  if (MaxProgress > 0) and (InstallProgressLabel <> nil) then
   begin
     Pct := (CurProgress * 100) div MaxProgress;
-    NewWidth := (InstallProgressTrack.Width * CurProgress) div MaxProgress;
-    if NewWidth < 1 then NewWidth := 1;
-    InstallProgressFill.Width := NewWidth;
     InstallProgressLabel.Caption := IntToStr(Pct) + '% complete';
   end;
 end;
