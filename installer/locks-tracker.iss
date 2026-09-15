@@ -64,248 +64,138 @@ Filename: "{app}\{#AppExeName}"; Description: "Launch Locks Tracker"; WorkingDir
 [Code]
 var
   OptionsPage: TWizardPage;
-  OptionsOverlay: TPanel;
-  OptionsImage: TBitmapImage;
-  OptionsTitle: TNewStaticText;
-  OptionsIntro: TNewStaticText;
-  OptionsGroup: TNewStaticText;
-  OptionsHint: TNewStaticText;
   DesktopShortcutCheck: TNewCheckBox;
-
-  WelcomeOverlay: TPanel;
-  WelcomeSidebar: TPanel;
-  WelcomeLogo: TBitmapImage;
-  WelcomeBrand: TNewStaticText;
-  WelcomeVersion: TNewStaticText;
-  WelcomeStep1: TNewStaticText;
-  WelcomeStep2: TNewStaticText;
-  WelcomeStep3: TNewStaticText;
-  WelcomeStep4: TNewStaticText;
-  WelcomeTitle: TNewStaticText;
-  WelcomeIntro: TNewStaticText;
-  WelcomeInfo: TPanel;
-  WelcomeInfoTitle: TNewStaticText;
-  WelcomeInfo1: TNewStaticText;
-  WelcomeInfo2: TNewStaticText;
-  WelcomeInfo3: TNewStaticText;
-  WelcomeContinue: TNewStaticText;
-
-  ReadyOverlay: TPanel;
-  ReadySidebar: TPanel;
-  ReadyLogo: TBitmapImage;
-  ReadyBrand: TNewStaticText;
-  ReadyVersion: TNewStaticText;
-  ReadyStep1: TNewStaticText;
-  ReadyStep2: TNewStaticText;
-  ReadyStep3: TNewStaticText;
-  ReadyTitle: TNewStaticText;
-  ReadyIntro: TNewStaticText;
-  ReadyInstruction: TNewStaticText;
-  ReadySummary: TPanel;
-  ReadySummaryTitle: TNewStaticText;
+  WelcomeOverlay, OptionsOverlay, ReadyOverlay: TPanel;
+  InstallingOverlay, FinishedOverlay: TPanel;
+  WelcomeSidebar, OptionsSidebar, ReadySidebar: TPanel;
+  InstallingSidebar, FinishedSidebar: TPanel;
+  WelcomeMain, OptionsMain, ReadyMain: TPanel;
+  InstallingMain, FinishedMain: TPanel;
+  WelcomeLogo, OptionsLogo, ReadyLogo: TBitmapImage;
+  InstallingLogo, FinishedLogo: TBitmapImage;
   ReadyDestination: TNewStaticText;
-  ReadyVersionLine: TNewStaticText;
-  ReadyTimeLine: TNewStaticText;
+  InstallingCard, FinishedCard: TPanel;
+  InstallProgressTrack, InstallProgressFill: TPanel;
+  InstallProgressLabel: TNewStaticText;
+
+function AddPanel(AParent: TWinControl; X, Y, W, H: Integer; AColor: TColor): TPanel;
+begin
+  Result := TPanel.Create(WizardForm);
+  Result.Parent := AParent;
+  Result.SetBounds(X, Y, W, H);
+  Result.BevelOuter := bvNone;
+  Result.Color := AColor;
+end;
+
+function AddText(AParent: TWinControl; X, Y, W, H, Size: Integer;
+  const S: String; Bold: Boolean; FontColor, BackColor: TColor): TNewStaticText;
+begin
+  Result := TNewStaticText.Create(WizardForm);
+  Result.Parent := AParent;
+  Result.SetBounds(X, Y, W, H);  Result.AutoSize := False;
+  Result.WordWrap := True;
+  Result.Caption := S;
+  Result.Font.Name := 'Segoe UI';
+  Result.Font.Size := Size;
+  Result.Font.Color := FontColor;
+  if Bold then Result.Font.Style := [fsBold] else Result.Font.Style := [];
+  Result.Color := BackColor;
+end;
+
+function StepText(Step, ActiveStep: Integer; const LabelText: String): String;
+begin
+  if Step < ActiveStep then
+    Result := '✓  ' + IntToStr(Step) + '. ' + LabelText
+  else if Step = ActiveStep then
+    Result := '●  ' + IntToStr(Step) + '. ' + LabelText
+  else
+    Result := '○  ' + IntToStr(Step) + '. ' + LabelText;
+end;
+
+function StepColor(Step, ActiveStep: Integer): TColor;
+begin
+  if Step = ActiveStep then Result := $00E98B17
+  else if Step < ActiveStep then Result := $007C8794
+  else Result := $00A2A8B0;
+end;
+
+procedure BuildSidebar(AOverlay: TPanel; ActiveStep: Integer;
+  const InstallLabel: String; var ASidebar: TPanel; var ALogo: TBitmapImage);
+var
+  W, Y, SW: Integer;
+  Bg: TColor;
+begin  Bg := $00FAF7F3;
+  W := (AOverlay.Width * 29) div 100;
+  ASidebar := AddPanel(AOverlay, 0, 0, W, AOverlay.Height, Bg);
+
+  ALogo := TBitmapImage.Create(ASidebar);
+  ALogo.Parent := ASidebar;
+  SW := (W * 48) div 100;
+  ALogo.SetBounds((W - SW) div 2, ScaleY(28), SW, SW);
+  ALogo.Stretch := True;
+  ALogo.Bitmap.LoadFromFile(ExpandConstant('{tmp}\installer-logo.bmp'));
+
+  L := AddText(ASidebar, ScaleX(14), ALogo.Top + ALogo.Height + ScaleY(10),
+    W - ScaleX(28), ScaleY(34), 17, 'Locks Tracker', True, clBlack, Bg);
+  L.Alignment := taCenter;
+  L := AddText(ASidebar, ScaleX(14), ALogo.Top + ALogo.Height + ScaleY(42),
+    W - ScaleX(28), ScaleY(24), 9, 'Installer v{#AppVersion}', False,
+    $00747B84, Bg);
+  L.Alignment := taCenter;
+
+  Y := (ASidebar.Height * 50) div 100;
+  AddText(ASidebar, ScaleX(22), Y, W - ScaleX(32), ScaleY(26), 10,
+    StepText(1, ActiveStep, 'Welcome'), ActiveStep = 1, StepColor(1, ActiveStep), Bg);
+  AddText(ASidebar, ScaleX(22), Y + ScaleY(34), W - ScaleX(32), ScaleY(30), 10,
+    StepText(2, ActiveStep, 'Installation Options'), ActiveStep = 2, StepColor(2, ActiveStep), Bg);
+  AddText(ASidebar, ScaleX(22), Y + ScaleY(70), W - ScaleX(32), ScaleY(26), 10,
+    StepText(3, ActiveStep, InstallLabel), ActiveStep = 3, StepColor(3, ActiveStep), Bg);
+  AddText(ASidebar, ScaleX(22), Y + ScaleY(106), W - ScaleX(32), ScaleY(26), 10,
+    StepText(4, ActiveStep, 'Complete'), ActiveStep = 4, StepColor(4, ActiveStep), Bg);
+
+  AddText(ASidebar, ScaleX(22), ASidebar.Height - ScaleY(52),
+    W - ScaleX(44), ScaleY(34), 8, 'Track Today.  Explore Tomorrow.', False,
+    $009097A0, Bg);
+end;
 
 procedure BuildWelcomePage;
 var
-  SidebarWidth: Integer;
-  ContentLeft: Integer;
-  ContentWidth: Integer;
+  Left, W: Integer;
+  Card: TPanel;
+  Bg: TColor;
 begin
-  ExtractTemporaryFile('installer-logo.bmp');
-
-  WelcomeOverlay := TPanel.Create(WizardForm);
-  WelcomeOverlay.Parent := WizardForm;
-  WelcomeOverlay.Left := 0;
-  WelcomeOverlay.Top := 0;
-  WelcomeOverlay.Width := WizardForm.ClientWidth;
-  WelcomeOverlay.Height := WizardForm.Bevel.Top;
-  WelcomeOverlay.BevelOuter := bvNone;
-  WelcomeOverlay.Color := clWhite;
+  Bg := clWhite;
+  WelcomeOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
+    WizardForm.Bevel.Top, Bg);
   WelcomeOverlay.Visible := False;
+  BuildSidebar(WelcomeOverlay, 1, 'Install', WelcomeSidebar, WelcomeLogo);
 
-  SidebarWidth := (WelcomeOverlay.Width * 29) div 100;
+  Left := WelcomeSidebar.Width + ScaleX(34);
+  W := WelcomeOverlay.Width - Left - ScaleX(30);
+  WelcomeMain := AddPanel(WelcomeOverlay, WelcomeSidebar.Width, 0,
+    WelcomeOverlay.Width - WelcomeSidebar.Width, WelcomeOverlay.Height, Bg);
 
-  WelcomeSidebar := TPanel.Create(WelcomeOverlay);
-  WelcomeSidebar.Parent := WelcomeOverlay;
-  WelcomeSidebar.Left := 0;
-  WelcomeSidebar.Top := 0;
-  WelcomeSidebar.Width := SidebarWidth;
-  WelcomeSidebar.Height := WelcomeOverlay.Height;
-  WelcomeSidebar.BevelOuter := bvNone;
-  WelcomeSidebar.Color := $00FAF7F3;
+  AddText(WelcomeOverlay, Left, ScaleY(34), W, ScaleY(46), 21,
+    'Welcome to the Locks Tracker Installer', True, clBlack, Bg);
+  AddText(WelcomeOverlay, Left, ScaleY(92), W, ScaleY(58), 11,
+    'This setup wizard will guide you through installing Locks Tracker on your computer.',
+    False, $003F454C, Bg);
+  AddText(WelcomeOverlay, Left, ScaleY(148), W, ScaleY(34), 10,
+    'It only takes a few moments to complete the installation.', False,
+    $00666D75, Bg);
 
-  WelcomeLogo := TBitmapImage.Create(WelcomeSidebar);
-  WelcomeLogo.Parent := WelcomeSidebar;
-  WelcomeLogo.Width := (SidebarWidth * 52) div 100;
-  WelcomeLogo.Height := WelcomeLogo.Width;
-  WelcomeLogo.Left := (SidebarWidth - WelcomeLogo.Width) div 2;
-  WelcomeLogo.Top := ScaleY(34);
-  WelcomeLogo.Stretch := True;
-  WelcomeLogo.Bitmap.LoadFromFile(ExpandConstant('{tmp}\installer-logo.bmp'));
-
-  WelcomeBrand := TNewStaticText.Create(WelcomeSidebar);
-  WelcomeBrand.Parent := WelcomeSidebar;
-  WelcomeBrand.Left := ScaleX(14);
-  WelcomeBrand.Top := WelcomeLogo.Top + WelcomeLogo.Height + ScaleY(12);
-  WelcomeBrand.Width := SidebarWidth - ScaleX(28);
-  WelcomeBrand.Alignment := taCenter;
-  WelcomeBrand.Caption := 'Locks Tracker';
-  WelcomeBrand.Font.Name := 'Segoe UI';
-  WelcomeBrand.Font.Size := 17;
-  WelcomeBrand.Font.Style := [fsBold];
-  WelcomeBrand.Color := WelcomeSidebar.Color;
-
-  WelcomeVersion := TNewStaticText.Create(WelcomeSidebar);
-  WelcomeVersion.Parent := WelcomeSidebar;
-  WelcomeVersion.Left := ScaleX(14);
-  WelcomeVersion.Top := WelcomeBrand.Top + ScaleY(31);
-  WelcomeVersion.Width := SidebarWidth - ScaleX(28);
-  WelcomeVersion.Alignment := taCenter;
-  WelcomeVersion.Caption := 'Installer v{#AppVersion}';
-  WelcomeVersion.Font.Name := 'Segoe UI';
-  WelcomeVersion.Font.Size := 9;
-  WelcomeVersion.Font.Color := $00747B84;
-  WelcomeVersion.Color := WelcomeSidebar.Color;
-
-  WelcomeStep1 := TNewStaticText.Create(WelcomeSidebar);
-  WelcomeStep1.Parent := WelcomeSidebar;
-  WelcomeStep1.Left := ScaleX(27);
-  WelcomeStep1.Top := (WelcomeSidebar.Height * 57) div 100;
-  WelcomeStep1.Width := SidebarWidth - ScaleX(40);
-  WelcomeStep1.Caption := '●  1. Welcome';
-  WelcomeStep1.Font.Name := 'Segoe UI';
-  WelcomeStep1.Font.Size := 10;
-  WelcomeStep1.Font.Style := [fsBold];
-  WelcomeStep1.Font.Color := $00E98B17;
-  WelcomeStep1.Color := WelcomeSidebar.Color;
-
-  WelcomeStep2 := TNewStaticText.Create(WelcomeSidebar);
-  WelcomeStep2.Parent := WelcomeSidebar;
-  WelcomeStep2.Left := WelcomeStep1.Left;
-  WelcomeStep2.Top := WelcomeStep1.Top + ScaleY(34);
-  WelcomeStep2.Width := WelcomeStep1.Width;
-  WelcomeStep2.Caption := '○  2. Installation Options';
-  WelcomeStep2.Font.Name := 'Segoe UI';
-  WelcomeStep2.Font.Size := 9;
-  WelcomeStep2.Font.Color := $00969CA4;
-  WelcomeStep2.Color := WelcomeSidebar.Color;
-
-  WelcomeStep3 := TNewStaticText.Create(WelcomeSidebar);
-  WelcomeStep3.Parent := WelcomeSidebar;
-  WelcomeStep3.Left := WelcomeStep1.Left;
-  WelcomeStep3.Top := WelcomeStep2.Top + ScaleY(34);
-  WelcomeStep3.Width := WelcomeStep1.Width;
-  WelcomeStep3.Caption := '○  3. Ready to Install';
-  WelcomeStep3.Font.Name := 'Segoe UI';
-  WelcomeStep3.Font.Size := 9;
-  WelcomeStep3.Font.Color := $00969CA4;
-  WelcomeStep3.Color := WelcomeSidebar.Color;
-
-  WelcomeStep4 := TNewStaticText.Create(WelcomeSidebar);
-  WelcomeStep4.Parent := WelcomeSidebar;
-  WelcomeStep4.Left := WelcomeStep1.Left;
-  WelcomeStep4.Top := WelcomeStep3.Top + ScaleY(34);
-  WelcomeStep4.Width := WelcomeStep1.Width;
-  WelcomeStep4.Caption := '○  4. Complete';
-  WelcomeStep4.Font.Name := 'Segoe UI';
-  WelcomeStep4.Font.Size := 9;
-  WelcomeStep4.Font.Color := $00969CA4;
-  WelcomeStep4.Color := WelcomeSidebar.Color;
-
-  ContentLeft := SidebarWidth + ScaleX(32);
-  ContentWidth := WelcomeOverlay.Width - ContentLeft - ScaleX(28);
-
-  WelcomeTitle := TNewStaticText.Create(WelcomeOverlay);
-  WelcomeTitle.Parent := WelcomeOverlay;
-  WelcomeTitle.Left := ContentLeft;
-  WelcomeTitle.Top := ScaleY(38);
-  WelcomeTitle.Width := ContentWidth;
-  WelcomeTitle.AutoSize := False;
-  WelcomeTitle.Height := ScaleY(42);
-  WelcomeTitle.Caption := 'Welcome to the Locks Tracker Installer';
-  WelcomeTitle.Font.Name := 'Segoe UI';
-  WelcomeTitle.Font.Size := 20;
-  WelcomeTitle.Font.Style := [fsBold];
-  WelcomeTitle.Color := clWhite;
-
-  WelcomeIntro := TNewStaticText.Create(WelcomeOverlay);
-  WelcomeIntro.Parent := WelcomeOverlay;
-  WelcomeIntro.Left := ContentLeft;
-  WelcomeIntro.Top := WelcomeTitle.Top + ScaleY(52);
-  WelcomeIntro.Width := ContentWidth;
-  WelcomeIntro.AutoSize := False;
-  WelcomeIntro.Height := ScaleY(58);
-  WelcomeIntro.WordWrap := True;
-  WelcomeIntro.Caption := 'This setup wizard will guide you through installing Locks Tracker on your computer.';
-  WelcomeIntro.Font.Name := 'Segoe UI';
-  WelcomeIntro.Font.Size := 11;
-  WelcomeIntro.Color := clWhite;
-
-  WelcomeContinue := TNewStaticText.Create(WelcomeOverlay);
-  WelcomeContinue.Parent := WelcomeOverlay;
-  WelcomeContinue.Left := ContentLeft;
-  WelcomeContinue.Top := WelcomeIntro.Top + ScaleY(48);
-  WelcomeContinue.Width := ContentWidth;
-  WelcomeContinue.AutoSize := False;
-  WelcomeContinue.Height := ScaleY(34);
-  WelcomeContinue.Caption := 'It only takes a few moments to complete the installation.';
-  WelcomeContinue.Font.Name := 'Segoe UI';
-  WelcomeContinue.Font.Size := 10;
-  WelcomeContinue.Font.Color := $00545A62;
-  WelcomeContinue.Color := clWhite;
-
-  WelcomeInfo := TPanel.Create(WelcomeOverlay);
-  WelcomeInfo.Parent := WelcomeOverlay;
-  WelcomeInfo.Left := ContentLeft;
-  WelcomeInfo.Top := WelcomeContinue.Top + ScaleY(48);
-  WelcomeInfo.Width := ContentWidth;
-  WelcomeInfo.Height := ScaleY(150);
-  WelcomeInfo.Color := $00FCFBFA;
-  WelcomeInfo.BevelOuter := bvLowered;
-
-  WelcomeInfoTitle := TNewStaticText.Create(WelcomeInfo);
-  WelcomeInfoTitle.Parent := WelcomeInfo;
-  WelcomeInfoTitle.Left := ScaleX(20);
-  WelcomeInfoTitle.Top := ScaleY(16);
-  WelcomeInfoTitle.Width := WelcomeInfo.Width - ScaleX(40);
-  WelcomeInfoTitle.Caption := 'What this installer will do:';
-  WelcomeInfoTitle.Font.Name := 'Segoe UI';
-  WelcomeInfoTitle.Font.Size := 12;
-  WelcomeInfoTitle.Font.Style := [fsBold];
-  WelcomeInfoTitle.Color := WelcomeInfo.Color;
-
-  WelcomeInfo1 := TNewStaticText.Create(WelcomeInfo);
-  WelcomeInfo1.Parent := WelcomeInfo;
-  WelcomeInfo1.Left := ScaleX(26);
-  WelcomeInfo1.Top := ScaleY(52);
-  WelcomeInfo1.Width := WelcomeInfo.Width - ScaleX(52);
-  WelcomeInfo1.Caption := '•  Install the latest version of Locks Tracker';
-  WelcomeInfo1.Font.Name := 'Segoe UI';
-  WelcomeInfo1.Font.Size := 10;
-  WelcomeInfo1.Color := WelcomeInfo.Color;
-
-  WelcomeInfo2 := TNewStaticText.Create(WelcomeInfo);
-  WelcomeInfo2.Parent := WelcomeInfo;
-  WelcomeInfo2.Left := WelcomeInfo1.Left;
-  WelcomeInfo2.Top := WelcomeInfo1.Top + ScaleY(29);
-  WelcomeInfo2.Width := WelcomeInfo1.Width;
-  WelcomeInfo2.Caption := '•  Create optional shortcuts for quick access';
-  WelcomeInfo2.Font.Name := 'Segoe UI';
-  WelcomeInfo2.Font.Size := 10;
-  WelcomeInfo2.Color := WelcomeInfo.Color;
-
-  WelcomeInfo3 := TNewStaticText.Create(WelcomeInfo);
-  WelcomeInfo3.Parent := WelcomeInfo;
-  WelcomeInfo3.Left := WelcomeInfo1.Left;
-  WelcomeInfo3.Top := WelcomeInfo2.Top + ScaleY(29);
-  WelcomeInfo3.Width := WelcomeInfo1.Width;
-  WelcomeInfo3.Caption := '•  Keep the app ready for future automatic updates';
-  WelcomeInfo3.Font.Name := 'Segoe UI';
-  WelcomeInfo3.Font.Size := 10;
-  WelcomeInfo3.Color := WelcomeInfo.Color;
+  Card := AddPanel(WelcomeOverlay, Left, ScaleY(198), W, ScaleY(154), $00FCFBFA);
+  Card.BevelOuter := bvLowered;
+  AddText(Card, ScaleX(20), ScaleY(16), Card.Width - ScaleX(40), ScaleY(30), 12,
+    'What this installer will do', True, clBlack, Card.Color);
+  AddText(Card, ScaleX(24), ScaleY(56), Card.Width - ScaleX(48), ScaleY(25), 10,
+    '•  Install the latest version of Locks Tracker', False, $00484F58, Card.Color);
+  AddText(Card, ScaleX(24), ScaleY(86), Card.Width - ScaleX(48), ScaleY(25), 10,
+    '•  Create an optional desktop shortcut', False, $00484F58, Card.Color);
+  AddText(Card, ScaleX(24), ScaleY(116), Card.Width - ScaleX(48), ScaleY(25), 10,
+    '•  Keep the app ready for future automatic updates', False, $00484F58, Card.Color);
 end;
+
 function ShouldCreateDesktopShortcut: Boolean;
 begin
   Result := DesktopShortcutCheck.Checked;
@@ -313,310 +203,241 @@ end;
 
 procedure BuildOptionsPage;
 var
-  ImageWidth: Integer;
-  ContentLeft: Integer;
+  Left, W: Integer;
+  Card: TPanel;
+  Bg: TColor;
 begin
+  Bg := clWhite;
   OptionsPage := CreateCustomPage(wpSelectDir, '', '');
-  ExtractTemporaryFile('wizard-image-fixed.bmp');
-
-  OptionsOverlay := TPanel.Create(WizardForm);
-  OptionsOverlay.Parent := WizardForm;
-  OptionsOverlay.Left := 0;
-  OptionsOverlay.Top := 0;
-  OptionsOverlay.Width := WizardForm.ClientWidth;
-  OptionsOverlay.Height := WizardForm.Bevel.Top;
-  OptionsOverlay.BevelOuter := bvNone;
-  OptionsOverlay.Color := clWhite;
+  OptionsOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
+    WizardForm.Bevel.Top, Bg);
   OptionsOverlay.Visible := False;
-  OptionsImage := TBitmapImage.Create(OptionsOverlay);
-  OptionsImage.Parent := OptionsOverlay;
-  OptionsImage.Left := 0;
-  OptionsImage.Top := 0;
-  OptionsImage.Height := OptionsOverlay.Height;
-  ImageWidth := (OptionsImage.Height * 336) div 643;
-  OptionsImage.Width := ImageWidth;
-  OptionsImage.Stretch := True;
-  OptionsImage.Bitmap.LoadFromFile(ExpandConstant('{tmp}\wizard-image-fixed.bmp'));
+  BuildSidebar(OptionsOverlay, 2, 'Install', OptionsSidebar, OptionsLogo);
 
-  ContentLeft := ImageWidth + ScaleX(30);
+  Left := OptionsSidebar.Width + ScaleX(34);
+  W := OptionsOverlay.Width - Left - ScaleX(30);
+  OptionsMain := AddPanel(OptionsOverlay, OptionsSidebar.Width, 0,
+    OptionsOverlay.Width - OptionsSidebar.Width, OptionsOverlay.Height, Bg);
 
-  OptionsTitle := TNewStaticText.Create(OptionsOverlay);
-  OptionsTitle.Parent := OptionsOverlay;
-  OptionsTitle.Left := ContentLeft;
-  OptionsTitle.Top := ScaleY(38);
-  OptionsTitle.Width := OptionsOverlay.Width - ContentLeft - ScaleX(28);
-  OptionsTitle.AutoSize := False;
-  OptionsTitle.Height := ScaleY(34);
-  OptionsTitle.Caption := 'Choose Installation Options';
-  OptionsTitle.Font.Size := 20;
-  OptionsTitle.Font.Style := [fsBold];
-  OptionsTitle.Color := clWhite;
+  AddText(OptionsOverlay, Left, ScaleY(34), W, ScaleY(46), 21,
+    'Choose Installation Options', True, clBlack, Bg);
+  AddText(OptionsOverlay, Left, ScaleY(92), W, ScaleY(54), 11,
+    'Choose any extra shortcuts you want Setup to create for Locks Tracker.',
+    False, $003F454C, Bg);
 
-  OptionsIntro := TNewStaticText.Create(OptionsOverlay);
-  OptionsIntro.Parent := OptionsOverlay;
-  OptionsIntro.Left := ContentLeft;
-  OptionsIntro.Top := OptionsTitle.Top + OptionsTitle.Height + ScaleY(14);
-  OptionsIntro.Width := OptionsTitle.Width;
-  OptionsIntro.AutoSize := False;
-  OptionsIntro.Height := ScaleY(46);
-  OptionsIntro.WordWrap := True;
-  OptionsIntro.Caption := 'Choose any extra shortcuts you want Setup to create for Locks Tracker.';
-  OptionsIntro.Font.Size := 11;
-  OptionsIntro.Color := clWhite;
+  Card := AddPanel(OptionsOverlay, Left, ScaleY(172), W, ScaleY(170), $00FCFBFA);
+  Card.BevelOuter := bvLowered;
+  AddText(Card, ScaleX(20), ScaleY(18), Card.Width - ScaleX(40), ScaleY(30), 12,
+    'Additional shortcuts', True, clBlack, Card.Color);
 
-  OptionsGroup := TNewStaticText.Create(OptionsOverlay);
-  OptionsGroup.Parent := OptionsOverlay;
-  OptionsGroup.Left := ContentLeft;
-  OptionsGroup.Top := OptionsIntro.Top + OptionsIntro.Height + ScaleY(30);
-  OptionsGroup.Width := OptionsTitle.Width;
-  OptionsGroup.Caption := 'Additional shortcuts';
-  OptionsGroup.Font.Size := 12;
-  OptionsGroup.Font.Style := [fsBold];
-  OptionsGroup.Color := clWhite;
-
-  DesktopShortcutCheck := TNewCheckBox.Create(OptionsOverlay);
-  DesktopShortcutCheck.Parent := OptionsOverlay;
-  DesktopShortcutCheck.Left := ContentLeft;
-  DesktopShortcutCheck.Top := OptionsGroup.Top + ScaleY(38);
-  DesktopShortcutCheck.Width := OptionsTitle.Width;
-  DesktopShortcutCheck.Height := ScaleY(30);
+  DesktopShortcutCheck := TNewCheckBox.Create(Card);
+  DesktopShortcutCheck.Parent := Card;
+  DesktopShortcutCheck.SetBounds(ScaleX(24), ScaleY(62),
+    Card.Width - ScaleX(48), ScaleY(30));
   DesktopShortcutCheck.Caption := 'Create a desktop shortcut';
   DesktopShortcutCheck.Checked := False;
-  DesktopShortcutCheck.Font.Size := 11;
+  DesktopShortcutCheck.Font.Name := 'Segoe UI';
+  DesktopShortcutCheck.Font.Size := 10;
 
-  OptionsHint := TNewStaticText.Create(OptionsOverlay);
-  OptionsHint.Parent := OptionsOverlay;
-  OptionsHint.Left := ContentLeft;
-  OptionsHint.Top := DesktopShortcutCheck.Top + DesktopShortcutCheck.Height + ScaleY(18);
-  OptionsHint.Width := OptionsTitle.Width;
-  OptionsHint.AutoSize := False;
-  OptionsHint.Height := ScaleY(44);
-  OptionsHint.WordWrap := True;
-  OptionsHint.Caption := 'You can create or remove shortcuts later without reinstalling Locks Tracker.';
-  OptionsHint.Font.Size := 9;
-  OptionsHint.Font.Color := clGray;
-  OptionsHint.Color := clWhite;
+  AddText(Card, ScaleX(24), ScaleY(112), Card.Width - ScaleX(48), ScaleY(44), 9,
+    'You can create or remove shortcuts later without reinstalling Locks Tracker.',
+    False, $00707882, Card.Color);
 end;
 
 procedure BuildReadyPage;
 var
-  SidebarWidth: Integer;
-  ContentLeft: Integer;
-  ContentWidth: Integer;
+  Left, W: Integer;
+  Card: TPanel;
+  Bg: TColor;
 begin
-  ExtractTemporaryFile('installer-logo.bmp');
-
-  ReadyOverlay := TPanel.Create(WizardForm);
-  ReadyOverlay.Parent := WizardForm;
-  ReadyOverlay.Left := 0;
-  ReadyOverlay.Top := 0;
-  ReadyOverlay.Width := WizardForm.ClientWidth;
-  ReadyOverlay.Height := WizardForm.Bevel.Top;
-  ReadyOverlay.BevelOuter := bvNone;
-  ReadyOverlay.Color := clWhite;
+  Bg := clWhite;
+  ReadyOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
+    WizardForm.Bevel.Top, Bg);
   ReadyOverlay.Visible := False;
+  BuildSidebar(ReadyOverlay, 3, 'Ready to Install', ReadySidebar, ReadyLogo);
 
-  SidebarWidth := (ReadyOverlay.Width * 29) div 100;
+  Left := ReadySidebar.Width + ScaleX(34);
+  W := ReadyOverlay.Width - Left - ScaleX(30);
+  ReadyMain := AddPanel(ReadyOverlay, ReadySidebar.Width, 0,
+    ReadyOverlay.Width - ReadySidebar.Width, ReadyOverlay.Height, Bg);
 
-  ReadySidebar := TPanel.Create(ReadyOverlay);
-  ReadySidebar.Parent := ReadyOverlay;
-  ReadySidebar.Left := 0;
-  ReadySidebar.Top := 0;
-  ReadySidebar.Width := SidebarWidth;
-  ReadySidebar.Height := ReadyOverlay.Height;
-  ReadySidebar.BevelOuter := bvNone;
-  ReadySidebar.Color := $00FAF7F3;
+  AddText(ReadyOverlay, Left, ScaleY(34), W, ScaleY(46), 21,
+    'Ready to Install', True, clBlack, Bg);
+  AddText(ReadyOverlay, Left, ScaleY(92), W, ScaleY(54), 11,
+    'Setup is ready to install Locks Tracker on your computer.',
+    False, $003F454C, Bg);
+  AddText(ReadyOverlay, Left, ScaleY(142), W, ScaleY(32), 10,
+    'Click Install to continue.', False, $00666D75, Bg);
 
-  ReadyLogo := TBitmapImage.Create(ReadySidebar);
-  ReadyLogo.Parent := ReadySidebar;
-  ReadyLogo.Width := (SidebarWidth * 52) div 100;
-  ReadyLogo.Height := ReadyLogo.Width;
-  ReadyLogo.Left := (SidebarWidth - ReadyLogo.Width) div 2;
-  ReadyLogo.Top := ScaleY(34);
-  ReadyLogo.Stretch := True;
-  ReadyLogo.Bitmap.LoadFromFile(ExpandConstant('{tmp}\installer-logo.bmp'));
+  Card := AddPanel(ReadyOverlay, Left, ScaleY(190), W, ScaleY(170), $00FCFBFA);
+  Card.BevelOuter := bvLowered;
+  AddText(Card, ScaleX(20), ScaleY(16), Card.Width - ScaleX(40), ScaleY(30), 12,
+    'Installation Summary', True, clBlack, Card.Color);
+  AddText(Card, ScaleX(24), ScaleY(58), ScaleX(110), ScaleY(24), 9,
+    'Destination', True, $00454C54, Card.Color);
+  ReadyDestination := AddText(Card, ScaleX(24), ScaleY(82),
+    Card.Width - ScaleX(48), ScaleY(38), 9, '', False, $00636B75, Card.Color);
+  AddText(Card, ScaleX(24), ScaleY(124), ScaleX(160), ScaleY(24), 9,
+    'Version to install', True, $00454C54, Card.Color);
+  AddText(Card, ScaleX(174), ScaleY(124), Card.Width - ScaleX(198), ScaleY(24), 9,
+    'v{#AppVersion}', False, $00636B75, Card.Color);
+end;
 
-  ReadyBrand := TNewStaticText.Create(ReadySidebar);
-  ReadyBrand.Parent := ReadySidebar;
-  ReadyBrand.Left := ScaleX(14);
-  ReadyBrand.Top := ReadyLogo.Top + ReadyLogo.Height + ScaleY(12);
-  ReadyBrand.Width := SidebarWidth - ScaleX(28);
-  ReadyBrand.Alignment := taCenter;
-  ReadyBrand.Caption := 'Locks Tracker';
-  ReadyBrand.Font.Name := 'Segoe UI';
-  ReadyBrand.Font.Size := 17;
-  ReadyBrand.Font.Style := [fsBold];
-  ReadyBrand.Color := ReadySidebar.Color;
+procedure BuildInstallingPage;
+var
+  Left, W: Integer;
+  Bg: TColor;
+begin
+  Bg := clWhite;
+  InstallingOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
+    WizardForm.Bevel.Top, Bg);
+  InstallingOverlay.Visible := False;
+  BuildSidebar(InstallingOverlay, 3, 'Installing Files', InstallingSidebar, InstallingLogo);
 
-  ReadyVersion := TNewStaticText.Create(ReadySidebar);
-  ReadyVersion.Parent := ReadySidebar;
-  ReadyVersion.Left := ScaleX(14);
-  ReadyVersion.Top := ReadyBrand.Top + ScaleY(31);
-  ReadyVersion.Width := SidebarWidth - ScaleX(28);
-  ReadyVersion.Alignment := taCenter;
-  ReadyVersion.Caption := 'Installer v{#AppVersion}';
-  ReadyVersion.Font.Name := 'Segoe UI';
-  ReadyVersion.Font.Size := 9;
-  ReadyVersion.Font.Color := $00747B84;
-  ReadyVersion.Color := ReadySidebar.Color;
+  Left := InstallingSidebar.Width + ScaleX(34);
+  W := InstallingOverlay.Width - Left - ScaleX(30);
+  InstallingMain := AddPanel(InstallingOverlay, InstallingSidebar.Width, 0,
+    InstallingOverlay.Width - InstallingSidebar.Width, InstallingOverlay.Height, Bg);
 
-  ReadyStep1 := TNewStaticText.Create(ReadySidebar);
-  ReadyStep1.Parent := ReadySidebar;
-  ReadyStep1.Left := ScaleX(27);
-  ReadyStep1.Top := (ReadySidebar.Height * 59) div 100;
-  ReadyStep1.Width := SidebarWidth - ScaleX(40);
-  ReadyStep1.Caption := '●  1. Ready to Install';
-  ReadyStep1.Font.Name := 'Segoe UI';
-  ReadyStep1.Font.Size := 10;
-  ReadyStep1.Font.Style := [fsBold];
-  ReadyStep1.Font.Color := $00E98B17;
-  ReadyStep1.Color := ReadySidebar.Color;
+  AddText(InstallingOverlay, Left, ScaleY(34), W, ScaleY(46), 21,
+    'Installing Files', True, clBlack, Bg);
+  AddText(InstallingOverlay, Left, ScaleY(92), W, ScaleY(48), 11,
+    'Please wait while Setup installs Locks Tracker on your computer.',
+    False, $003F454C, Bg);
 
-  ReadyStep2 := TNewStaticText.Create(ReadySidebar);
-  ReadyStep2.Parent := ReadySidebar;
-  ReadyStep2.Left := ReadyStep1.Left;
-  ReadyStep2.Top := ReadyStep1.Top + ScaleY(38);
-  ReadyStep2.Width := ReadyStep1.Width;
-  ReadyStep2.Caption := '○  2. Installing Files';
-  ReadyStep2.Font.Name := 'Segoe UI';
-  ReadyStep2.Font.Size := 9;
-  ReadyStep2.Font.Color := $00969CA4;
-  ReadyStep2.Color := ReadySidebar.Color;
+  InstallingCard := AddPanel(InstallingOverlay, Left, ScaleY(164), W, ScaleY(184), $00FCFBFA);
+  InstallingCard.BevelOuter := bvLowered;
 
-  ReadyStep3 := TNewStaticText.Create(ReadySidebar);
-  ReadyStep3.Parent := ReadySidebar;
-  ReadyStep3.Left := ReadyStep1.Left;
-  ReadyStep3.Top := ReadyStep2.Top + ScaleY(38);
-  ReadyStep3.Width := ReadyStep1.Width;
-  ReadyStep3.Caption := '○  3. Complete';
-  ReadyStep3.Font.Name := 'Segoe UI';
-  ReadyStep3.Font.Size := 9;
-  ReadyStep3.Font.Color := $00969CA4;
-  ReadyStep3.Color := ReadySidebar.Color;
+  WizardForm.StatusLabel.Parent := InstallingCard;
+  WizardForm.StatusLabel.SetBounds(ScaleX(22), ScaleY(22),
+    InstallingCard.Width - ScaleX(44), ScaleY(28));
+  WizardForm.StatusLabel.Font.Name := 'Segoe UI';
+  WizardForm.StatusLabel.Font.Size := 10;
+  WizardForm.StatusLabel.Font.Style := [fsBold];
+  WizardForm.StatusLabel.Color := InstallingCard.Color;
 
-  ContentLeft := SidebarWidth + ScaleX(32);
-  ContentWidth := ReadyOverlay.Width - ContentLeft - ScaleX(28);
+  WizardForm.FilenameLabel.Parent := InstallingCard;
+  WizardForm.FilenameLabel.SetBounds(ScaleX(22), ScaleY(56),
+    InstallingCard.Width - ScaleX(44), ScaleY(44));
+  WizardForm.FilenameLabel.Font.Name := 'Segoe UI';
+  WizardForm.FilenameLabel.Font.Size := 9;
+  WizardForm.FilenameLabel.Font.Color := $00646C76;
+  WizardForm.FilenameLabel.Color := InstallingCard.Color;
 
-  ReadyTitle := TNewStaticText.Create(ReadyOverlay);
-  ReadyTitle.Parent := ReadyOverlay;
-  ReadyTitle.Left := ContentLeft;
-  ReadyTitle.Top := ScaleY(38);
-  ReadyTitle.Width := ContentWidth;
-  ReadyTitle.AutoSize := False;
-  ReadyTitle.Height := ScaleY(42);
-  ReadyTitle.Caption := 'Ready to Install';
-  ReadyTitle.Font.Name := 'Segoe UI';
-  ReadyTitle.Font.Size := 22;
-  ReadyTitle.Font.Style := [fsBold];
-  ReadyTitle.Color := clWhite;
+  WizardForm.ProgressGauge.Visible := False;
+  InstallProgressTrack := AddPanel(InstallingCard, ScaleX(22), ScaleY(112),
+    InstallingCard.Width - ScaleX(44), ScaleY(12), $00ECE7E1);
+  InstallProgressFill := AddPanel(InstallProgressTrack, 0, 0, 1,
+    InstallProgressTrack.Height, $00E98B17);
+  InstallProgressLabel := AddText(InstallingCard, ScaleX(22), ScaleY(132),
+    InstallingCard.Width - ScaleX(44), ScaleY(22), 8, '0% complete', False,
+    $00707882, InstallingCard.Color);
 
-  ReadyIntro := TNewStaticText.Create(ReadyOverlay);
-  ReadyIntro.Parent := ReadyOverlay;
-  ReadyIntro.Left := ContentLeft;
-  ReadyIntro.Top := ReadyTitle.Top + ScaleY(52);
-  ReadyIntro.Width := ContentWidth;
-  ReadyIntro.AutoSize := False;
-  ReadyIntro.Height := ScaleY(58);
-  ReadyIntro.WordWrap := True;
-  ReadyIntro.Caption := 'Setup is now ready to install Locks Tracker on your computer.';
-  ReadyIntro.Font.Name := 'Segoe UI';
-  ReadyIntro.Font.Size := 11;
-  ReadyIntro.Color := clWhite;
+  AddText(InstallingCard, ScaleX(22), ScaleY(154),
+    InstallingCard.Width - ScaleX(44), ScaleY(28), 9,
+    'This usually takes less than a couple of minutes.', False,
+    $00707882, InstallingCard.Color);
+end;
 
-  ReadyInstruction := TNewStaticText.Create(ReadyOverlay);
-  ReadyInstruction.Parent := ReadyOverlay;
-  ReadyInstruction.Left := ContentLeft;
-  ReadyInstruction.Top := ReadyIntro.Top + ScaleY(52);
-  ReadyInstruction.Width := ContentWidth;
-  ReadyInstruction.AutoSize := False;
-  ReadyInstruction.Height := ScaleY(30);
-  ReadyInstruction.Caption := 'Click "Install" to continue with the installation.';
-  ReadyInstruction.Font.Name := 'Segoe UI';
-  ReadyInstruction.Font.Size := 10;
-  ReadyInstruction.Color := clWhite;
+procedure BuildFinishedPage;
+var
+  Left, W: Integer;
+  Bg: TColor;
+begin
+  Bg := clWhite;
+  FinishedOverlay := AddPanel(WizardForm, 0, 0, WizardForm.ClientWidth,
+    WizardForm.Bevel.Top, Bg);
+  FinishedOverlay.Visible := False;
+  BuildSidebar(FinishedOverlay, 4, 'Install', FinishedSidebar, FinishedLogo);
 
-  ReadySummary := TPanel.Create(ReadyOverlay);
-  ReadySummary.Parent := ReadyOverlay;
-  ReadySummary.Left := ContentLeft;
-  ReadySummary.Top := ReadyInstruction.Top + ScaleY(42);
-  ReadySummary.Width := ContentWidth;
-  ReadySummary.Height := ScaleY(158);
-  ReadySummary.Color := $00FCFBFA;
-  ReadySummary.BevelOuter := bvLowered;
+  Left := FinishedSidebar.Width + ScaleX(34);
+  W := FinishedOverlay.Width - Left - ScaleX(30);
+  FinishedMain := AddPanel(FinishedOverlay, FinishedSidebar.Width, 0,
+    FinishedOverlay.Width - FinishedSidebar.Width, FinishedOverlay.Height, Bg);
 
-  ReadySummaryTitle := TNewStaticText.Create(ReadySummary);
-  ReadySummaryTitle.Parent := ReadySummary;
-  ReadySummaryTitle.Left := ScaleX(20);
-  ReadySummaryTitle.Top := ScaleY(16);
-  ReadySummaryTitle.Width := ReadySummary.Width - ScaleX(40);
-  ReadySummaryTitle.Caption := 'Installation Summary:';
-  ReadySummaryTitle.Font.Name := 'Segoe UI';
-  ReadySummaryTitle.Font.Size := 13;
-  ReadySummaryTitle.Font.Style := [fsBold];
-  ReadySummaryTitle.Color := ReadySummary.Color;
+  AddText(FinishedOverlay, Left, ScaleY(34), W, ScaleY(46), 21,
+    'Installation Complete', True, clBlack, Bg);
+  AddText(FinishedOverlay, Left, ScaleY(92), W, ScaleY(52), 11,
+    'Locks Tracker has been installed successfully and is ready to use.',
+    False, $003F454C, Bg);
 
-  ReadyDestination := TNewStaticText.Create(ReadySummary);
-  ReadyDestination.Parent := ReadySummary;
-  ReadyDestination.Left := ScaleX(28);
-  ReadyDestination.Top := ScaleY(54);
-  ReadyDestination.Width := ReadySummary.Width - ScaleX(56);
-  ReadyDestination.AutoSize := False;
-  ReadyDestination.Height := ScaleY(40);
-  ReadyDestination.WordWrap := True;
-  ReadyDestination.Font.Name := 'Segoe UI';
-  ReadyDestination.Font.Size := 9;
-  ReadyDestination.Color := ReadySummary.Color;
+  FinishedCard := AddPanel(FinishedOverlay, Left, ScaleY(168), W, ScaleY(172), $00FCFBFA);
+  FinishedCard.BevelOuter := bvLowered;
+  AddText(FinishedCard, ScaleX(20), ScaleY(18),
+    FinishedCard.Width - ScaleX(40), ScaleY(30), 12,
+    'You’re all set', True, clBlack, FinishedCard.Color);
+  AddText(FinishedCard, ScaleX(22), ScaleY(54),
+    FinishedCard.Width - ScaleX(44), ScaleY(44), 9,
+    'Automatic updates are enabled, so future releases can install directly from the app.',
+    False, $00636B75, FinishedCard.Color);
 
-  ReadyVersionLine := TNewStaticText.Create(ReadySummary);
-  ReadyVersionLine.Parent := ReadySummary;
-  ReadyVersionLine.Left := ReadyDestination.Left;
-  ReadyVersionLine.Top := ScaleY(96);
-  ReadyVersionLine.Width := ReadyDestination.Width;
-  ReadyVersionLine.Caption := '•  Version to install: v{#AppVersion}';
-  ReadyVersionLine.Font.Name := 'Segoe UI';
-  ReadyVersionLine.Font.Size := 9;
-  ReadyVersionLine.Color := ReadySummary.Color;
-
-  ReadyTimeLine := TNewStaticText.Create(ReadySummary);
-  ReadyTimeLine.Parent := ReadySummary;
-  ReadyTimeLine.Left := ReadyDestination.Left;
-  ReadyTimeLine.Top := ScaleY(122);
-  ReadyTimeLine.Width := ReadyDestination.Width;
-  ReadyTimeLine.Caption := '•  Estimated time: About 2 minutes';
-  ReadyTimeLine.Font.Name := 'Segoe UI';
-  ReadyTimeLine.Font.Size := 9;
-  ReadyTimeLine.Color := ReadySummary.Color;
+  WizardForm.RunList.Parent := FinishedCard;
+  WizardForm.RunList.SetBounds(ScaleX(18), ScaleY(108),
+    FinishedCard.Width - ScaleX(36), ScaleY(46));
+  WizardForm.RunList.Font.Name := 'Segoe UI';
+  WizardForm.RunList.Font.Size := 10;
 end;
 
 procedure InitializeWizard;
 begin
+  ExtractTemporaryFile('installer-logo.bmp');
   BuildWelcomePage;
   BuildOptionsPage;
   BuildReadyPage;
+  BuildInstallingPage;
+  BuildFinishedPage;
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
-  if Assigned(WelcomeOverlay) then
-  begin
-    WelcomeOverlay.Visible := (CurPageID = wpWelcome);
-    if WelcomeOverlay.Visible then
-      WelcomeOverlay.BringToFront;
-  end;
-  if Assigned(OptionsOverlay) then
-  begin
-    OptionsOverlay.Visible := (CurPageID = OptionsPage.ID);
-    if OptionsOverlay.Visible then
-      OptionsOverlay.BringToFront;
-  end;
+  WelcomeOverlay.Visible := False;
+  OptionsOverlay.Visible := False;
+  ReadyOverlay.Visible := False;
+  InstallingOverlay.Visible := False;
+  FinishedOverlay.Visible := False;
 
-  if Assigned(ReadyOverlay) then
+  if CurPageID = wpWelcome then
   begin
-    ReadyOverlay.Visible := (CurPageID = wpReady);
-    if ReadyOverlay.Visible then
-    begin
-      ReadyDestination.Caption := 'Destination: ' + ExpandConstant('{app}');
-      ReadyOverlay.BringToFront;
-    end;
+    WelcomeOverlay.Visible := True;
+    WelcomeOverlay.BringToFront;
+  end
+  else if CurPageID = OptionsPage.ID then
+  begin
+    OptionsOverlay.Visible := True;
+    OptionsOverlay.BringToFront;
+  end
+  else if CurPageID = wpReady then
+  begin
+    ReadyDestination.Caption := ExpandConstant('{app}');
+    ReadyOverlay.Visible := True;
+    ReadyOverlay.BringToFront;
+  end
+  else if CurPageID = wpInstalling then
+  begin
+    InstallingOverlay.Visible := True;
+    InstallingOverlay.BringToFront;
+    WizardForm.StatusLabel.BringToFront;
+    WizardForm.FilenameLabel.BringToFront;
+    WizardForm.ProgressGauge.Visible := False;
+  end
+  else if CurPageID = wpFinished then
+  begin
+    FinishedOverlay.Visible := True;
+    FinishedOverlay.BringToFront;
+    WizardForm.RunList.BringToFront;
+  end;
+end;
+
+procedure CurInstallProgressChanged(CurProgress, MaxProgress: Integer);
+var
+  Pct, NewWidth: Integer;
+begin
+  if (MaxProgress > 0) and (InstallProgressTrack <> nil) and (InstallProgressFill <> nil) then
+  begin
+    Pct := (CurProgress * 100) div MaxProgress;
+    NewWidth := (InstallProgressTrack.Width * CurProgress) div MaxProgress;
+    if NewWidth < 1 then NewWidth := 1;
+    InstallProgressFill.Width := NewWidth;
+    InstallProgressLabel.Caption := IntToStr(Pct) + '% complete';
   end;
 end;
