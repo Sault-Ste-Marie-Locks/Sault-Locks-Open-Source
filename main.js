@@ -986,13 +986,24 @@ function createWindow() {
     updateTrayMenu();
   });
   if (process.platform === 'darwin') {
-    const setMacFullscreenLayout = fullscreen => {
+    const setMacFullscreenLayout = () => {
       try { if (app.dock) app.dock.show(); } catch (_) {}
-      try { mainWindow.webContents.executeJavaScript(`document.documentElement.classList.toggle('mac-native-fullscreen', ${fullscreen ? 'true' : 'false'});`).catch(() => {}); } catch (_) {}
+      const refreshLayout = () => {
+        if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) return;
+        mainWindow.webContents.executeJavaScript(`(() => {
+          document.documentElement.classList.remove('mac-native-fullscreen');
+          void document.documentElement.offsetHeight;
+          window.dispatchEvent(new Event('resize'));
+          requestAnimationFrame(() => requestAnimationFrame(() => window.dispatchEvent(new Event('resize'))));
+        })();`).catch(() => {});
+      };
+      refreshLayout();
+      setTimeout(refreshLayout, 120);
+      setTimeout(refreshLayout, 350);
       updateTrayMenu();
     };
-    mainWindow.on('enter-full-screen', () => setMacFullscreenLayout(true));
-    mainWindow.on('leave-full-screen', () => setMacFullscreenLayout(false));
+    mainWindow.on('enter-full-screen', setMacFullscreenLayout);
+    mainWindow.on('leave-full-screen', setMacFullscreenLayout);
   }
   mainWindow.on('closed', () => { mainWindow = null; updateTrayMenu(); });
 }
