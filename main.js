@@ -342,7 +342,11 @@ body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
 .updater-dark.mac button:disabled,.updater-dark.windows button:disabled{background:#242629!important;color:#7f838a!important}
 .updater-dark.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
 .updater-dark.mac .bar,.updater-dark.windows .bar{background:#303236!important;border-color:#4b4e53!important}
-.updater-dark .logo{background:#111214!important}</style></head><body class="${platformClass}">
+.updater-dark .logo{background:#111214!important}
+.updater-dark .titlebar{background:#151d26!important;border-bottom-color:#2b3947!important}
+.updater-dark.windows .titlebar-btn{width:46px!important;min-width:46px!important;height:30px!important;padding:0!important;border:0!important;border-radius:0!important;background:#151d26!important;color:#f5f7fa!important}
+.updater-dark.windows .titlebar-btn:hover{background:#202b37!important}
+.updater-dark.windows .titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}</style></head><body class="${platformClass}">
 <div class="titlebar"><span>Lock Release Update</span><div class="titlebar-controls"><button class="titlebar-btn" aria-label="Minimize" onclick="location.href='lockrelease-update://minimize'">&#8722;</button><button class="titlebar-btn close" aria-label="Close" onclick="location.href='lockrelease-update://close'">&#215;</button></div></div>
 ${isMac ? `
 <div class="body" id="card">
@@ -475,7 +479,11 @@ body.updater-dark{background:#17181a!important;color:#f5f5f5!important}
 .updater-dark.mac button:disabled,.updater-dark.windows button:disabled{background:#242629!important;color:#7f838a!important}
 .updater-dark.mac .primary{background:linear-gradient(#4d8fe9,#2f70c9)!important;border-color:#5d99ea!important;color:#fff!important}
 .updater-dark.mac .bar,.updater-dark.windows .bar{background:#303236!important;border-color:#4b4e53!important}
-.updater-dark .logo{background:#111214!important}</style></head><body class="${(isMac ? 'mac' : 'windows') + (darkMode ? ' updater-dark' : '')}">
+.updater-dark .logo{background:#111214!important}
+.updater-dark .titlebar{background:#151d26!important;border-bottom-color:#2b3947!important}
+.updater-dark.windows .titlebar-btn{width:46px!important;min-width:46px!important;height:30px!important;padding:0!important;border:0!important;border-radius:0!important;background:#151d26!important;color:#f5f7fa!important}
+.updater-dark.windows .titlebar-btn:hover{background:#202b37!important}
+.updater-dark.windows .titlebar-btn.close:hover{background:#c42b1c!important;color:#fff!important}</style></head><body class="${(isMac ? 'mac' : 'windows') + (darkMode ? ' updater-dark' : '')}">
 <div class="titlebar"><span>Lock Release Update</span><div class="titlebar-controls"><button class="titlebar-btn" aria-label="Minimize" onclick="location.href='lockrelease-update://minimize'">&#8722;</button><button class="titlebar-btn close" aria-label="Close" onclick="location.href='lockrelease-update://close'">&#215;</button></div></div>
 <div class="body">
   ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="">` : '<div class="logo"></div>'}
