@@ -1,27 +1,50 @@
+<p align="center">
+  <img src="https://i.imgur.com/i1TX5XR.png" alt="Sault Locks Tracker" width="100%">
+</p>
+
 # Lock Release / Sault Locks Tracker
 
-Desktop and mobile canal traffic tracker used by the Sault Canada Locks.
+Desktop and mobile canal traffic tracking software used by the **Sault Canada Locks**.
 
-## Project layout
+The project includes the desktop application, linked mobile interface, local API, database storage, automatic updates, and release tooling.
 
-- `main.js` - Electron desktop shell, tray, updater, and desktop lifecycle.
-- `server.js` - local API, SQLite storage, phone pairing, and static routing.
-- `public/` - live desktop web UI served by `server.js`.
-- `mobile/public/` - live linked-phone UI/PWA.
-- `assets/` - Electron-only app icons.
-- `database/` - starter/recovery SQLite database for legacy/source installs.
-- `data-backup/` - legacy JSON fallback used only when a database is empty.
-- `tools/data/` - manual JSON import utilities.
-- `.github/workflows/build-release.yml` - Windows/macOS build and public update release workflow.
+## Project Structure
+
+* `main.js` — Electron desktop shell, system tray, updater, and application lifecycle.
+* `server.js` — Local API, SQLite storage, phone pairing, and static file routing.
+* `public/` — Desktop web interface served by `server.js`.
+* `mobile/public/` — Linked-phone interface and PWA.
+* `assets/` — Electron application icons and desktop assets.
+* `database/` — Starter and recovery SQLite database for source or legacy installs.
+* `data-backup/` — Legacy JSON fallback used when the database is empty.
+* `tools/data/` — Manual JSON import and data utilities.
+* `.github/workflows/build-release.yml` — Windows and macOS build and release workflow.
 
 ## Development
 
-Run `npm install`, then `npm start`.
+Install dependencies and start the application:
 
-Writable live data is stored under the Electron user-data folder rather than inside the installed app. Updates replace application files without replacing the live database.
+```bash
+npm install
+npm start
+```
+
+Live writable data is stored in the Electron user-data directory instead of inside the installed application.
+
+This allows application updates to replace program files without overwriting the active database or user data.
 
 ## Releases
 
-Every push to `main` triggers the release workflow. Automatic update payloads publish to `Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Updates`, while user-facing Windows and macOS downloads publish to `Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Releases`.
+Every push to `main` triggers the automated build and release workflow.
 
-Do not commit generated builds, release archives, logs, or temporary import files.
+Automatic update packages are published to:
+
+**Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Updates**
+
+Public Windows and macOS downloads are published to:
+
+**Sault-Ste-Marie-Locks/Sault-Locks-Tracker-Releases**
+
+## Repository Notes
+
+Generated builds, release archives, logs, temporary files, and manual import files should not be committed to this repository.
