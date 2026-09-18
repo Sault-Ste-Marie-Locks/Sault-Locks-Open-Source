@@ -261,6 +261,12 @@ function typeBadge(type){const shown=canonicalTrafficType(type)||String(type||''
 function entryTypeLabel(type){const shown=canonicalTrafficType(type); return entryTypes[shown]?.title || (shown==='LR'?'Lock Reversal':shown==='LT'?'Lock Test':shown==='RB'?'Recreational Boat':'Entry');}
 function trafficRecordId(r){
   if(!r || typeof r !== 'object') return '';
+
+  // Historical records fetched from SQLite include dashboardId, which is the
+  // real records.record_id. Prefer it so older entries can be edited safely.
+  const dashboardId=String(r.dashboardId||r.recordId||r.record_id||'').trim();
+  if(dashboardId) return dashboardId;
+
   if(r.mobileId) return 'mobile:' + r.mobileId;
   if(r.oldId) return 'old:' + r.oldId;
   if(r.id) return 'id:' + r.id;
@@ -269,7 +275,31 @@ function trafficRecordId(r){
 function findTrafficIndexById(id){
   const wanted=String(id||'').trim();
   if(!wanted) return -1;
-  return (data.traffic||[]).findIndex(r=>trafficRecordId(r)===wanted || String(r.mobileId||'')===wanted || String(r.oldId||'')===wanted || String(r.id||'')===wanted);
+  return (data.traffic||[]).findIndex(r=>
+    trafficRecordId(r)===wanted ||
+    String(r.dashboardId||r.recordId||r.record_id||'')===wanted ||
+    String(r.mobileId||'')===wanted ||
+    String(r.oldId||'')===wanted ||
+    String(r.id||'')===wanted
+  );
+}
+function cacheFetchedTrafficRows(rows){
+  const incoming=Array.isArray(rows) ? rows : [];
+  if(!incoming.length) return incoming;
+
+  // Reports and Search can load entries that are older than the dashboard's
+  // small startup cache. Keep those fetched rows in memory so Edit/Delete can
+  // resolve them without changing their stored date or time.
+  data.traffic=mergeByKey(
+    data.traffic||[],
+    incoming,
+    row=>trafficRecordId(row)||dashboardRecKey(row)
+  ).sort((a,b)=>
+    String(a.date||'').localeCompare(String(b.date||'')) ||
+    String(a.time||'').localeCompare(String(b.time||''))
+  );
+
+  return incoming;
 }
 function trafficRows(rows, actions=false){return `<thead><tr><th>Date</th><th>Time</th><th>Canal</th><th>Vessel</th><th>Type</th><th>Dir.</th><th>Rev.</th><th>Passengers</th><th>Destination</th><th>Home Port</th>${actions?'<th>Actions</th>':''}</tr></thead><tbody>`+rows.map(r=>{const id=htmlEscape(trafficRecordId(r));return `<tr data-entry-id="${id}"><td>${prettyDate(r.date)}</td><td>${htmlEscape(displayTime(r.time||''))}</td><td>${htmlEscape(r.canal||'')}</td><td><strong>${htmlEscape(r.vessel||entryTypeLabel(r.type))}</strong></td><td>${typeBadge(r.type)}</td><td>${htmlEscape(r.direction||'')}</td><td>${htmlEscape(r.reverse||'')}</td><td>${htmlEscape(r.passengers??0)}</td><td>${htmlEscape(r.destination||'')}</td><td>${htmlEscape(r.homePort||'')}</td>${actions?`<td class="entry-actions"><button class="btn" type="button" data-entry-action="edit" data-entry-id="${id}">Edit</button><button class="btn danger" type="button" data-entry-action="delete" data-entry-id="${id}">Delete</button></td>`:''}</tr>`}).join('')+'</tbody>'; }
 function lookupTrafficRows(rows){
@@ -335,6 +365,7 @@ async function runSearch(){
     const r=await fetch('/api/records/search?'+params.toString(),{cache:'no-store'});
     const out=await r.json().catch(()=>({}));
     const rows=Array.isArray(out.traffic) ? out.traffic : [];
+    cacheFetchedTrafficRows(rows);
     setHTML('#searchTable',lookupTrafficRows(rows));
     setText('#searchCount',`${rows.length} found${rows.length>=500?' - narrow your search for more':''}`);
   }catch(e){
@@ -437,7 +468,7 @@ async function fetchReportRows(kind){
     else url='/api/records/range?start='+encodeURIComponent(start)+'&end='+encodeURIComponent(end)+'&limit=10000';
     const r=await fetch(url,{cache:'no-store'});
     const out=await r.json().catch(()=>({}));
-    if(r.ok && Array.isArray(out.traffic)) return out.traffic;
+    if(r.ok && Array.isArray(out.traffic)) return cacheFetchedTrafficRows(out.traffic);
   }catch(e){}
   if(kind==='dailyReport') return (data.traffic||[]).filter(r=>r.date===reportDate);
   if(kind==='monthlyReport') return (data.traffic||[]).filter(r=>String(r.date||'').startsWith(reportMonth));
