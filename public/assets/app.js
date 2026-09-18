@@ -703,11 +703,143 @@ function ensureEntryEditorStyles(){
     body.dark-mode .entry-edit-section-title::before,html.app-dark .entry-edit-section-title::before{background:#123a5c;color:#79bfff}
     body.dark-mode .entry-edit-field span,html.app-dark .entry-edit-field span{color:var(--text-soft)!important}
     body.dark-mode .entry-edit-field input,body.dark-mode .entry-edit-field select,body.dark-mode .entry-edit-field textarea,html.app-dark .entry-edit-field input,html.app-dark .entry-edit-field select,html.app-dark .entry-edit-field textarea{background-color:#121a23!important;border-color:var(--line-strong)!important;color:var(--text)!important}
+    #editTrafficPreset{color-scheme:light}
+    body.dark-mode #editTrafficPreset,html.app-dark #editTrafficPreset{color-scheme:dark;background-color:#121a23!important;border-color:var(--line-strong)!important;color:var(--text)!important}
+    body.dark-mode #editTrafficPreset option,html.app-dark #editTrafficPreset option{background:#121a23!important;color:#f3f2f1!important}
     body.dark-mode .entry-edit-actions,html.app-dark .entry-edit-actions{background:#151d26!important;border-color:var(--line)!important}
     @media(max-width:900px){.entry-edit-card{max-height:92vh}.entry-edit-grid,.entry-edit-grid.entry-main-grid,.entry-edit-grid.entry-location-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:620px){.entry-edit-modal{padding:10px;place-items:end center}.entry-edit-card{width:100%;max-height:95vh;border-radius:16px 16px 0 0}.entry-edit-header{padding:15px 54px 15px 66px;min-height:74px}.entry-edit-header::before{left:16px;width:38px;height:38px}.entry-edit-header h3{font-size:20px}.entry-edit-close{position:absolute;right:14px;top:16px}.entry-edit-scroll{padding:12px}.entry-edit-section-title{padding-left:52px}.entry-edit-grid,.entry-edit-grid.entry-main-grid,.entry-edit-grid.entry-location-grid{grid-template-columns:1fr;gap:12px;padding:14px}.entry-edit-actions{grid-template-columns:1fr;gap:9px;padding:12px}.entry-edit-delete-wrap,.entry-edit-save-wrap{width:100%;display:grid;grid-template-columns:1fr;gap:8px}.entry-edit-meta{text-align:center;white-space:normal}.entry-edit-actions .btn{width:100%;min-height:42px}}
   `;
   document.head.appendChild(style);
+}
+
+
+function entryEditPresetItems(typeValue=''){
+  const wantedType=typeof normalizePresetTypeKey==='function' ? normalizePresetTypeKey(typeValue) : String(typeValue||'');
+  const allowedTypes=wantedType==='RB' ? new Set(['RB','K']) : new Set(wantedType?[wantedType]:['RB','TB','Gov','Com','K']);
+  const items=[];
+  const seen=new Set();
+
+  const addPreset=(preset, fallbackType='')=>{
+    if(!preset || typeof preset!=='object') return;
+    const name=String(preset.name||preset.vessel||'').trim();
+    if(!name) return;
+
+    const type=typeof normalizePresetTypeKey==='function'
+      ? (normalizePresetTypeKey(preset.vesselType||preset.type||fallbackType) || fallbackType || wantedType || 'RB')
+      : (preset.vesselType||preset.type||fallbackType||wantedType||'RB');
+
+    if(wantedType && !allowedTypes.has(type)) return;
+
+    const canalReg=String(preset.canalReg||preset.canal||preset.reg||'').trim();
+    const vesselReg=String(preset.vesselReg||preset.registration||preset.registrationNumber||'').trim();
+    const key=[name.toUpperCase(),canalReg.toUpperCase(),vesselReg.toUpperCase(),type].join('|');
+    if(seen.has(key)) return;
+    seen.add(key);
+
+    items.push({
+      name,
+      canalReg,
+      vesselReg,
+      type,
+      homePort:String(preset.homePort||preset.homeport||preset.port||'').trim(),
+      city:String(preset.city||'').trim(),
+      state:String(preset.state||'').trim(),
+      country:String(preset.country||'').trim()
+    });
+  };
+
+  try{
+    if(typeof vesselPresetGroups!=='undefined' && vesselPresetGroups){
+      for(const type of ['RB','TB','Gov','Com','K']){
+        (vesselPresetGroups[type]||[]).forEach(preset=>addPreset(preset,type));
+      }
+    }
+  }catch(_){}
+
+  (data.registry||[]).forEach(preset=>addPreset(preset,preset.type||''));
+
+  return items.sort((a,b)=>a.name.localeCompare(b.name) || a.vesselReg.localeCompare(b.vesselReg));
+}
+
+function refreshEntryEditPresetOptions(record=null){
+  const select=$('#editTrafficPreset');
+  if(!select) return;
+
+  const currentType=$('#editTrafficType')?.value || record?.type || '';
+  const items=entryEditPresetItems(currentType);
+  select._entryEditPresetItems=items;
+  select.innerHTML='';
+
+  const manual=document.createElement('option');
+  manual.value='';
+  manual.textContent='No preset — type manually';
+  select.appendChild(manual);
+
+  items.forEach((preset,index)=>{
+    const option=document.createElement('option');
+    option.value=String(index);
+    option.textContent=[
+      preset.name,
+      preset.vesselReg ? `Reg ${preset.vesselReg}` : '',
+      preset.canalReg ? `Canal ${preset.canalReg}` : ''
+    ].filter(Boolean).join(' · ');
+    select.appendChild(option);
+  });
+
+  if(!record){
+    select.value='';
+    return;
+  }
+
+  const wantedName=String(record.vessel||record.vesselName||record.boatName||'').trim().toUpperCase();
+  const wantedReg=String(record.vesselReg||record.registration||record.registrationNumber||record.reg||'').trim().toUpperCase();
+
+  const matchIndex=items.findIndex(preset=>{
+    if(wantedName && preset.name.toUpperCase()!==wantedName) return false;
+    if(wantedReg && preset.vesselReg && preset.vesselReg.toUpperCase()!==wantedReg) return false;
+    return !!wantedName;
+  });
+
+  select.value=matchIndex>=0 ? String(matchIndex) : '';
+}
+
+function applyEntryEditPreset(){
+  const select=$('#editTrafficPreset');
+  if(!select || select.value==='') return;
+
+  const items=Array.isArray(select._entryEditPresetItems) ? select._entryEditPresetItems : [];
+  const preset=items[Number(select.value)];
+  if(!preset) return;
+
+  const vessel=$('#editTrafficVessel');
+  if(vessel) vessel.value=preset.name||'';
+
+  const reg=$('#editTrafficReg');
+  if(reg && preset.vesselReg) reg.value=preset.vesselReg;
+
+  const type=$('#editTrafficType');
+  if(type && preset.type && [...type.options].some(option=>option.value===preset.type)){
+    type.value=preset.type;
+  }
+
+  const homePort=$('#editTrafficHomePort');
+  if(homePort){
+    homePort.value=preset.homePort || [preset.city,preset.state,preset.country].filter(Boolean).join(', ');
+  }
+}
+
+function releaseEntryEditPresetWhenTyping(){
+  const select=$('#editTrafficPreset');
+  if(!select || select.value==='') return;
+
+  const items=Array.isArray(select._entryEditPresetItems) ? select._entryEditPresetItems : [];
+  const preset=items[Number(select.value)];
+  const typed=String($('#editTrafficVessel')?.value||'').trim().toUpperCase();
+
+  if(!preset || typed!==String(preset.name||'').trim().toUpperCase()){
+    select.value='';
+  }
 }
 
 function ensureEntryEditor(){
@@ -754,8 +886,15 @@ function ensureEntryEditor(){
             </label>
 
             <label class="entry-edit-field">
+              <span>Preset (optional)</span>
+              <select id="editTrafficPreset" aria-label="Choose a vessel preset">
+                <option value="">No preset — type manually</option>
+              </select>
+            </label>
+
+            <label class="entry-edit-field">
               <span>Vessel</span>
-              <input id="editTrafficVessel" list="vesselList">
+              <input id="editTrafficVessel" autocomplete="off" spellcheck="false" placeholder="Type boat name">
             </label>
 
             <label class="entry-edit-field">
@@ -834,6 +973,9 @@ function ensureEntryEditor(){
   document.body.appendChild(modal);
 
   $('#entryEditForm')?.addEventListener('submit',saveEntryEdit);
+  $('#editTrafficPreset')?.addEventListener('change',applyEntryEditPreset);
+  $('#editTrafficVessel')?.addEventListener('input',releaseEntryEditPresetWhenTyping);
+  $('#editTrafficType')?.addEventListener('change',()=>refreshEntryEditPresetOptions());
   $('#entryEditDelete')?.addEventListener('click',()=>{
     const id=$('#editTrafficOriginalId')?.value;
     if(id) deleteTrafficById(id,true);
@@ -856,12 +998,13 @@ function openEntryEditor(id){
   if(idx<0){toast('Entry not found'); return;}
 
   const r=data.traffic[idx]||{};
+  $('#editTrafficType').value=r.type||'RB';
+  refreshEntryEditPresetOptions(r);
   $('#editTrafficOriginalId').value=trafficRecordId(r);
   $('#editTrafficDate').value=String(r.date||todayISO()).slice(0,10);
   $('#editTrafficTime').value=r.time||nowTime();
   $('#editTrafficVessel').value=r.vessel||'';
   $('#editTrafficReg').value=r.vesselReg||r.registration||r.reg||'';
-  $('#editTrafficType').value=r.type||'RB';
   $('#editTrafficDirection').value=editorDirectionValue(r.direction||r.dir||r.lockDirection||'');
   $('#editTrafficPassengers').value=Number(r.passengers)||0;
   $('#editTrafficDestination').value=r.destination||'';
