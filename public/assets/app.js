@@ -71,6 +71,40 @@ let phoneServerState=JSON.parse(localStorage.getItem(phoneServerStateKey)||'null
 let currentReport=dashboardSettings().defaultReport||'dailyReport';
 let reportRenderGeneration=0;
 let reportLastSignature="";
+
+// Keep report navigation responsive when the operator quickly cycles dates.
+// Recent report payloads are cached briefly and duplicate requests share one fetch.
+const reportRowsCache = new Map();
+const reportRowsInFlight = new Map();
+const REPORT_ROWS_CACHE_TTL = 30000;
+let reportRenderTimer = 0;
+
+function reportRowsCacheGet(key){
+  const cached=reportRowsCache.get(key);
+  if(!cached) return null;
+  if(Date.now()-cached.at>REPORT_ROWS_CACHE_TTL){
+    reportRowsCache.delete(key);
+    return null;
+  }
+  return cached.rows;
+}
+
+function reportRowsCacheSet(key,rows){
+  reportRowsCache.set(key,{at:Date.now(),rows:Array.isArray(rows)?rows:[]});
+  // Keep the cache small even if someone browses through many dates.
+  while(reportRowsCache.size>40){
+    const oldest=reportRowsCache.keys().next().value;
+    reportRowsCache.delete(oldest);
+  }
+}
+
+function queueReportRender(delay=70){
+  clearTimeout(reportRenderTimer);
+  reportRenderTimer=setTimeout(()=>{
+    reportRenderTimer=0;
+    renderReport();
+  },delay);
+}
 const entryTypes = {
   RB: {
     title: 'Recreational Boat',
@@ -461,18 +495,53 @@ async function fetchReportRows(kind){
   const reportMonth=$('#reportMonth')?.value || todayISO().slice(0,7);
   const start=$('#startDate')?.value || todayISO().slice(0,8)+'01';
   const end=$('#endDate')?.value || todayISO();
+
+  const period = kind==='dailyReport'
+    ? reportDate
+    : kind==='monthlyReport'
+      ? reportMonth
+      : `${start}|${end}`;
+
+  const cacheKey=`${kind}:${period}`;
+  const cached=reportRowsCacheGet(cacheKey);
+  if(cached) return cached;
+
+  if(reportRowsInFlight.has(cacheKey)){
+    return reportRowsInFlight.get(cacheKey);
+  }
+
+  const request=(async()=>{
+    try{
+      let url='';
+      if(kind==='dailyReport') url='/api/records/day?date='+encodeURIComponent(reportDate)+'&limit=3000';
+      else if(kind==='monthlyReport') url='/api/records/month?month='+encodeURIComponent(reportMonth)+'&limit=10000';
+      else url='/api/records/range?start='+encodeURIComponent(start)+'&end='+encodeURIComponent(end)+'&limit=10000';
+
+      const r=await fetch(url,{cache:'no-store'});
+      const out=await r.json().catch(()=>({}));
+      if(r.ok && Array.isArray(out.traffic)){
+        const rows=cacheFetchedTrafficRows(out.traffic);
+        reportRowsCacheSet(cacheKey,rows);
+        return rows;
+      }
+    }catch(e){}
+
+    let rows;
+    if(kind==='dailyReport') rows=(data.traffic||[]).filter(r=>r.date===reportDate);
+    else if(kind==='monthlyReport') rows=(data.traffic||[]).filter(r=>String(r.date||'').startsWith(reportMonth));
+    else rows=(data.traffic||[]).filter(r=>r.date>=start&&r.date<=end);
+
+    reportRowsCacheSet(cacheKey,rows);
+    return rows;
+  })();
+
+  reportRowsInFlight.set(cacheKey,request);
+
   try{
-    let url='';
-    if(kind==='dailyReport') url='/api/records/day?date='+encodeURIComponent(reportDate)+'&limit=3000';
-    else if(kind==='monthlyReport') url='/api/records/month?month='+encodeURIComponent(reportMonth)+'&limit=10000';
-    else url='/api/records/range?start='+encodeURIComponent(start)+'&end='+encodeURIComponent(end)+'&limit=10000';
-    const r=await fetch(url,{cache:'no-store'});
-    const out=await r.json().catch(()=>({}));
-    if(r.ok && Array.isArray(out.traffic)) return cacheFetchedTrafficRows(out.traffic);
-  }catch(e){}
-  if(kind==='dailyReport') return (data.traffic||[]).filter(r=>r.date===reportDate);
-  if(kind==='monthlyReport') return (data.traffic||[]).filter(r=>String(r.date||'').startsWith(reportMonth));
-  return (data.traffic||[]).filter(r=>r.date>=start&&r.date<=end);
+    return await request;
+  }finally{
+    reportRowsInFlight.delete(cacheKey);
+  }
 }
 async function renderReport(){
   updateReportControls();
@@ -1222,7 +1291,11 @@ function renderPairCode(){
 
 async function generatePhoneCode(){if(!phoneServerState.running){toast('Start the phone server first'); return;} activePair={code:String(Math.floor(100000+Math.random()*900000)),expires:Date.now()+120000}; savePair(); try{const r=await fetch('/api/pair/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(activePair)}); const out=await r.json().catch(()=>({})); if(!r.ok||!out.ok){activePair=null; savePair(); if(r.status===423){phoneServerState={...phoneServerState,running:false,url:'',startedAt:null}; savePhoneServerState();} renderPhoneServer(); renderPairCode(); toast(out.error||'Start the phone server first'); return;} if(out&&out.code){activePair.code=out.code; activePair.expires=out.expires||activePair.expires; savePair();}}catch(e){activePair=null; savePair(); renderPairCode(); toast('Could not create phone code'); return;} renderPairCode(); toast('Pairing code generated');}
 function render(){applyTheme(); applyDashboardPreferences(); const today=todayISO(); const todayTraffic=data.traffic.filter(r=>r.date===today); const totalPassengers=todayTraffic.reduce((a,r)=>a+(Number(r.passengers)||0),0); const dailyVessels=new Set(todayTraffic.map(r=>(r.vessel||r.canal||'').trim()).filter(Boolean)).size; setText('#statRecords',todayTraffic.length); setText('#statPassengers',totalPassengers.toLocaleString()); setText('#statLockages',countDirectionalLockages(todayTraffic)); setText('#statRegistered',dailyVessels); setText('#todayLabel',new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})); setHTML('#recentTable',trafficRows([...data.traffic].slice(-6).reverse(),true)); setHTML('#trafficTable',trafficRows(data.traffic,true)); setHTML('#registryTable',registryRows(data.registry)); const phoneList=Array.isArray(data.phones)?data.phones:[]; setHTML('#whitelistTable',phoneRows(phoneList.filter(p=>p.whitelisted===true),'No whitelisted devices yet.')); setHTML('#phoneTable',phoneRows(phoneList.filter(p=>p.whitelisted!==true),'No other linked devices.')); setHTML('#phoneEventLog', phoneEventRows()); setHTML('#vesselList',data.registry.map(r=>`<option value="${r.vessel}"></option>`).join('')); setHTML('#countryOptions',(data.countries||[]).map(c=>`<option value="${htmlEscape(c.country||c)}"></option>`).join('')); setHTML('#stateOptions',(data.states||[]).map(st=>`<option value="${htmlEscape(st.stateProv||st)}"></option>`).join('')); renderPairCode(); renderPhoneServer(); renderChart(); renderReport(); runSearch(); renderEntryPresets();}
-function bindEvents(){setActiveDashboardNav();applyTheme();applyDashboardPreferences();const prefs=dashboardSettings(); document.addEventListener('click',e=>{const btn=e.target.closest('[data-entry-action]'); if(!btn) return; const action=btn.dataset.entryAction; if(action==='edit') openEntryEditor(btn.dataset.entryId); if(action==='delete') deleteTrafficById(btn.dataset.entryId); if(action==='close-edit') closeEntryEditor();}); if($('#trafficDate')) $('#trafficDate').value=todayISO(); if($('#trafficTime')) $('#trafficTime').value=prefs.autofillTime?nowTime():''; if($('#reportDate')) $('#reportDate').value=todayISO(); if($('#reportMonth')) $('#reportMonth').value=todayISO().slice(0,7); if($('#startDate')) $('#startDate').value=todayISO().slice(0,8)+'01'; if($('#endDate')) $('#endDate').value=todayISO(); setupEntryTypeChooser(); if($('#trafficDirection')&&!$('#trafficDirection').value&&prefs.defaultDirection) $('#trafficDirection').value=prefs.defaultDirection; $$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.report===currentReport)); updateReportControls(); const q=new URLSearchParams(window.location.search).get('q'); if(q&&$('#globalSearch')) $('#globalSearch').value=q; $('#globalSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=e.target.value.trim(); if(!$('#searchTable') && v) location.href='/search?q='+encodeURIComponent(v);}}); $('#syncTime')?.addEventListener('click',()=>{if($('#trafficDate')) $('#trafficDate').value=todayISO(); if($('#trafficTime')) $('#trafficTime').value=nowTime(); toast('Time updated');}); $('#trafficVessel')?.addEventListener('change',fillFromRegistry); $('#trafficCanalReg')?.addEventListener('change',fillFromRegistry); $('#trafficForm')?.addEventListener('submit',async e=>{e.preventDefault(); const row={id:'desktop_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),date:$('#trafficDate').value,canal:$('#trafficCanalReg').value,vessel:$('#trafficVessel').value.toUpperCase(),vesselReg:$('#trafficVesselReg').value,type:$('#trafficType').value,direction:$('#trafficDirection').value,reverse:$('#trafficReverse').value,time:normalizeTime24($('#trafficTime').value,nowTime()),passengers:Number($('#trafficPassengers').value)||0,destination:$('#trafficDestination').value.toUpperCase(),homePort:$('#trafficHomePort').value,status:'Pending',completed:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),source:'Desktop Dashboard'}; try{const res=await fetch('/api/dashboard/entry/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:row.id,entry:row})}); const out=await res.json().catch(()=>({})); if(!res.ok||!out.ok) throw new Error(out.error||'Save failed'); if(Array.isArray(out.traffic)) data.traffic=out.traffic; else data.traffic.push(out.entry||row); persistLocal(); e.target.reset(); $('#trafficDate').value=todayISO(); $('#trafficTime').value=prefs.autofillTime?nowTime():''; $('#trafficPassengers').value=0; reapplySelectedEntryType(); if($('#trafficDirection')&&!$('#trafficDirection').value&&prefs.defaultDirection) $('#trafficDirection').value=prefs.defaultDirection; render(); toast('Traffic record added'); setTimeout(()=>{window.location.href='/new-entry';},450);}catch(err){console.error(err); toast('Save failed — check server console');}}); $('#registrationForm')?.addEventListener('submit',e=>{e.preventDefault(); data.registry.push({canal:$('#regCanal').value,owner:$('#regOwner').value,vessel:$('#regVessel').value.toUpperCase(),length:$('#regLength').value,regType:$('#regType').value,vesselReg:$('#regNumber').value,type:$('#regVesselType').value,city:$('#regCity').value,country:$('#regCountry').value,state:$('#regState').value,address:$('#regAddress').value}); save(); e.target.reset(); render(); toast('Registration saved');}); ['searchDate','searchCanal','searchVessel','searchType','searchDestination','searchHomePort','globalSearch'].forEach(id=>$('#'+id)?.addEventListener('input',runSearch)); $('#runSearch')?.addEventListener('click',runSearch); $('#clearSearch')?.addEventListener('click',()=>{$$('#search input').forEach(i=>i.value=''); runSearch();}); $$('.tab').forEach(t=>t.addEventListener('click',()=>switchReport(t.dataset.report))); ['reportDate','reportMonth','startDate','endDate'].forEach(id=>$('#'+id)?.addEventListener('input',renderReport)); $('#printCurrentReport')?.addEventListener('click',()=>printReport()); $('#printDailyReport')?.addEventListener('click',()=>printReport('dailyReport')); $('#printMonthlyReport')?.addEventListener('click',()=>printReport('monthlyReport')); $('#exportData')?.addEventListener('click',exportData); $('#easyExport')?.addEventListener('click',exportData); $('#resetData')?.addEventListener('click',()=>{if(confirm('Reset all demo data?')){data=JSON.parse(JSON.stringify(demo)); data.phones=[]; activePair=null; savePair(); save(); render(); toast('Demo data reset');}}); $('#generatePairCode')?.addEventListener('click',generatePhoneCode); $('#cancelPairCode')?.addEventListener('click',async()=>{activePair=null; savePair(); try{await fetch('/api/pair/cancel',{method:'POST'});}catch(e){} renderPairCode(); toast('Pairing link cancelled');}); $('#startPhoneServer')?.addEventListener('click',startPhoneServer); $('#stopPhoneServer')?.addEventListener('click',stopPhoneServer); refreshPhoneServerStatus(); pullSharedPresets(); pullServerData(); setInterval(()=>{if(!document.hidden){pullSharedPresets(); pullServerData();}},15000); document.addEventListener('visibilitychange',()=>{if(!document.hidden){pullSharedPresets(); pullServerData();}}); $('#darkModeToggle')?.addEventListener('change',e=>{localStorage.setItem(themeKey,String(e.target.checked)); applyTheme(); toast(e.target.checked?'Dark Mode enabled':'Light Mode enabled');}); $('#presetForm')?.addEventListener('submit',async e=>{
+function bindEvents(){setActiveDashboardNav();applyTheme();applyDashboardPreferences();const prefs=dashboardSettings(); document.addEventListener('click',e=>{const btn=e.target.closest('[data-entry-action]'); if(!btn) return; const action=btn.dataset.entryAction; if(action==='edit') openEntryEditor(btn.dataset.entryId); if(action==='delete') deleteTrafficById(btn.dataset.entryId); if(action==='close-edit') closeEntryEditor();}); if($('#trafficDate')) $('#trafficDate').value=todayISO(); if($('#trafficTime')) $('#trafficTime').value=prefs.autofillTime?nowTime():''; if($('#reportDate')) $('#reportDate').value=todayISO(); if($('#reportMonth')) $('#reportMonth').value=todayISO().slice(0,7); if($('#startDate')) $('#startDate').value=todayISO().slice(0,8)+'01'; if($('#endDate')) $('#endDate').value=todayISO(); setupEntryTypeChooser(); if($('#trafficDirection')&&!$('#trafficDirection').value&&prefs.defaultDirection) $('#trafficDirection').value=prefs.defaultDirection; $$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.report===currentReport)); updateReportControls(); const q=new URLSearchParams(window.location.search).get('q'); if(q&&$('#globalSearch')) $('#globalSearch').value=q; $('#globalSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=e.target.value.trim(); if(!$('#searchTable') && v) location.href='/search?q='+encodeURIComponent(v);}}); $('#syncTime')?.addEventListener('click',()=>{if($('#trafficDate')) $('#trafficDate').value=todayISO(); if($('#trafficTime')) $('#trafficTime').value=nowTime(); toast('Time updated');}); $('#trafficVessel')?.addEventListener('change',fillFromRegistry); $('#trafficCanalReg')?.addEventListener('change',fillFromRegistry); $('#trafficForm')?.addEventListener('submit',async e=>{e.preventDefault(); const row={id:'desktop_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),date:$('#trafficDate').value,canal:$('#trafficCanalReg').value,vessel:$('#trafficVessel').value.toUpperCase(),vesselReg:$('#trafficVesselReg').value,type:$('#trafficType').value,direction:$('#trafficDirection').value,reverse:$('#trafficReverse').value,time:normalizeTime24($('#trafficTime').value,nowTime()),passengers:Number($('#trafficPassengers').value)||0,destination:$('#trafficDestination').value.toUpperCase(),homePort:$('#trafficHomePort').value,status:'Pending',completed:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),source:'Desktop Dashboard'}; try{const res=await fetch('/api/dashboard/entry/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:row.id,entry:row})}); const out=await res.json().catch(()=>({})); if(!res.ok||!out.ok) throw new Error(out.error||'Save failed'); if(Array.isArray(out.traffic)) data.traffic=out.traffic; else data.traffic.push(out.entry||row); reportRowsCache.clear(); persistLocal(); e.target.reset(); $('#trafficDate').value=todayISO(); $('#trafficTime').value=prefs.autofillTime?nowTime():''; $('#trafficPassengers').value=0; reapplySelectedEntryType(); if($('#trafficDirection')&&!$('#trafficDirection').value&&prefs.defaultDirection) $('#trafficDirection').value=prefs.defaultDirection; render(); toast('Traffic record added'); setTimeout(()=>{window.location.href='/new-entry';},450);}catch(err){console.error(err); toast('Save failed — check server console');}}); $('#registrationForm')?.addEventListener('submit',e=>{e.preventDefault(); data.registry.push({canal:$('#regCanal').value,owner:$('#regOwner').value,vessel:$('#regVessel').value.toUpperCase(),length:$('#regLength').value,regType:$('#regType').value,vesselReg:$('#regNumber').value,type:$('#regVesselType').value,city:$('#regCity').value,country:$('#regCountry').value,state:$('#regState').value,address:$('#regAddress').value}); save(); e.target.reset(); render(); toast('Registration saved');}); ['searchDate','searchCanal','searchVessel','searchType','searchDestination','searchHomePort','globalSearch'].forEach(id=>$('#'+id)?.addEventListener('input',runSearch)); $('#runSearch')?.addEventListener('click',runSearch); $('#clearSearch')?.addEventListener('click',()=>{$$('#search input').forEach(i=>i.value=''); runSearch();}); $$('.tab').forEach(t=>t.addEventListener('click',()=>switchReport(t.dataset.report))); ['reportDate','reportMonth','startDate','endDate'].forEach(id=>{
+  const field=$('#'+id);
+  field?.addEventListener('input',()=>queueReportRender(70));
+  field?.addEventListener('change',()=>queueReportRender(0));
+}); $('#printCurrentReport')?.addEventListener('click',()=>printReport()); $('#printDailyReport')?.addEventListener('click',()=>printReport('dailyReport')); $('#printMonthlyReport')?.addEventListener('click',()=>printReport('monthlyReport')); $('#exportData')?.addEventListener('click',exportData); $('#easyExport')?.addEventListener('click',exportData); $('#resetData')?.addEventListener('click',()=>{if(confirm('Reset all demo data?')){data=JSON.parse(JSON.stringify(demo)); data.phones=[]; activePair=null; savePair(); save(); render(); toast('Demo data reset');}}); $('#generatePairCode')?.addEventListener('click',generatePhoneCode); $('#cancelPairCode')?.addEventListener('click',async()=>{activePair=null; savePair(); try{await fetch('/api/pair/cancel',{method:'POST'});}catch(e){} renderPairCode(); toast('Pairing link cancelled');}); $('#startPhoneServer')?.addEventListener('click',startPhoneServer); $('#stopPhoneServer')?.addEventListener('click',stopPhoneServer); refreshPhoneServerStatus(); pullSharedPresets(); pullServerData(); setInterval(()=>{if(!document.hidden){pullSharedPresets(); pullServerData();}},15000); document.addEventListener('visibilitychange',()=>{if(!document.hidden){pullSharedPresets(); pullServerData();}}); $('#darkModeToggle')?.addEventListener('change',e=>{localStorage.setItem(themeKey,String(e.target.checked)); applyTheme(); toast(e.target.checked?'Dark Mode enabled':'Light Mode enabled');}); $('#presetForm')?.addEventListener('submit',async e=>{
     e.preventDefault();
     const form=e.currentTarget;
     if(form.dataset.saving==='true') return;
@@ -1702,6 +1775,7 @@ function dashboardNormalFormHTML(kind){
     <div class="field"><label>Destination</label>${dest}</div>
     <div class="field"><label>Home Port</label>${home}</div>
     <div class="field"><label>Time</label><input id="entryTime" type="time" value="${dashCurrentTime()}"></div>
+    <div class="field"><label>Date</label><input id="entryDate" type="date" value="${dashCurrentDate()}"></div>
     <div class="field full"><label>Additional Notes</label><textarea id="notes" placeholder="Additional Notes"></textarea></div>
   </div>`;
 }
@@ -1712,21 +1786,106 @@ function dashboardSystemFormHTML(kind){
     <div class="field"><label>Canal</label><input id="canal" value="Sault Canada Locks" readonly></div>
     <div class="field"><label>Direction</label><select id="reverseDir" class="placeholder"><option value="">Select Direction</option>${dirOptions}</select></div>
     <div class="field"><label>${label} Time</label><input id="reverseTime" type="time" value="${dashCurrentTime()}"></div>
+    <div class="field"><label>Date</label><input id="entryDate" type="date" value="${dashCurrentDate()}"></div>
     <div class="field full"><label>Reason <span class="muted-label">(optional)</span></label><textarea id="reverseReason" placeholder="Optional reason"></textarea></div>
     <div class="field full"><label>Notes</label><textarea id="notes" placeholder="Notes"></textarea></div>
   </div>`;
 }
 function setupDashboardManualDropdown(selectId,inputId){
-  const select=dashField(selectId), input=dashField(inputId); if(!select||!input) return;
-  function update(){const opt=select.options[select.selectedIndex]; select.classList.toggle('placeholder',!select.value); if(opt&&opt.dataset.manual==='true'){input.style.display='block'; if(document.activeElement!==input) input.focus(); opt.value=input.value.trim()||'Other';}else{input.style.display='none'; input.value=''; const manual=[...select.options].find(o=>o.dataset.manual==='true'); if(manual) manual.value='Other';}}
-  select.addEventListener('change',update); input.addEventListener('input',()=>{const opt=select.options[select.selectedIndex]; if(opt&&opt.dataset.manual==='true') opt.value=input.value.trim()||'Other'}); update();
+  const select=dashField(selectId), input=dashField(inputId);
+  if(!select||!input) return;
+
+  function update(){
+    const opt=select.options[select.selectedIndex];
+    select.classList.toggle('placeholder',!select.value);
+
+    if(opt&&opt.dataset.manual==='true'){
+      input.style.display='block';
+      if(document.activeElement!==input) input.focus();
+      opt.value=input.value.trim()||'Other';
+    }else{
+      input.style.display='none';
+      input.value='';
+      input.classList.remove('show');
+      const manual=[...select.options].find(o=>o.dataset&&o.dataset.manual==='true');
+      if(manual) manual.value='Other';
+    }
+  }
+
+  select.addEventListener('change',update);
+  input.addEventListener('input',()=>{
+    const opt=select.options[select.selectedIndex];
+    if(opt&&opt.dataset.manual==='true') opt.value=input.value.trim()||'Other';
+  });
+
+  update();
 }
-function getDashboardRealValue(selectId,manualId){const field=dashField(selectId), manual=dashField(manualId); if(!field) return ''; if(field.tagName!=='SELECT') return field.value.trim(); const opt=field.options[field.selectedIndex]; return opt&&opt.dataset.manual==='true'&&manual ? (manual.value.trim()||'Other') : field.value.trim();}
+
+// When a vessel preset contains a custom value such as
+// "Sault Ste. Marie, MI, USA", keep it inside the dropdown.
+// Do not select "Other", because that opens the extra manual input
+// and makes the form row grow taller.
+function setDashboardPresetSelectValue(selectId,inputId,value){
+  const select=dashField(selectId);
+  const input=dashField(inputId);
+  const wanted=String(value||'').trim();
+
+  if(!select||select.tagName!=='SELECT'||!wanted) return false;
+
+  let option=[...select.options].find(opt=>
+    opt.dataset?.manual!=='true' &&
+    String(opt.value||opt.textContent||'').trim().toLowerCase()===wanted.toLowerCase()
+  );
+
+  if(!option){
+    [...select.options]
+      .filter(opt=>opt.dataset?.presetValue==='true')
+      .forEach(opt=>opt.remove());
+
+    option=document.createElement('option');
+    option.value=wanted;
+    option.textContent=wanted;
+    option.dataset.presetValue='true';
+
+    const manual=[...select.options].find(opt=>opt.dataset&&opt.dataset.manual==='true');
+    if(manual) select.insertBefore(option,manual);
+    else select.appendChild(option);
+  }
+
+  select.value=option.value;
+  select.classList.remove('placeholder');
+
+  if(input){
+    input.value='';
+    input.style.display='none';
+    input.classList.remove('show');
+  }
+
+  select.dispatchEvent(new Event('change',{bubbles:true}));
+  return true;
+}
+
+function getDashboardRealValue(selectId,manualId){
+  const field=dashField(selectId), manual=dashField(manualId);
+  if(!field) return '';
+  if(field.tagName!=='SELECT') return field.value.trim();
+  const opt=field.options[field.selectedIndex];
+  return opt&&opt.dataset.manual==='true'&&manual ? (manual.value.trim()||'Other') : field.value.trim();
+}
 function dashboardMissingFields(kind){
-  if(kind==='LR'||kind==='LT') return [{name:'Direction',value:dashValue('reverseDir')},{name:'Time',value:dashValue('reverseTime')}].filter(x=>!x.value);
+  if(kind==='LR'||kind==='LT') return [
+    {name:'Direction',value:dashValue('reverseDir')},
+    {name:'Time',value:dashValue('reverseTime')},
+    {name:'Date',value:dashValue('entryDate')}
+  ].filter(x=>!x.value);
   const fields = [{name:kind==='K'?'Name / Company':'Vessel Name',value:getDashboardRealValue('vessel','vesselManual')},{name:'Registration',value:dashValue('reg')},{name:'Direction',value:getDashboardRealValue('dir','dirManual')},{name:'Passenger Count',value:dashValue('pass')}];
   if(kind==='K') fields.push({name:'Number of Kayaks',value:dashValue('kayakCount')});
-  fields.push({name:'Destination',value:getDashboardRealValue('dest','destManual')},{name:'Home Port',value:getDashboardRealValue('homePort','homePortManual')},{name:'Time',value:dashValue('entryTime')});
+  fields.push(
+    {name:'Destination',value:getDashboardRealValue('dest','destManual')},
+    {name:'Home Port',value:getDashboardRealValue('homePort','homePortManual')},
+    {name:'Time',value:dashValue('entryTime')},
+    {name:'Date',value:dashValue('entryDate')}
+  );
   return fields.filter(x=>!x.value);
 }
 function showDashboardMissing(missing){const popup=dashField('missingPopup'), list=dashField('missingList'); if(!popup||!list) return; list.innerHTML=missing.map(x=>`<div>• ${x.name}</div>`).join(''); popup.classList.add('active');}
@@ -1740,11 +1899,12 @@ async function saveDashboardMobileEntry(kind, options={}){
   let row, mobile;
   if(kind==='LR'||kind==='LT'){
     const time=dashValue('reverseTime')||dashCurrentTime();
-    row={id:desktopId,date:dashCurrentDate(),canal:dashValue('canal')||'Sault Canada Locks',vessel:name,vesselReg:'N/A',type:kind,direction:dashValue('reverseDir'),reverse:kind==='LR'?'Yes':'',time,passengers:0,destination:'N/A',homePort:'N/A',notes:dashValue('notes')||dashValue('reverseReason')||'-',reason:dashValue('reverseReason'),status:'Pending',completed:false,createdAt:nowIso,updatedAt:nowIso,source:'Desktop Dashboard'};
+    const date=dashValue('entryDate')||dashCurrentDate();
+    row={id:desktopId,date,canal:dashValue('canal')||'Sault Canada Locks',vessel:name,vesselReg:'N/A',type:kind,direction:dashValue('reverseDir'),reverse:kind==='LR'?'Yes':'',time,passengers:0,destination:'N/A',homePort:'N/A',notes:dashValue('notes')||dashValue('reverseReason')||'-',reason:dashValue('reverseReason'),status:'Pending',completed:false,createdAt:nowIso,updatedAt:nowIso,source:'Desktop Dashboard'};
     mobile={...row,entryType:name,formType:name,vesselName:name,reg:'N/A',registration:'N/A',dir:row.direction,pass:'N/A',dest:'N/A',entryTime:time,reverseTime:time,reverseReason:row.reason};
   } else {
-    const vessel=getDashboardRealValue('vessel','vesselManual')||'Unknown'; const preset=findEntryPreset(kind,vessel); const reg=dashValue('reg')||preset?.canalReg||preset?.reg||(kind==='K'?'K':'N/A'); const time=dashValue('entryTime')||dashCurrentTime(); const kayakCount=kind==='K'?dashValue('kayakCount'):''; const notesValue=dashValue('notes') || (kind==='K'&&kayakCount ? `Number of Kayaks: ${kayakCount}` : '-');
-    row={id:desktopId,date:dashCurrentDate(),canal:reg,vessel:vessel.toUpperCase(),vesselReg:preset?.vesselReg||reg,type:(kind==='K'?'RB':kind),sourceType:(kind==='K'?'Kayak':undefined),direction:getDashboardRealValue('dir','dirManual'),reverse:'',time,passengers:Number(dashValue('pass'))||0,destination:getDashboardRealValue('dest','destManual')||'N/A',homePort:getDashboardRealValue('homePort','homePortManual')||'N/A',notes:notesValue,kayakCount,numberOfKayaks:kayakCount,owner:preset?.owner||'',regType:preset?.regType||'',vesselType:preset?.vesselType||kind,address:preset?.address||'',city:preset?.city||'',country:preset?.country||'',state:preset?.state||'',postalCode:preset?.postalCode||'',status:'Pending',completed:false,createdAt:nowIso,updatedAt:nowIso,source:'Desktop Dashboard'};
+    const vessel=getDashboardRealValue('vessel','vesselManual')||'Unknown'; const preset=findEntryPreset(kind,vessel); const reg=dashValue('reg')||preset?.canalReg||preset?.reg||(kind==='K'?'K':'N/A'); const time=dashValue('entryTime')||dashCurrentTime(); const date=dashValue('entryDate')||dashCurrentDate(); const kayakCount=kind==='K'?dashValue('kayakCount'):''; const notesValue=dashValue('notes') || (kind==='K'&&kayakCount ? `Number of Kayaks: ${kayakCount}` : '-');
+    row={id:desktopId,date,canal:reg,vessel:vessel.toUpperCase(),vesselReg:preset?.vesselReg||reg,type:(kind==='K'?'RB':kind),sourceType:(kind==='K'?'Kayak':undefined),direction:getDashboardRealValue('dir','dirManual'),reverse:'',time,passengers:Number(dashValue('pass'))||0,destination:getDashboardRealValue('dest','destManual')||'N/A',homePort:getDashboardRealValue('homePort','homePortManual')||'N/A',notes:notesValue,kayakCount,numberOfKayaks:kayakCount,owner:preset?.owner||'',regType:preset?.regType||'',vesselType:preset?.vesselType||kind,address:preset?.address||'',city:preset?.city||'',country:preset?.country||'',state:preset?.state||'',postalCode:preset?.postalCode||'',status:'Pending',completed:false,createdAt:nowIso,updatedAt:nowIso,source:'Desktop Dashboard'};
     mobile={...row,entryType:name,formType:name,vesselName:vessel,reg,registration:reg,dir:row.direction,pass:String(row.passengers),dest:row.destination,entryTime:time,kayakCount,numberOfKayaks:kayakCount};
   }
   try{
@@ -1789,8 +1949,36 @@ function initDashboardMobileEntryForm(){
   if(!['RB','K','LR','LT'].includes(kind)) ['dir','dest','homePort'].forEach(id=>setupDashboardManualDropdown(id,id+'Manual'));
   if(kind==='RB') setupDashboardManualDropdown('dir','dirManual');
   setupCustomEntryPresetDropdown(kind);
-  const v=dashField('vessel'), r=dashField('reg'); if(v&&r){v.addEventListener('change',()=>{const preset=findEntryPreset(kind,v.value); if(preset){r.value=preset.canalReg||preset.reg||preset.vesselReg||''; r.dispatchEvent(new Event('input',{bubbles:true})); const hp=dashField('homePort'); const hpm=dashField('homePortManual'); const hpVal=preset.homePort||preset.homeport||preset.port||[preset.city,preset.state,preset.country].filter(Boolean).join(', '); if(hp&&hpVal){ if(hp.tagName==='SELECT'){ const opt=[...hp.options].find(o=>String(o.value||o.textContent||'').toLowerCase()===String(hpVal).toLowerCase()); if(opt){hp.value=opt.value;} else {const man=[...hp.options].find(o=>o.dataset&&o.dataset.manual==='true'); if(man){hp.value=man.value; if(hpm){hpm.value=hpVal; hpm.classList.add('show');}}} } else hp.value=hpVal; hp.dispatchEvent(new Event('change',{bubbles:true})); }}});}
-  dashField('clearMobileForm')?.addEventListener('click',()=>{form.reset(); const t=dashField('entryTime')||dashField('reverseTime'); if(t) t.value=dashCurrentTime(); toast('Form cleared');});
+  const v=dashField('vessel'), r=dashField('reg');
+  if(v&&r){
+    v.addEventListener('change',()=>{
+      const preset=findEntryPreset(kind,v.value);
+      if(!preset) return;
+
+      r.value=preset.canalReg||preset.reg||preset.vesselReg||'';
+      r.dispatchEvent(new Event('input',{bubbles:true}));
+
+      const hp=dashField('homePort');
+      const hpVal=preset.homePort||preset.homeport||preset.port||[preset.city,preset.state,preset.country].filter(Boolean).join(', ');
+
+      if(hp&&hpVal){
+        if(hp.tagName==='SELECT'){
+          setDashboardPresetSelectValue('homePort','homePortManual',hpVal);
+        }else{
+          hp.value=hpVal;
+          hp.dispatchEvent(new Event('change',{bubbles:true}));
+        }
+      }
+    });
+  }
+  dashField('clearMobileForm')?.addEventListener('click',()=>{
+    form.reset();
+    const t=dashField('entryTime')||dashField('reverseTime');
+    if(t) t.value=dashCurrentTime();
+    const d=dashField('entryDate');
+    if(d) d.value=dashCurrentDate();
+    toast('Form cleared');
+  });
   dashField('cancelSubmit')?.addEventListener('click',hideDashboardMissing); dashField('missingPopup')?.addEventListener('click',e=>{if(e.target.id==='missingPopup') hideDashboardMissing();});
   let allow=false;
   let saving=false;
